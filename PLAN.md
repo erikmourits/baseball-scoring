@@ -240,6 +240,7 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
   - Performance: large useLiveQuery queries, unnecessary re-renders
   - Security: RLS policy audit, Edge Function input validation
   - Dead code and unused imports cleanup
+  - Remove alert/confirm dialogs with modals
 
 ### Phase 8 — Deployment & Polish ❌
 - [ ] DNS A record: `baseball.mourits.nu` → server IP
@@ -266,3 +267,8 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
 | League switching | localStorage + StorageEvent | Simple; reactive across components without context provider |
 | Dialogs | Custom `ConfirmDialog` (no browser confirm/alert) | Consistent styling; better UX |
 | UI framework | Tailwind CSS only | Sufficient at current complexity |
+
+---
+
+## Nice to haves (todos)
+- [ ] Dark mode
