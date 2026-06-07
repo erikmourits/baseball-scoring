@@ -3,26 +3,31 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { seasonService } from '../services/seasonService'
 import { useSession } from '../hooks/useSession'
+import { useLeague } from '../hooks/useLeague'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 export default function SeasonsPage() {
   const { session } = useSession()
+  const { league } = useLeague()
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [year, setYear] = useState(String(new Date().getFullYear()))
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
+  const leagueId = league?.id
+
   const seasons = useLiveQuery(async () => {
-    const all = await db.seasons.toArray()
+    if (!leagueId) return []
+    const all = await db.seasons.where('leagueId').equals(leagueId).toArray()
     return all.sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
-  }, [])
+  }, [leagueId])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !session) return
     setSaving(true)
-    await seasonService.create(session.user.id, name.trim(), year ? Number(year) : undefined)
+    await seasonService.create(session.user.id, name.trim(), year ? Number(year) : undefined, league?.id)
     setName('')
     setYear(String(new Date().getFullYear()))
     setShowForm(false)

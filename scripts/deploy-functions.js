@@ -48,7 +48,7 @@ let failed = 0
 for (const fn of functions) {
   process.stdout.write(`  Deploying ${fn}... `)
   try {
-    const noJwt = ['get-shared-game', 'ocr-scorecard'].includes(fn)
+    const noJwt = ['get-shared-game', 'ocr-scorecard', 'league-invite'].includes(fn)
     const cmd = `supabase functions deploy ${fn}${noJwt ? ' --no-verify-jwt' : ''}`
     execSync(cmd, { stdio: 'pipe' })
     console.log('✅')

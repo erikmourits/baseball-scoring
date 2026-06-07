@@ -216,6 +216,8 @@ function StatsTab({ teamId }: { teamId: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+
+
 export default function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()

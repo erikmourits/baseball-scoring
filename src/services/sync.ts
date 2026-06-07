@@ -4,12 +4,30 @@ import { db } from '../db/local'
 
 // ── Push dirty local records to Supabase ─────────────────────────────────────
 
+export async function syncLeagues() {
+  const dirty = await db.leagues.filter(l => l._dirty).toArray()
+  for (const league of dirty) {
+    const { error } = await (supabase.from('leagues') as any).upsert({
+      id:         league.id,
+      name:       league.name,
+      created_by: league.createdBy,
+      created_at: league.createdAt,
+    })
+    if (!error) {
+      await db.leagues.update(league.id, { _dirty: false })
+    }
+  }
+}
+
 export async function syncTeams() {
   const dirty = await db.teams.filter(t => t._dirty).toArray()
+  const fallbackLeague = await db.leagues.toCollection().first()
   for (const team of dirty) {
+    const leagueId = team.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('teams') as any).upsert({
       id:         team.id,
       user_id:    team.userId,
+      league_id:  leagueId,
       name:       team.name,
       home_field: team.homeField ?? null,
       created_at: team.createdAt,
@@ -43,10 +61,13 @@ export async function syncPlayers() {
 
 export async function syncSeasons() {
   const dirty = await db.seasons.filter(s => s._dirty).toArray()
+  const fallbackLeague = await db.leagues.toCollection().first()
   for (const season of dirty) {
+    const leagueId = season.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('seasons') as any).upsert({
       id:         season.id,
       user_id:    season.userId,
+      league_id:  leagueId,
       name:       season.name,
       year:       season.year ?? null,
       start_date: season.startDate ?? null,
@@ -63,10 +84,14 @@ export async function syncSeasons() {
 
 export async function syncGames() {
   const dirty = await db.games.filter(g => g._dirty).toArray()
+  // Fallback league: used when a game has no leagueId (pre-migration records)
+  const fallbackLeague = await db.leagues.toCollection().first()
   for (const game of dirty) {
+    const leagueId = game.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('games') as any).upsert({
       id:               game.id,
       user_id:          game.userId,
+      league_id:        leagueId,
       season_id:        game.seasonId ?? null,
       date:             game.date,
       location:         game.location ?? null,
@@ -153,9 +178,37 @@ export async function syncAtBats() {
 
 // ── Pull server data into local DB on login / app start ──────────────────────
 
+async function pullLeagues() {
+  const { data, error } = await (supabase.from('leagues') as any).select('*')
+  if (error || !data) return
+
+  for (const l of data as any[]) {
+    const local = await db.leagues.get(l.id)
+    if (!local || !local._dirty) {
+      await db.leagues.put({
+        id:        l.id,
+        name:      l.name,
+        createdBy: l.created_by,
+        createdAt: l.created_at,
+        updatedAt: l.created_at,
+        _dirty:    false,
+      })
+    }
+  }
+}
+
 async function pullTeams() {
   const { data, error } = await (supabase.from('teams') as any).select('*')
   if (error || !data) return
+
+  const serverIds = new Set((data as any[]).map((t: any) => t.id))
+  const localTeams = await db.teams.toArray()
+  for (const local of localTeams) {
+    if (!local._dirty && !serverIds.has(local.id)) {
+      await db.players.where('teamId').equals(local.id).delete()
+      await db.teams.delete(local.id)
+    }
+  }
 
   for (const t of data as any[]) {
     const local = await db.teams.get(t.id)
@@ -163,6 +216,7 @@ async function pullTeams() {
       await db.teams.put({
         id:        t.id,
         userId:    t.user_id,
+        leagueId:  t.league_id ?? undefined,
         name:      t.name,
         homeField: t.home_field ?? undefined,
         createdAt: t.created_at,
@@ -201,12 +255,21 @@ async function pullSeasons() {
   const { data, error } = await (supabase.from('seasons') as any).select('*')
   if (error || !data) return
 
+  const serverIds = new Set((data as any[]).map((s: any) => s.id))
+  const localSeasons = await db.seasons.toArray()
+  for (const local of localSeasons) {
+    if (!local._dirty && !serverIds.has(local.id)) {
+      await db.seasons.delete(local.id)
+    }
+  }
+
   for (const s of data as any[]) {
     const local = await db.seasons.get(s.id)
     if (!local || !local._dirty) {
       await db.seasons.put({
         id:        s.id,
         userId:    s.user_id,
+        leagueId:  s.league_id ?? undefined,
         name:      s.name,
         year:      s.year ?? undefined,
         startDate: s.start_date ?? undefined,
@@ -224,12 +287,34 @@ async function pullGames() {
   const { data, error } = await (supabase.from('games') as any).select('*')
   if (error || !data) return
 
+  const serverIds = new Set((data as any[]).map((g: any) => g.id))
+
+  // Remove local games that no longer exist on the server
+  const localGames = await db.games.toArray()
+  for (const local of localGames) {
+    if (!local._dirty && !serverIds.has(local.id)) {
+      await db.gameLineups.where('gameId').equals(local.id).delete()
+      const inningIds = (await db.innings.where('gameId').equals(local.id).toArray()).map(i => i.id)
+      if (inningIds.length) {
+        const atBatIds = (await db.atBats.where('inningId').anyOf(inningIds).toArray()).map(ab => ab.id)
+        if (atBatIds.length) {
+          await db.fieldingCredits.where('atBatId').anyOf(atBatIds).delete()
+          await db.baserunningEvents.where('atBatId').anyOf(atBatIds).delete()
+          await db.atBats.where('inningId').anyOf(inningIds).delete()
+        }
+        await db.innings.where('gameId').equals(local.id).delete()
+      }
+      await db.games.delete(local.id)
+    }
+  }
+
   for (const g of data as any[]) {
     const local = await db.games.get(g.id)
     if (!local || !local._dirty) {
       await db.games.put({
         id:              g.id,
         userId:          g.user_id,
+        leagueId:        g.league_id ?? undefined,
         seasonId:        g.season_id ?? undefined,
         date:            g.date,
         location:        g.location ?? undefined,
@@ -328,8 +413,103 @@ async function pullAtBats() {
   }
 }
 
+
+/**
+ * Ensures every local team/season/game has a leagueId and is marked dirty so
+ * it gets pushed to Supabase. Runs on every pullFromServer call — idempotent
+ * because the dirty flag is already true if unpushed, and harmless if already
+ * synced (Supabase upsert is a no-op for unchanged rows).
+ */
+async function stampMissingLeagueIds() {
+  const league = await db.leagues.toCollection().first()
+  if (!league) return
+
+  // Mark ALL local records dirty so they get pushed.
+  // Records with wrong/missing leagueId would be rejected by Supabase RLS;
+  // this ensures the leagueId is always set before the next syncAll() runs.
+  const [teams, seasons, games] = await Promise.all([
+    db.teams.toArray(),
+    db.seasons.toArray(),
+    db.games.toArray(),
+  ])
+
+  let stamped = 0
+  await Promise.all([
+    ...teams.map(t => {
+      if (!t.leagueId) { stamped++; return db.teams.update(t.id, { leagueId: league.id, _dirty: true }) }
+      return Promise.resolve()
+    }),
+    ...seasons.map(s => {
+      if (!s.leagueId) { stamped++; return db.seasons.update(s.id, { leagueId: league.id, _dirty: true }) }
+      return Promise.resolve()
+    }),
+    ...games.map(g => {
+      if (!g.leagueId) { stamped++; return db.games.update(g.id, { leagueId: league.id, _dirty: true }) }
+      return Promise.resolve()
+    }),
+  ])
+
+  if (stamped > 0) {
+    console.log(`[sync] Stamped leagueId onto ${stamped} records`)
+  }
+}
+
+/**
+ * Force-push ALL local records to Supabase regardless of dirty flag.
+ * Use after a schema migration to recover data that Supabase lost.
+ */
+export async function forceResyncAll() {
+  const league = await db.leagues.toCollection().first()
+  if (!league) return
+
+  // Mark everything dirty
+  const [teams, seasons, games, players, innings, atBats, lineups] = await Promise.all([
+    db.teams.toArray(),
+    db.seasons.toArray(),
+    db.games.toArray(),
+    db.players.toArray(),
+    db.innings.toArray(),
+    db.atBats.toArray(),
+    db.gameLineups.toArray(),
+  ])
+
+  await Promise.all([
+    ...teams.map(t => db.teams.update(t.id, { leagueId: league.id, _dirty: true })),
+    ...seasons.map(s => db.seasons.update(s.id, { leagueId: league.id, _dirty: true })),
+    ...games.map(g => db.games.update(g.id, { leagueId: league.id, _dirty: true })),
+    ...players.map(p => db.players.update(p.id, { _dirty: true })),
+    ...innings.map(i => db.innings.update(i.id, { _dirty: true })),
+    ...atBats.map(ab => db.atBats.update(ab.id, { _dirty: true })),
+    ...lineups.map(l => db.gameLineups.update(l.id, { _dirty: true })),
+  ])
+
+  console.log(`[sync] Force-marked ${teams.length + seasons.length + games.length + players.length + innings.length + atBats.length + lineups.length} records dirty`)
+  await syncAll()
+}
+
+
+export async function clearLocalAndResync() {
+  // Wipe all local tables
+  await Promise.all([
+    db.leagues.clear(),
+    db.teams.clear(),
+    db.players.clear(),
+    db.seasons.clear(),
+    db.games.clear(),
+    db.gameLineups.clear(),
+    db.innings.clear(),
+    db.atBats.clear(),
+  ])
+  // Pull fresh from server
+  await pullFromServer()
+}
+
 export async function pullFromServer() {
-  // Independent tables first
+  // Leagues first — everything else references them
+  await pullLeagues()
+  // Stamp leagueId onto any pre-migration local records before pushing
+  await stampMissingLeagueIds()
+  // Independent tables next
   await Promise.all([pullTeams(), pullPlayers(), pullSeasons()])
   // Games before their dependent tables
   await pullGames()
@@ -339,6 +519,8 @@ export async function pullFromServer() {
 }
 
 export async function syncAll() {
+  // Leagues first
+  await syncLeagues()
   // Independent tables
   await Promise.all([syncTeams(), syncPlayers(), syncSeasons()])
   // Game data in dependency order: games → lineups/innings → at-bats

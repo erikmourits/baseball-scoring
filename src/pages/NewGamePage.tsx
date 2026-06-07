@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type LocalPlayer } from '../db/local'
 import { useSession } from '../hooks/useSession'
+import { useLeague } from '../hooks/useLeague'
 import { gameService } from '../services/gameService'
 import { lineupService } from '../services/lineupService'
 import { teamService } from '../services/teamService'
@@ -337,6 +338,7 @@ function QuickAddToggle({
 export default function NewGamePage() {
   const navigate = useNavigate()
   const { session } = useSession()
+  const { league } = useLeague()
 
   const [date, setDate]         = useState(new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
@@ -371,8 +373,15 @@ export default function NewGamePage() {
   const [step, setStep]     = useState<Step>('info')
   const [saving, setSaving] = useState(false)
 
-  const seasons = useLiveQuery(() => db.seasons.toArray())
-  const teams   = useLiveQuery(() => db.teams.toArray())
+  const leagueId = league?.id
+  const seasons = useLiveQuery(async () => {
+    if (!leagueId) return []
+    return db.seasons.where('leagueId').equals(leagueId).toArray()
+  }, [leagueId])
+  const teams = useLiveQuery(async () => {
+    if (!leagueId) return []
+    return db.teams.where('leagueId').equals(leagueId).toArray()
+  }, [leagueId])
   const players = useLiveQuery(() => db.players.toArray())
 
   useEffect(() => {
@@ -563,7 +572,7 @@ export default function NewGamePage() {
     let resolvedAwayTeamId = awayTeamId
 
     if (homeIsQuick) {
-      const t = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team')
+      const t = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team', league?.id)
       resolvedHomeTeamId = t.id
       for (let i = 1; i <= quickHomeBatterCount; i++) {
         await playerService.create(t.id, { name: `Player ${i}` })
@@ -571,7 +580,7 @@ export default function NewGamePage() {
     }
 
     if (awayIsQuick) {
-      const t = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent')
+      const t = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent', league?.id)
       resolvedAwayTeamId = t.id
       for (let i = 1; i <= quickAwayBatterCount; i++) {
         await playerService.create(t.id, { name: `Player ${i}` })
@@ -580,6 +589,7 @@ export default function NewGamePage() {
 
     const game = await gameService.create({
       userId:     session.user.id,
+      leagueId:   league?.id,
       seasonId:   seasonId || undefined,
       date,
       location:   location || undefined,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { gameService } from '../services/gameService'
+import { useLeague } from '../hooks/useLeague'
 
 const STATUS_LABEL: Record<string, string> = {
   draft:       'Draft',
@@ -18,11 +19,15 @@ const STATUS_COLOR: Record<string, string> = {
 export default function HomePage() {
   const navigate = useNavigate()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { league } = useLeague()
+
+  const leagueId = league?.id
 
   const activeSeason = useLiveQuery(async () => {
-    const all = await db.seasons.toArray()
+    if (!leagueId) return null
+    const all = await db.seasons.where('leagueId').equals(leagueId).toArray()
     return all.find(s => s.isActive) ?? null
-  })
+  }, [leagueId])
 
   const games = useLiveQuery(async () => {
     if (!activeSeason) return []
@@ -31,17 +36,39 @@ export default function HomePage() {
   }, [activeSeason?.id])
 
   const teams = useLiveQuery(async () => {
-    const all = await db.teams.toArray()
+    if (!leagueId) return {}
+    const all = await db.teams.where('leagueId').equals(leagueId).toArray()
     return Object.fromEntries(all.map(t => [t.id, t.name]))
-  })
+  }, [leagueId])
 
   async function handleDelete(id: string) {
     await gameService.delete(id)
     setDeletingId(null)
   }
 
-  if (activeSeason === undefined) {
+  // Still loading
+  if (activeSeason === undefined || league === undefined) {
     return <div className="p-4 text-gray-400">Loading…</div>
+  }
+
+  // No league yet — prompt user to create or join one
+  if (league === null) {
+    return (
+      <div className="p-4 text-center py-16">
+        <p className="text-4xl mb-3">🏆</p>
+        <p className="text-xl font-bold text-gray-900 mb-1">Welcome!</p>
+        <p className="text-sm text-gray-500 mb-6">
+          Set up a league to start scoring games. A league keeps your teams,
+          seasons, and games together — and lets you invite other scorers.
+        </p>
+        <button
+          onClick={() => navigate('/league')}
+          className="bg-brand-500 text-white font-medium px-6 py-3 rounded-xl hover:bg-brand-600 transition-colors"
+        >
+          Create my league
+        </button>
+      </div>
+    )
   }
 
   const deletingGame = deletingId ? games?.find(g => g.id === deletingId) : null

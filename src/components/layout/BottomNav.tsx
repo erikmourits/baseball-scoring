@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 
 const navItems = [
-  { to: '/',        icon: '🏟️', label: 'Games'   },
-  { to: '/teams',   icon: '👥', label: 'Teams'   },
-  { to: '/seasons', icon: '📅', label: 'Seasons' },
-  { to: '/stats',   icon: '📊', label: 'Stats'   },
+  { to: '/',               icon: '🏟️', label: 'Games'   },
+  { to: '/teams',          icon: '👥', label: 'Teams'   },
+  { to: '/seasons',        icon: '📅', label: 'Seasons' },
+  { to: '/stats',          icon: '📊', label: 'Stats'   },
+  { to: '/league',         icon: '🏆', label: 'League'  },
 ]
 
 export default function BottomNav() {
@@ -27,13 +27,6 @@ export default function BottomNav() {
             <span>{item.label}</span>
           </NavLink>
         ))}
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="flex flex-col items-center gap-0.5 px-4 py-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <span className="text-xl">🚪</span>
-          <span>Sign out</span>
-        </button>
       </div>
     </nav>
   )

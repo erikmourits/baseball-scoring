@@ -15,6 +15,8 @@ import StatsPage from './pages/StatsPage'
 import ScorecardUploadPage from './pages/ScorecardUploadPage'
 import ScorecardReviewPage from './pages/ScorecardReviewPage'
 import WatchPage from './pages/WatchPage'
+import InvitePage from './pages/InvitePage'
+import LeagueSettingsPage from './pages/LeagueSettingsPage'
 import AppShell from './components/layout/AppShell'
 
 function AuthenticatedApp() {
@@ -34,7 +36,10 @@ function AuthenticatedApp() {
         <Route path="/games/:gameId/summary"                    element={<GameSummaryPage />} />
         <Route path="/games/upload"                             element={<ScorecardUploadPage />} />
         <Route path="/games/upload/review"                      element={<ScorecardReviewPage />} />
+        <Route path="/league"                                     element={<LeagueSettingsPage />} />
         <Route path="/watch/:token"                               element={<WatchPage />} />
+        <Route path="/invite/:token"                              element={<InvitePage />} />
+        <Route path="/league-invite/:token"                       element={<InvitePage />} />
         <Route path="*"                                         element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
@@ -59,7 +64,9 @@ export default function App() {
       ) : (
         <Routes>
           <Route path="/auth"          element={<AuthPage />} />
-          <Route path="/watch/:token"  element={<WatchPage />} />
+          <Route path="/watch/:token"         element={<WatchPage />} />
+          <Route path="/invite/:token"        element={<InvitePage />} />
+          <Route path="/league-invite/:token" element={<InvitePage />} />
           <Route path="*"              element={<Navigate to="/auth" replace />} />
         </Routes>
       )}

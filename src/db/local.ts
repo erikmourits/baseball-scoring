@@ -2,16 +2,26 @@ import Dexie, { type Table } from 'dexie'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export interface LocalLeague {
+  id: string           // UUID, generated client-side
+  name: string
+  createdBy: string    // user id
+  createdAt: string
+  updatedAt: string
+  _dirty: boolean
+}
+
 export interface LocalTeam {
   id: string           // UUID, generated client-side
   serverId?: string    // set after sync
   userId: string
+  leagueId?: string
   name: string
   homeField?: string   // default game location
   createdAt: string
   updatedAt: string
   syncedAt?: string
-  _dirty: boolean      // true = needs sync
+  _dirty: boolean
 }
 
 export interface LocalPlayer {
@@ -31,6 +41,7 @@ export interface LocalPlayer {
 export interface LocalSeason {
   id: string
   userId: string
+  leagueId?: string
   name: string
   year?: number
   startDate?: string
@@ -45,6 +56,7 @@ export interface LocalGame {
   id: string
   serverId?: string
   userId: string
+  leagueId?: string
   seasonId?: string
   date: string
   location?: string
@@ -137,6 +149,7 @@ export interface LocalPitchingLine {
 // ── Database ─────────────────────────────────────────────────────────────────
 
 class BaseballDatabase extends Dexie {
+  leagues!: Table<LocalLeague>
   teams!: Table<LocalTeam>
   players!: Table<LocalPlayer>
   seasons!: Table<LocalSeason>
@@ -194,6 +207,14 @@ class BaseballDatabase extends Dexie {
     // v6: add gameLineups table
     this.version(6).stores({
       gameLineups: 'id, gameId, teamId, [gameId+teamId]',
+    })
+
+    // v7: add leagues table; add leagueId index to teams, seasons, games
+    this.version(7).stores({
+      leagues: 'id, createdBy',
+      teams:   'id, userId, leagueId',
+      seasons: 'id, userId, leagueId',
+      games:   'id, userId, status, seasonId, leagueId',
     })
   }
 }

@@ -5,13 +5,14 @@ import { supabase } from '../lib/supabase'
 const now = () => new Date().toISOString()
 
 export const seasonService = {
-  async create(userId: string, name: string, year?: number): Promise<LocalSeason> {
+  async create(userId: string, name: string, year?: number, leagueId?: string): Promise<LocalSeason> {
     const existing = await db.seasons.toArray()
     const isFirst = existing.length === 0
 
     const season: LocalSeason = {
       id:        crypto.randomUUID(),
       userId,
+      leagueId,
       name:      name.trim(),
       year,
       isActive:  isFirst,
@@ -48,6 +49,7 @@ async function syncSeason(season: LocalSeason) {
   const { error } = await (supabase.from('seasons') as any).upsert({
     id:         season.id,
     user_id:    season.userId,
+    league_id:  season.leagueId ?? null,
     name:       season.name,
     year:       season.year ?? null,
     start_date: season.startDate ?? null,

@@ -4,18 +4,23 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { teamService } from '../services/teamService'
 import { useSession } from '../hooks/useSession'
+import { useLeague } from '../hooks/useLeague'
 
 export default function TeamsPage() {
   const { session } = useSession()
+  const { league } = useLeague()
   const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const leagueId = league?.id
+
   const teams = useLiveQuery(async () => {
-    const all = await db.teams.toArray()
+    if (!leagueId) return []
+    const all = await db.teams.where('leagueId').equals(leagueId).toArray()
     return all.sort((a, b) => a.name.localeCompare(b.name))
-  })
+  }, [leagueId])
 
   const playerCounts = useLiveQuery(async () => {
     const all = await db.players.toArray()
@@ -29,7 +34,7 @@ export default function TeamsPage() {
     e.preventDefault()
     if (!session || !name.trim()) return
     setSaving(true)
-    const team = await teamService.create(session.user.id, name)
+    const team = await teamService.create(session.user.id, name, league?.id)
     setSaving(false)
     setName('')
     setShowForm(false)
