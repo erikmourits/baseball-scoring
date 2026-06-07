@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useGameSubscription } from '../hooks/useGameSubscription'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
@@ -45,6 +46,7 @@ type PitcherLine = {
 
 export default function GameSummaryPage() {
   const { gameId } = useParams<{ gameId: string }>()
+  const { isLive } = useGameSubscription(gameId)
   const navigate   = useNavigate()
 
   const game = useLiveQuery(() => db.games.get(gameId!), [gameId])
@@ -211,6 +213,14 @@ export default function GameSummaryPage() {
         </div>
         {game.status === 'final' && (
           <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">Final</p>
+        )}
+        {game.status !== 'final' && isLive && (
+          <div className="flex justify-center mt-3">
+            <span className="flex items-center gap-1.5 text-xs bg-red-500/80 px-3 py-1 rounded-full font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              LIVE
+            </span>
+          </div>
         )}
       </div>
 

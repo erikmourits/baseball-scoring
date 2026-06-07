@@ -217,38 +217,46 @@ Stats computed on-the-fly from the game log — no separate stats table.
 - [x] Custom in-app `ConfirmDialog` component (no browser `confirm()` / `alert()`)
 - [x] Supabase migrations: 001 lineup_order, 002 player positions, 003 soft delete + seasons
 
-### Phase 2 — Play-by-Play Scoring
-- [ ] New game screen: pick season, teams, date, location, set lineup order, pick starting pitchers
-- [ ] Scoring UI: batter card, result buttons, fielder selection grid (1–9)
-- [ ] Baserunner state tracker (runners on base, auto-advance on hits/outs)
-- [ ] Baserunning events between at-bats (SB, CS, WP, PB, balk)
-- [ ] Pitching change flow (mid-inning substitution, splits PitchingLine)
-- [ ] Auto-advance batter; auto-switch half-inning at 3 outs
-- [ ] Live scoreboard header (score, inning, outs)
-- [ ] Save / resume in-progress game
-- [ ] Game list on home screen (by season, with status badges)
+### Phase 2 — Play-by-Play Scoring ✅
+- [x] New game screen: pick season, teams, date, location, set lineup order, pick starting pitchers
+- [x] Scoring UI: batter card, result buttons, fielder selection grid (1–9)
+- [x] Baserunner state tracker (runners on base, auto-advance on hits/outs)
+- [x] Baserunning events between at-bats (SB, CS, WP, PB, balk)
+- [x] Pitching change flow (mid-inning substitution via sub menu; pitcher shown in scoreboard)
+- [x] Auto-advance batter; auto-switch half-inning at 3 outs
+- [x] Live scoreboard header (score, inning, outs)
+- [x] Save / resume in-progress game (localStorage persistence across refreshes)
+- [x] Game list on home screen (by season, with status badges)
+- [x] Undo (unlimited stack, persisted across refresh)
+- [x] Runner outcomes per play; between-at-bat events (SB/CS/WP/PB/BALK)
+- [x] Inning-end animation; skip to next half-inning with run prompt
+- [x] Delete game; end game flow → summary
+- [x] Previous at-bat results shown inline on batter card
 
-### Phase 3 — Image Upload & OCR
-- [ ] Write GPT-4o-mini system prompt covering KNBSB notation
-- [ ] Supabase Edge Function: receive image → call GPT-4o-mini Vision → return JSON game log
-- [ ] Camera / file upload UI
-- [ ] Review & correction screen (highlight uncertain cells)
-- [ ] Save corrected game log to local DB
+### Phase 3 — Image Upload & OCR ⏳ (blocked on OpenAI credits)
+- [x] Write GPT-4o-mini system prompt covering KNBSB notation
+- [x] Supabase Edge Function: receive image → call GPT-4o-mini Vision → return JSON game log
+- [x] Camera / file upload UI (📷 Take photo + 🖼️ Choose file; drag-and-drop)
+- [x] Review & correction screen (confidence indicators, editable results, saves to Dexie)
+- [x] Routes wired: /games/upload and /games/upload/review; 📷 button on HomePage
+- [ ] End-to-end test with real scorecard (blocked: needs OpenAI credits on platform.openai.com)
 
-### Phase 4 — Statistics & Export
-- [ ] Stats computation functions (hitting, fielding, pitching) — pure functions
-- [ ] Box score view per game with print stylesheet
-- [ ] Season stats view (all games, per player), sortable columns
+### Phase 4 — Statistics & Export (partial ✅)
+- [x] Stats computation functions — batting (AVG/OBP/SLG/OPS/PA/HR/RBI/BB/K) and pitching (IP/K/BB/H/R/ERA/W/L)
+- [x] Box score / game summary page (linescore + batting + pitching lines per team)
+- [x] Season stats view: sortable player table on TeamDetailPage; individual PlayerStatsPage with game log
+- [x] Pitching: ERA, W/L decisions, innings pitched on all stats pages
 - [ ] Excel (.xlsx) export for season stats
 - [ ] Print-optimized box score layout
+- [ ] Fielding stats (PO, A, E, FLD%)
 
-### Phase 5 — Sync & Multi-Device
-- [ ] Sync queue with retry logic and online/offline detection
+### Phase 5 — Sync & Multi-Device (partial ✅)
+- [x] Sync queue with retry logic and online/offline detection (teams, players, seasons, games, innings, at-bats)
 - [ ] Supabase real-time subscription for in-progress games
 - [ ] "Resume on this device" flow
 - [ ] Sync status indicator in UI
 
-### Phase 6 — Deployment & Polish
+### Phase 6 — Deployment & Polish ❌ Not started
 - [ ] DNS A record: `baseball.mourits.nu` → server IP
 - [ ] Install Nginx; apply `nginx/baseball.mourits.nu.conf`
 - [ ] Certbot SSL (`sudo certbot --nginx -d baseball.mourits.nu`)

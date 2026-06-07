@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type LocalAtBat } from '../db/local'
+import { supabase } from '../lib/supabase'
 import { gameService } from '../services/gameService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useGameState, clearGameState } from '../hooks/useGameState'
+import { useGameSubscription } from '../hooks/useGameSubscription'
 import { SubstitutionPage } from '../components/game/SubstitutionPage'
 import { RunnerOutcomes } from '../components/game/RunnerOutcomes'
 import { BetweenEvents } from '../components/game/BetweenEvents'
@@ -117,6 +119,8 @@ export default function GamePage() {
     captureSnapshot, handleUndo, advanceHalf,
   } = useGameState(gameId!, game?.homeScore ?? 0, game?.awayScore ?? 0)
 
+  const { isLive } = useGameSubscription(gameId)
+
   const batterIndex    = half === 'top' ? awayBatterIndex : homeBatterIndex
   const setBatterIndex = half === 'top' ? setAwayBatterIndex : setHomeBatterIndex
 
@@ -162,6 +166,7 @@ export default function GamePage() {
   const [runnerOutcomes, setRunnerOutcomes]     = useState<Record<string, RunnerDest>>({})
   const [fielders, setFielders]                 = useState<string[]>([])
   const [showFinalConfirm, setShowFinalConfirm] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const [showSub, setShowSub]                   = useState(false)
   const [activeEvent, setActiveEvent]           = useState<BetweenEvent | null>(null)
   const [pickedRunner, setPickedRunner]         = useState<BaseKey | ''>('')
@@ -393,6 +398,20 @@ export default function GamePage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  async function handleShare() {
+    try {
+      const { data, error } = await (supabase.from('game_shares') as any)
+        .insert({ game_id: gameId, created_by: game?.userId })
+        .select('id')
+        .single()
+      if (error || !data) return
+      const url = `${window.location.origin}/watch/${data.id}`
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2500)
+    } catch { /* ignore */ }
+  }
+
   if (!game || !players || !teams) return <div className="p-4 text-gray-400">Loading…</div>
 
   const homeName      = teams[game.homeTeamId ?? ''] ?? '—'
@@ -412,6 +431,15 @@ export default function GamePage() {
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => navigate('/')} className="text-white/70 text-sm">‹ Games</button>
           <div className="flex items-center gap-2">
+            {isLive && (
+              <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-0.5 rounded-full font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                LIVE
+              </span>
+            )}
+            <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
+              {shareCopied ? '✓ Copied!' : 'Share'}
+            </button>
             <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">Sub</button>
             <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">End game</button>
           </div>
