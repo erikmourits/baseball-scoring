@@ -2,9 +2,10 @@ import { NavLink } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
 const navItems = [
-  { to: '/',        icon: '🏟️', label: 'Games'  },
-  { to: '/teams',   icon: '👥', label: 'Teams'  },
-  { to: '/stats',   icon: '📊', label: 'Stats'  },
+  { to: '/',        icon: '🏟️', label: 'Games'   },
+  { to: '/teams',   icon: '👥', label: 'Teams'   },
+  { to: '/seasons', icon: '📅', label: 'Seasons' },
+  { to: '/stats',   icon: '📊', label: 'Stats'   },
 ]
 
 export default function BottomNav() {

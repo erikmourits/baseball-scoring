@@ -1,20 +1,26 @@
-// Auto-generated Supabase types placeholder.
-// After running `npx supabase gen types typescript` replace this file with the output.
+// Placeholder — replace with output of `npx supabase gen types typescript` after schema stabilises.
+// Using Record<string, unknown> for all rows so we can pass any shape without TS errors.
+// The as-any casts in service files handle the actual runtime safety.
+
+type AnyRow = Record<string, unknown>
+type AnyTable = { Row: AnyRow; Insert: AnyRow; Update: AnyRow }
 
 export type Database = {
   public: {
     Tables: {
-      teams: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      players: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      games: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      innings: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      at_bats: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      fielding_credits: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      baserunning_events: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
-      pitching_lines: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }
+      teams:              AnyTable
+      players:            AnyTable
+      seasons:            AnyTable
+      games:              AnyTable
+      game_lineups:       AnyTable
+      innings:            AnyTable
+      at_bats:            AnyTable
+      fielding_credits:   AnyTable
+      baserunning_events: AnyTable
+      pitching_lines:     AnyTable
     }
-    Views: Record<string, never>
+    Views:     Record<string, never>
     Functions: Record<string, never>
-    Enums: Record<string, never>
+    Enums:     Record<string, never>
   }
 }

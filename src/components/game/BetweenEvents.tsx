@@ -1,0 +1,78 @@
+import type { Bases, BaseKey, BetweenEvent } from '../../types/game'
+
+const baseLabel = (k: BaseKey) => k === 'first' ? '1st' : k === 'second' ? '2nd' : '3rd'
+
+interface BetweenEventsProps {
+  bases: Bases
+  players: Record<string, { name: string }>
+  activeEvent: BetweenEvent | null
+  pickedRunner: BaseKey | ''
+  onEventSelect: (ev: BetweenEvent) => void
+  onPickRunner: (k: BaseKey) => void
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function BetweenEvents({
+  bases, players, activeEvent, pickedRunner,
+  onEventSelect, onPickRunner, onConfirm, onCancel,
+}: BetweenEventsProps) {
+  const runnersOnBase = (['first', 'second', 'third'] as BaseKey[]).filter(k => !!bases[k])
+  const showPicker = activeEvent === 'SB' || activeEvent === 'CS' || activeEvent === 'WP' || activeEvent === 'PB'
+
+  const pickerTitle = activeEvent === 'SB' ? 'Stolen base — which runner?'
+    : activeEvent === 'CS' ? 'Caught stealing — which runner?'
+    : activeEvent === 'WP' ? 'Wild pitch — which runner advanced?'
+    : 'Passed ball — which runner advanced?'
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Other events</p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {(['SB', 'CS', 'WP', 'PB', 'BALK'] as BetweenEvent[]).map(ev => (
+          <button key={ev} onClick={() => onEventSelect(ev)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+              activeEvent === ev
+                ? 'bg-brand-500 border-brand-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+            }`}>
+            {ev === 'BALK' ? 'Balk' : ev}
+          </button>
+        ))}
+      </div>
+
+      {showPicker && (
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+          <p className="text-sm font-medium text-gray-700 mb-2">{pickerTitle}</p>
+          {runnersOnBase.length === 0 ? (
+            <p className="text-sm text-gray-400">No runners on base.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {runnersOnBase.map(k => (
+                <button key={k} onClick={() => onPickRunner(k)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-colors ${
+                    pickedRunner === k
+                      ? 'bg-brand-500 border-brand-500 text-white'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300'
+                  }`}>
+                  {baseLabel(k)}
+                  {bases[k] && players[bases[k]!] ? ` — ${players[bases[k]!]!.name.split(' ')[0]}` : ''}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={onConfirm} disabled={!pickedRunner || runnersOnBase.length === 0}
+              className="flex-1 bg-brand-500 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-40 transition-colors">
+              Confirm
+            </button>
+            <button onClick={onCancel}
+              className="flex-1 bg-gray-200 text-gray-600 text-sm font-medium py-2 rounded-lg hover:bg-gray-300 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

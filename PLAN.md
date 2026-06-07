@@ -14,8 +14,7 @@ A local-first Progressive Web App (PWA) for scoring baseball games play-by-play 
 | Framework | **React + TypeScript + Vite** | Fast dev, excellent PWA plugin, strong ecosystem |
 | PWA | **vite-plugin-pwa** | Service worker generation, offline caching, install prompts |
 | Local DB | **Dexie.js** (IndexedDB wrapper) | Reliable offline storage, sync-friendly, works in all browsers |
-| State / Sync | **TanStack Query** | Handles background sync, stale-while-revalidate, retries |
-| UI | **Tailwind CSS + shadcn/ui** | Mobile-first components, responsive by default |
+| UI | **Tailwind CSS** | Mobile-first utilities, responsive by default |
 | Routing | **React Router v6** | Standard, well-supported |
 | OCR | **GPT-4o-mini Vision** (via Supabase Edge Function) | Best accuracy for handwritten KNBSB scorecards; ~€0.01–0.02 per image, ~€1–2/year at hobby scale |
 
@@ -40,24 +39,36 @@ A local-first Progressive Web App (PWA) for scoring baseball games play-by-play 
 User
   id, email, created_at
 
+Season
+  id, user_id
+  name, year
+  start_date, end_date
+  is_active
+  created_at, updated_at
+
 Team
   id, user_id, name
+  created_at, updated_at
 
 Player
-  id, team_id, name, jersey_number, primary_position
+  id, team_id
+  name, jersey_number
+  primary_position, secondary_positions[]
+  deleted_at        ← soft delete; null = active
+  created_at, updated_at
 
 Game
-  id, user_id
+  id, user_id, season_id
   date, location
   home_team_id, away_team_id
   home_score, away_score
-  innings_complete (0-9+)
+  innings_complete (0–9+)
   status: draft | in_progress | final
   created_at, updated_at, synced_at
 
 Inning
   id, game_id
-  inning_number (1-9+)
+  inning_number (1–9+)
   half: top | bottom
 
 AtBat
@@ -69,8 +80,9 @@ AtBat
   baserunning_events[]  ← SB, CS, WP, PB, balk, pickoff
 
 FieldingCredit
-  player_id, credit_type: putout | assist | error
-  at_bat_id
+  at_bat_id, player_id
+  credit_type: putout | assist | error
+  sequence_number
 
 BaserunningEvent
   at_bat_id, runner_id
@@ -78,28 +90,51 @@ BaserunningEvent
 
 PitchingLine
   id, game_id, player_id
-  innings_pitched (stored as outs recorded, displayed as x.y)
+  outs_recorded (displayed as x.1 / x.2)
   hits_allowed, runs_allowed, earned_runs
   walks, strikeouts, hbp
   is_winning_pitcher, is_losing_pitcher, is_save
+  created_at, updated_at
 ```
 
-All records get a `local_id` (UUID generated on device) and an optional `server_id`. This is the key to conflict-free offline sync.
+All local records use a client-generated UUID as primary key and carry a `_dirty` flag for sync. Local Dexie schema mirrors the above with camelCase field names.
+
+### Dexie version history
+| Version | Change |
+|---|---|
+| v1 | teams, players (initial) |
+| v2 | added games, innings, atBats, fieldingCredits, baserunningEvents, pitchingLines; players had `lineupOrder` index |
+| v3 | forced upgrade past stale browser state (same schema as v2) |
+| v4 | dropped `lineupOrder` index from players; `secondaryPositions` stored as plain array |
+| v5 | added `seasons` table; added `seasonId` index to games |
+
+> **Never downgrade the Dexie version number.** Browsers reject it with a VersionError.
 
 ---
 
 ## Feature Breakdown
 
-### 1. Team & Roster Management
-- Create teams with names
-- Add/edit players (name, number, position)
-- Set lineup order per game (including designated starting pitcher)
-- Local-first: stored in IndexedDB, synced when online
+### 1. Team & Roster Management ✅
+- Create / rename / delete teams
+- Add / edit players: name, jersey number, primary position, secondary positions (multi-select chip UI)
+- Lineup order is **per-game**, not a player attribute
+- Soft delete players: `deletedAt` timestamp instead of physical removal — preserves game history
+- Roster view shows active players; toggle switch reveals inactive players with a Reactivate button
+- "Add another" button on the player form for fast batch entry
+- Local-first storage + sync with Supabase (dirty-flag + upsert pattern)
+- DB migration runner: `npm run migrate` applies all `supabase/migrations/*.sql` files in order
 
-### 2. Play-by-Play Scoring
+### 2. Seasons ✅
+- Seasons group games and stats; rosters are team-wide but games belong to a season
+- Season fields: name, year, start/end dates (optional), isActive flag
+- First season created is automatically set as active
+- Seasons page (📅 nav): list, create, set active, delete
+- Seasons sync to Supabase alongside teams and players
+
+### 3. Play-by-Play Scoring (Phase 2)
 
 **UI flow:**
-1. Start Game → pick home/away teams, date, location, starting pitchers
+1. Start Game → pick home/away teams, season, date, location, starting pitchers, lineup order
 2. Game screen shows current inning, half, batter in lineup order
 3. Per at-bat: tap result type (buttons for each outcome)
 4. For outs: tap which fielder(s) made the play (position number grid 1–9)
@@ -115,157 +150,113 @@ All records get a `local_id` (UUID generated on device) and an optional `server_
 - Special: WP, PB, balk, SB, CS (between at-bats)
 - Pitching change: substitute pitcher mid-inning (splits the PitchingLine)
 
-### 3. Image Upload → Game Log
-
-**Approach: GPT-4o-mini Vision via Supabase Edge Function**
+### 4. Image Upload → Game Log (Phase 3)
 
 **Flow:**
 1. User taps "Upload Scorecard" and picks a photo (camera or gallery)
 2. Image is sent to a Supabase Edge Function (API key never touches the client)
 3. Edge Function calls GPT-4o-mini Vision with a structured prompt describing the KNBSB scorecard format and requesting a strict JSON game log
 4. Result rendered as a review form — each inning/at-bat listed with confidence indicators
-5. Entries the model flagged as uncertain highlighted in yellow; user corrects before saving
+5. Entries the model flagged as uncertain highlighted; user corrects before saving
 6. Corrected game log saved to IndexedDB and queued for sync
 
-**Notation the prompt will teach the model:**
-The model is given a detailed system prompt covering the KNBSB Dutch scorecard conventions, confirmed from real examples:
+**KNBSB notation the prompt covers:**
 - **Circle = OUT**: `(K)` = strikeout, `(F8)` = flyout to CF, `(6-3)` = groundout SS→1B, `(6-4-3)` = double play
 - **Uncircled = reached base**: `W`/`BB` = walk, `HP`/`HBP` = hit by pitch, `HR`, `2B`/`DB`, `3B`, `SB`, `E6` = error, `FC` = fielder's choice
 - **`(SC)` circled** = caught stealing
-- **Runner tracking**: each line in a cell tracks a baserunner's position and movement; `+` or `↑` = run scored, `x` = out/stranded
-- **Column wrapping**: a slashed/crossed column header means the lineup turned over — same inning, second pass through the order
+- **Runner tracking**: `+` or `↑` = run scored, `x` = out/stranded
+- **Column wrapping**: slashed column header = lineup turned over in same inning
 
 **Cost:** ~€0.01–0.02 per image. At 50–100 games/year, under €2/year total.
 
-**Realistic accuracy expectation:** 85–95% on legible photos. The review step handles the rest.
+### 5. Statistics Engine (Phase 4)
 
-### 4. Statistics Engine
+Stats computed on-the-fly from the game log — no separate stats table.
 
-Stats are computed on-the-fly from the game log. No separate stats table needed — game log is always the source of truth.
+**Hitting stats:** G, AB, PA, H, 1B, 2B, 3B, HR, R, RBI, BB, HBP, RoE, K, SAC, SF, AVG, OBP, SLG, OPS
 
-**Hitting stats per player:**
-| Stat | Notes |
-|---|---|
-| G, AB, PA | Plate appearances vs at-bats (BB/HBP/SAC excluded from AB) |
-| H, 1B, 2B, 3B, HR | Hit breakdown |
-| R, RBI | Runs and RBI |
-| BB, HBP | Walks and hit by pitch |
-| RoE | Reached on error |
-| K | Strikeouts |
-| SAC, SF | Sacrifice hits and flies |
-| AVG | H / AB |
-| OBP | (H + BB + HBP) / (AB + BB + HBP + SF) |
-| SLG | Total bases / AB |
-| OPS | OBP + SLG |
+**Fielding stats:** PO, A, E, DP, FLD%
 
-**Fielding stats per player:**
-| Stat | Formula |
-|---|---|
-| PO | Putouts |
-| A | Assists |
-| E | Errors |
-| DP | Double plays participated in |
-| FLD% | (PO + A) / (PO + A + E) |
-
-**Pitching stats per player:**
-| Stat | Notes |
-|---|---|
-| G, GS | Games / games started |
-| IP | Innings pitched (stored as outs, displayed as x.1 / x.2) |
-| H, R, ER | Hits, runs, earned runs allowed |
-| BB, K, HBP | As pitcher |
-| W, L, SV | Win/loss/save decisions |
-| ERA | (ER × 9) / IP |
-| WHIP | (BB + H) / IP |
+**Pitching stats:** G, GS, IP, H, R, ER, BB, K, HBP, W, L, SV, ERA, WHIP
 
 **Export:**
-- **Stats → Excel (.xlsx)**: Separate sheets for hitting, pitching, fielding; one row per player; sortable columns
-- **Box score / game log → Printable HTML**: Clean print stylesheet; user does File → Print → Save as PDF from browser
+- **Stats → Excel (.xlsx)**: separate sheets for hitting, pitching, fielding; one row per player
+- **Box score → Printable HTML**: clean print stylesheet; user does File → Print → Save as PDF
 
-**Views:**
-- Box score (single game)
-- Season totals (all games, per player)
-- Team game log (game-by-game results with W/L record)
+**Views:** box score (per game), season totals (per player), team game log (W/L record)
 
-### 5. Offline-First + Multi-Device Sync
+### 6. Offline-First + Multi-Device Sync (Phase 5)
 
-**Offline:**
 - Full app shell cached by service worker on first load
-- All data reads from IndexedDB
-- All writes go to IndexedDB first, then queued for sync
-- Sync queue survives page refresh / app close
-
-**Sync strategy:**
-- When the app comes online, flush the sync queue to Supabase
-- Conflict resolution: **last-write-wins by `updated_at` timestamp** (sufficient for single-user hobby use)
-- Server is source of truth when the same game is opened on two devices
-
-**Multi-device resume:**
-- Games with `status: in_progress` are listed on the home screen after login on any device
-- Supabase real-time subscription pushes live updates to any other open session
+- All reads from IndexedDB; all writes go local first, then queued for Supabase sync
+- `_dirty` flag marks unsynced records; background flush on `online` event
+- Conflict resolution: **last-write-wins by `updated_at`** (sufficient for single-user hobby use)
+- Supabase real-time subscription pushes live game updates to other open sessions
 - "Resume on this device" pulls latest server state into local IndexedDB
 
 ---
 
 ## Build Phases
 
-### Phase 0 — Project Setup (Week 1)
+### Phase 0 — Project Setup ✅
+- [x] Scaffold Vite + React + TypeScript + Tailwind
+- [x] Configure vite-plugin-pwa (manifest, service worker, offline fallback)
+- [x] Configure Dexie.js schema
+- [x] Set up Supabase project (auth, database schema, RLS policies)
+- [x] Auth screens: sign up, log in, log out
 
-**Code & tooling:**
-- [ ] Scaffold Vite + React + TypeScript + Tailwind project
-- [ ] Configure vite-plugin-pwa (manifest, service worker, offline fallback)
-- [ ] Configure Dexie.js schema mirroring Supabase tables
-- [ ] Set up Supabase project (auth, database schema, RLS policies)
-- [ ] Auth screens: sign up, log in, log out
+### Phase 1 — Teams, Roster & Seasons ✅
+- [x] Team creation / rename / delete
+- [x] Player add / edit — name, jersey number, primary + secondary positions (chip UI)
+- [x] Soft delete players (preserve game history); reactivate from inactive list
+- [x] "Add another" fast entry flow on player form
+- [x] Season model: create, set active, delete; games linked to season
+- [x] Seasons page in bottom nav
+- [x] Local-first storage + sync to Supabase (teams, players, seasons)
+- [x] DB migration runner (`npm run migrate`) for Supabase schema changes
+- [x] Custom in-app `ConfirmDialog` component (no browser `confirm()` / `alert()`)
+- [x] Supabase migrations: 001 lineup_order, 002 player positions, 003 soft delete + seasons
 
-**Server & deployment (baseball.mourits.nu):**
-- [ ] Add DNS A record: `baseball.mourits.nu` → server IP
-- [ ] Install Nginx on server; configure to serve `dist/` with SPA fallback
-- [ ] Run Certbot for `baseball.mourits.nu` (Let's Encrypt SSL, auto-renew)
-- [ ] Create GitHub Actions workflow: on push to `main` → `npm run build` → rsync `dist/` to server
-- [ ] Smoke-test: confirm app loads over HTTPS on `baseball.mourits.nu`
-
-### Phase 1 — Teams & Roster (Week 1–2)
-- [ ] Team creation / edit / delete
-- [ ] Player management (add, edit, reorder lineup)
-- [ ] Local-first storage + sync with Supabase
-
-### Phase 2 — Play-by-Play Scoring (Week 2–4)
-- [ ] Start game screen (teams, date, starting pitchers)
-- [ ] Scoring UI: batter card, result buttons, fielder selection
-- [ ] Baserunning event entry
-- [ ] Pitching change flow (mid-inning substitution)
-- [ ] Auto-advance batter / half-inning logic
-- [ ] Live scoreboard header
+### Phase 2 — Play-by-Play Scoring
+- [ ] New game screen: pick season, teams, date, location, set lineup order, pick starting pitchers
+- [ ] Scoring UI: batter card, result buttons, fielder selection grid (1–9)
+- [ ] Baserunner state tracker (runners on base, auto-advance on hits/outs)
+- [ ] Baserunning events between at-bats (SB, CS, WP, PB, balk)
+- [ ] Pitching change flow (mid-inning substitution, splits PitchingLine)
+- [ ] Auto-advance batter; auto-switch half-inning at 3 outs
+- [ ] Live scoreboard header (score, inning, outs)
 - [ ] Save / resume in-progress game
+- [ ] Game list on home screen (by season, with status badges)
 
-### Phase 3 — Image Upload & OCR (Week 4–5)
-- [ ] Write GPT-4o-mini system prompt covering KNBSB notation (informed by 6 real example scorecards)
-- [ ] Supabase Edge Function: receive image, call GPT-4o-mini Vision, return structured JSON
+### Phase 3 — Image Upload & OCR
+- [ ] Write GPT-4o-mini system prompt covering KNBSB notation
+- [ ] Supabase Edge Function: receive image → call GPT-4o-mini Vision → return JSON game log
 - [ ] Camera / file upload UI
-- [ ] Review & correction screen (yellow highlights for uncertain cells)
-- [ ] Save corrected game log
+- [ ] Review & correction screen (highlight uncertain cells)
+- [ ] Save corrected game log to local DB
 
-### Phase 4 — Statistics & Export (Week 5–6)
-- [ ] Stats computation functions (hitting, fielding, pitching) — pure functions, unit tested
-- [ ] Box score view (per game) with print stylesheet
-- [ ] Season stats view (all games, per player)
-- [ ] Sortable stat tables
+### Phase 4 — Statistics & Export
+- [ ] Stats computation functions (hitting, fielding, pitching) — pure functions
+- [ ] Box score view per game with print stylesheet
+- [ ] Season stats view (all games, per player), sortable columns
 - [ ] Excel (.xlsx) export for season stats
 - [ ] Print-optimized box score layout
 
-### Phase 5 — Sync & Multi-Device (Week 6–7)
-- [ ] Sync queue implementation (retry logic, online/offline detection)
+### Phase 5 — Sync & Multi-Device
+- [ ] Sync queue with retry logic and online/offline detection
 - [ ] Supabase real-time subscription for in-progress games
 - [ ] "Resume on this device" flow
 - [ ] Sync status indicator in UI
 
-### Phase 6 — Polish (Week 7–8)
+### Phase 6 — Deployment & Polish
+- [ ] DNS A record: `baseball.mourits.nu` → server IP
+- [ ] Install Nginx; apply `nginx/baseball.mourits.nu.conf`
+- [ ] Certbot SSL (`sudo certbot --nginx -d baseball.mourits.nu`)
+- [ ] GitHub Actions secrets + push-to-deploy pipeline
 - [ ] PWA install prompt (iOS and Android)
 - [ ] Offline indicator banner
 - [ ] Error boundaries and empty states
-- [ ] Dark mode
-- [ ] End-to-end testing on mobile browsers (Safari iOS, Chrome Android)
+- [ ] End-to-end testing on mobile (Safari iOS, Chrome Android)
 
 ---
 
@@ -277,12 +268,18 @@ Stats are computed on-the-fly from the game log. No separate stats table needed 
 | Auth | Supabase Auth (email + password) | Simple, built-in, no extra service |
 | OCR | GPT-4o-mini Vision (server-side) | Best accuracy for handwritten KNBSB format; ~€2/year at hobby scale |
 | Offline storage | Dexie.js (IndexedDB) | Persistent, works in all modern browsers including Safari |
-| Conflict resolution | Last-write-wins | Sufficient for single-user hobby use; simpler than CRDT |
+| Conflict resolution | Last-write-wins by `updated_at` | Sufficient for single-user hobby use; simpler than CRDT |
 | Stats storage | Computed on-the-fly | Avoids stale stats; game log is the source of truth |
 | Stats export | Excel (.xlsx) | Requested by user |
 | Box score export | Printable HTML (browser → PDF) | No extra dependency; user controls PDF output |
 | Scoring notation | Custom tap-based UI | More usable on mobile than typing codes |
 | Pitcher stats | Tracked per game, aggregated to season | IP, H, R, ER, BB, K, HBP, W/L/SV, ERA, WHIP |
+| Lineup order | Per-game attribute, not per-player | Players can bat in different spots each game |
+| Player positions | Primary + secondary (multi-select) | Flexible for utility players and DH |
+| Player deletion | Soft delete (`deleted_at`) | Preserves player references in historical game data |
+| Seasons | First-class model; games belong to a season | Organises stats and rosters by competitive period |
+| Dialogs | Custom `ConfirmDialog` component | Browser `confirm()`/`alert()` is bad practice; in-app dialogs are consistent with app styling |
+| UI framework | Tailwind CSS only (no shadcn/ui) | shadcn/ui not needed at current complexity; Tailwind utilities are sufficient |
 
 ---
 
@@ -290,13 +287,13 @@ Stats are computed on-the-fly from the game log. No separate stats table needed 
 
 | Phase | Effort |
 |---|---|
-| Setup | 3–5 days |
-| Teams & Roster | 2–3 days |
+| Setup | ✅ done |
+| Teams, Roster & Seasons | ✅ done |
 | Play-by-play Scoring | 1–2 weeks (most complex UX) |
-| Image OCR | 1 week (Tesseract integration + parser tuning) |
+| Image OCR | 1 week |
 | Statistics & Export | 4–6 days |
 | Sync | 3–5 days |
-| Polish | 3–5 days |
-| **Total** | **~6–8 weeks** (solo developer) |
+| Deployment & Polish | 3–5 days |
+| **Remaining** | **~5–7 weeks** |
 
-Phases 2 (scoring UI) and 3 (OCR parser tuning) carry the most uncertainty. Phase 2 complexity is in the UX — getting baserunner state and fielding credits to feel natural on a small screen. Phase 3 depends on how consistently your scorecards are written; clean consistent handwriting makes a big difference.
+Phase 2 (scoring UI) carries the most complexity: baserunner state, fielder selection, and lineup management all need to feel natural on a small mobile screen.
