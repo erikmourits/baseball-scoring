@@ -3,7 +3,7 @@ import type { Bases, BaseKey, RunnerDest } from '../types/game'
 // ── Result sets ───────────────────────────────────────────────────────────────
 
 export const OUTS_RESULTS = new Set(['K', 'KL', 'FO', 'GO', 'SAC', 'SF', 'GDP'])
-export const RUNNER_OUTCOME_RESULTS = new Set(['1B', '2B', '3B', 'ROE', 'FC', 'SAC', 'SF'])
+export const RUNNER_OUTCOME_RESULTS = new Set(['1B', '2B', '3B', 'ROE', 'FC', 'SAC', 'SF', 'GO', 'GDP'])
 
 // ── Runner-outcome config ──────────────────────────────────────────────────────
 
@@ -31,7 +31,6 @@ export const BATTER_DEST: Partial<Record<string, BaseKey>> = {
 export const now = () => new Date().toISOString()
 
 export function outsFromResult(result: string): number {
-  if (result === 'GDP') return 2
   if (OUTS_RESULTS.has(result)) return 1
   return 0
 }
@@ -68,6 +67,16 @@ export function defaultOutcomes(result: string, bases: Bases): Record<string, Ru
     if (bases.second) o[bases.second] = 'hold'
     if (bases.first)  o[bases.first]  = 'hold'
   }
+  else if (result === 'GDP') {
+    if (bases.third)  o[bases.third]  = 'score'
+    if (bases.second) o[bases.second] = 'third'
+    if (bases.first)  o[bases.first]  = 'out'
+  }
+  else if (result === 'GO') {
+    if (bases.third)  o[bases.third]  = 'hold'
+    if (bases.second) o[bases.second] = 'hold'
+    if (bases.first)  o[bases.first]  = 'second'
+  }
   return o
 }
 
@@ -81,9 +90,14 @@ export function getAvailableOptions(
 ): RunnerDest[] {
   // On a triple all runners can only score or be put out at home
   if (result === '3B') return ['score', 'out']
+
+  const baseOrder: Record<BaseKey, number> = { first: 1, second: 2, third: 3 }
+  const myOrder = baseOrder[startingBase]
+
   // Collect bases already committed by other runners or the batter
   const committed = new Set<BaseKey>()
   if (batterDest) committed.add(batterDest)
+
   for (const [pid, dest] of Object.entries(outcomes)) {
     if (pid === runnerId) continue
     if (dest === 'score' || dest === 'out') continue
@@ -91,14 +105,36 @@ export function getAvailableOptions(
       const base = (['first', 'second', 'third'] as BaseKey[]).find(b => currentBases[b] === pid)
       if (base) committed.add(base)
     } else {
-      committed.add(dest as BaseKey)
+      // A runner on a lower base advancing TO our starting base should not block
+      // us from holding — if we hold, they will need to choose a different destination.
+      // Higher-base runners have priority, so skip adding their destination only in
+      // that specific conflict case.
+      const otherBase = (['first', 'second', 'third'] as BaseKey[]).find(b => currentBases[b] === pid)
+      const otherOrder = otherBase ? baseOrder[otherBase] : 0
+      const lowerRunnerTargetingOurBase = otherOrder < myOrder && dest === startingBase
+      if (!lowerRunnerTargetingOurBase) {
+        committed.add(dest as BaseKey)
+      }
     }
   }
-  const baseOrder: Record<BaseKey, number> = { first: 1, second: 2, third: 3 }
+
+  // If any lower-base runner is scoring they must pass through our base,
+  // so we cannot hold here while they run through.
+  const lowerRunnerScoringThrough = Object.entries(outcomes).some(([pid, dest]) => {
+    if (pid === runnerId || dest !== 'score') return false
+    const otherBase = (['first', 'second', 'third'] as BaseKey[]).find(b => currentBases[b] === pid)
+    const otherOrder = otherBase ? baseOrder[otherBase] : 0
+    return otherOrder < myOrder
+  })
+
   const batterOrder = batterDest ? baseOrder[batterDest] : 0
   const filtered = RUNNER_OPTIONS[startingBase].filter(opt => {
     if (opt === 'score') return true
-    if (opt === 'hold') return !committed.has(startingBase) && baseOrder[startingBase] > batterOrder
+    if (opt === 'hold') return (
+      !committed.has(startingBase) &&
+      baseOrder[startingBase] > batterOrder &&
+      !lowerRunnerScoringThrough
+    )
     return !committed.has(opt as BaseKey)
   })
   return [...filtered, 'out']

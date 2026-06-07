@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
+import { gameService } from '../services/gameService'
 
 const STATUS_LABEL: Record<string, string> = {
   draft:       'Draft',
@@ -15,6 +17,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const activeSeason = useLiveQuery(async () => {
     const all = await db.seasons.toArray()
@@ -32,10 +35,16 @@ export default function HomePage() {
     return Object.fromEntries(all.map(t => [t.id, t.name]))
   })
 
-  // Still loading
+  async function handleDelete(id: string) {
+    await gameService.delete(id)
+    setDeletingId(null)
+  }
+
   if (activeSeason === undefined) {
     return <div className="p-4 text-gray-400">Loading…</div>
   }
+
+  const deletingGame = deletingId ? games?.find(g => g.id === deletingId) : null
 
   return (
     <div className="p-4">
@@ -48,12 +57,21 @@ export default function HomePage() {
           )}
         </div>
         {activeSeason && (
-          <button
-            onClick={() => navigate('/games/new')}
-            className="bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-600 active:bg-brand-700 transition-colors"
-          >
-            + New game
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/games/new')}
+              className="bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-600 active:bg-brand-700 transition-colors"
+            >
+              + New game
+            </button>
+            <button
+              onClick={() => navigate('/games/upload')}
+              title="Upload scorecard"
+              className="bg-gray-100 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              📷
+            </button>
+          </div>
         )}
       </div>
 
@@ -88,10 +106,11 @@ export default function HomePage() {
             const home = teams?.[game.homeTeamId ?? ''] ?? '—'
             const away = teams?.[game.awayTeamId ?? ''] ?? '—'
             return (
-              <li key={game.id}>
+              <li key={game.id} className="flex gap-2 items-stretch">
+                {/* Main game card */}
                 <button
                   onClick={() => navigate(game.status === 'final' ? `/games/${game.id}/summary` : `/games/${game.id}`)}
-                  className="w-full bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 text-left hover:border-brand-400 transition-colors"
+                  className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 text-left hover:border-brand-400 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-400">
@@ -115,10 +134,50 @@ export default function HomePage() {
                     )}
                   </div>
                 </button>
+
+                {/* Delete button — separate full-height target */}
+                <button
+                  onClick={() => setDeletingId(game.id)}
+                  aria-label="Delete game"
+                  className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </li>
             )
           })}
         </ul>
+      )}
+
+      {/* Delete confirm modal */}
+      {deletingId && deletingGame && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-6 sm:pb-0">
+          <div className="bg-white rounded-2xl p-6 shadow-xl w-full max-w-sm">
+            <p className="font-semibold text-gray-900 mb-1">Delete game?</p>
+            <p className="text-sm text-gray-500 mb-2">
+              {teams?.[deletingGame.awayTeamId ?? ''] ?? '—'} @ {teams?.[deletingGame.homeTeamId ?? ''] ?? '—'}
+              {' · '}
+              {new Date(deletingGame.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+            </p>
+            <p className="text-xs text-gray-400 mb-5">This will permanently delete the game and all its at-bats.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deletingId)}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-medium text-white hover:bg-red-600 active:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

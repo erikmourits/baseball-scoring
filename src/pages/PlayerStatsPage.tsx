@@ -2,9 +2,12 @@ import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
-import { computeBattingLine, fmtAvg, fmtOps } from '../utils/statsCalc'
+import {
+  computeBattingLine, computePitchingLine, getPitcherDecisions,
+  fmtAvg, fmtOps, fmtIp, fmtEra,
+} from '../utils/statsCalc'
 
-// ── Stat cell helpers ─────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -34,7 +37,6 @@ export default function PlayerStatsPage() {
   const player = useLiveQuery(() => db.players.get(playerId!), [playerId])
   const team   = useLiveQuery(() => db.teams.get(teamId!),   [teamId])
 
-  // All games this team played in the selected season (or all if no seasonId)
   const games = useLiveQuery(async () => {
     let all = await db.games.toArray()
     all = all.filter(g =>
@@ -49,61 +51,73 @@ export default function PlayerStatsPage() {
     return Object.fromEntries(all.map(t => [t.id, t.name]))
   })
 
-  // All innings for those games, then all at-bats for this player
+  // Per-game at-bats + pitcher decisions
   const gameLog = useLiveQuery(async () => {
     if (!games?.length) return []
     const gameIds = games.map(g => g.id)
     const innings = await db.innings.where('gameId').anyOf(gameIds).toArray()
     const inningIds = innings.map(i => i.id)
-    const atBats = await db.atBats
-      .where('inningId').anyOf(inningIds)
-      .filter(ab => ab.batterId === playerId)
-      .toArray()
+    const allAtBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
 
-    // Build inningId → gameId map
-    const inningToGame: Record<string, string> = {}
-    for (const inn of innings) inningToGame[inn.id] = inn.gameId
+    const inningById = Object.fromEntries(innings.map(i => [i.id, i]))
 
-    // Group at-bats by game
-    const absByGame: Record<string, typeof atBats> = {}
-    for (const ab of atBats) {
-      const gId = inningToGame[ab.inningId]
-      if (!gId) continue
-      if (!absByGame[gId]) absByGame[gId] = []
-      absByGame[gId].push(ab)
+    const battingByGame:  Record<string, typeof allAtBats> = {}
+    const pitchingByGame: Record<string, typeof allAtBats> = {}
+    for (const ab of allAtBats) {
+      const gId = inningById[ab.inningId]?.gameId; if (!gId) continue
+      if (ab.batterId  === playerId) { if (!battingByGame[gId])  battingByGame[gId]  = []; battingByGame[gId].push(ab) }
+      if (ab.pitcherId === playerId) { if (!pitchingByGame[gId]) pitchingByGame[gId] = []; pitchingByGame[gId].push(ab) }
     }
 
-    return games.map(g => ({
-      game: g,
-      atBats: absByGame[g.id] ?? [],
-    }))
+    return games.map(g => {
+      const halfMap: Record<string, 'top' | 'bottom'> = {}
+      for (const inn of innings) if (inn.gameId === g.id) halfMap[inn.id] = inn.half
+      const gameAtBats = allAtBats.filter(ab => inningById[ab.inningId]?.gameId === g.id)
+      const { winnerId, loserId } = getPitcherDecisions(gameAtBats, halfMap, g.homeScore, g.awayScore)
+      const decision = winnerId === playerId ? 'W' : loserId === playerId ? 'L' : undefined
+      return {
+        game:        g,
+        battingAbs:  battingByGame[g.id]  ?? [],
+        pitchingAbs: pitchingByGame[g.id] ?? [],
+        decision,
+      }
+    })
   }, [games?.length, playerId])
 
-  const { seasonLine, gameLines } = useMemo(() => {
-    if (!gameLog) return { seasonLine: null, gameLines: [] }
+  const { seasonBatting, seasonPitching, seasonW, seasonL, gameLines } = useMemo(() => {
+    if (!gameLog) return { seasonBatting: null, seasonPitching: null, seasonW: 0, seasonL: 0, gameLines: [] }
     const gameLines = gameLog.map(entry => ({
       ...entry,
-      line: computeBattingLine(entry.atBats),
+      batting:  computeBattingLine(entry.battingAbs),
+      pitching: computePitchingLine(entry.pitchingAbs),
     }))
-    const allAtBats = gameLog.flatMap(e => e.atBats)
-    return { seasonLine: computeBattingLine(allAtBats), gameLines }
+    const allBatting  = gameLog.flatMap(e => e.battingAbs)
+    const allPitching = gameLog.flatMap(e => e.pitchingAbs)
+    const seasonW = gameLog.filter(e => e.decision === 'W').length
+    const seasonL = gameLog.filter(e => e.decision === 'L').length
+    return {
+      seasonBatting:  computeBattingLine(allBatting),
+      seasonPitching: computePitchingLine(allPitching),
+      seasonW, seasonL,
+      gameLines,
+    }
   }, [gameLog])
 
   if (!player || !team || !teams) return <div className="p-4 text-gray-400">Loading…</div>
 
-  const opsColor = !seasonLine ? 'text-gray-900'
-    : seasonLine.ops >= 0.900 ? 'text-green-600'
-    : seasonLine.ops >= 0.700 ? 'text-yellow-600'
+  const opsColor = !seasonBatting ? 'text-gray-900'
+    : seasonBatting.ops >= 0.900 ? 'text-green-600'
+    : seasonBatting.ops >= 0.700 ? 'text-yellow-600'
     : 'text-red-500'
+
+  const hasPitching = (seasonPitching?.outs ?? 0) > 0
 
   return (
     <div className="p-4 pb-10">
-      {/* Back */}
       <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 text-sm font-medium mb-4 flex items-center gap-1">
         ‹ {team.name}
       </button>
 
-      {/* Player header */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">{player.name}</h1>
         <p className="text-sm text-gray-400 mt-0.5">
@@ -111,54 +125,70 @@ export default function PlayerStatsPage() {
         </p>
       </div>
 
-      {/* Season stat cards */}
-      {seasonLine && seasonLine.pa > 0 ? (
+      {/* ── Batting ── */}
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Batting</p>
+
+      {seasonBatting && seasonBatting.pa > 0 ? (
         <>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Season totals</p>
-
-          {/* Rate stats */}
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <StatCard label="AVG" value={fmtAvg(seasonLine.avg)} sub={`${seasonLine.h}–${seasonLine.ab}`} />
-            <StatCard label="OBP" value={fmtAvg(seasonLine.obp)} />
-            <StatCard label="SLG" value={fmtAvg(seasonLine.slg)} />
+            <StatCard label="AVG" value={fmtAvg(seasonBatting.avg)} sub={`${seasonBatting.h}–${seasonBatting.ab}`} />
+            <StatCard label="OBP" value={fmtAvg(seasonBatting.obp)} />
+            <StatCard label="SLG" value={fmtAvg(seasonBatting.slg)} />
           </div>
-
-          {/* OPS highlight */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 mb-3 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-500">OPS</span>
-            <span className={`text-2xl font-bold tabular-nums ${opsColor}`}>{fmtOps(seasonLine.ops)}</span>
+            <span className={`text-2xl font-bold tabular-nums ${opsColor}`}>{fmtOps(seasonBatting.ops)}</span>
           </div>
-
-          {/* Counting stats */}
           <div className="grid grid-cols-4 gap-2 mb-6">
-            <StatCard label="PA"  value={String(seasonLine.pa)} />
-            <StatCard label="HR"  value={String(seasonLine.hr)} />
-            <StatCard label="RBI" value={String(seasonLine.rbi)} />
-            <StatCard label="BB"  value={String(seasonLine.bb)} />
-            <StatCard label="K"   value={String(seasonLine.k)} />
-            <StatCard label="HBP" value={String(seasonLine.hbp)} />
-            <StatCard label="2B"  value={String(seasonLine.doubles)} />
-            <StatCard label="3B"  value={String(seasonLine.triples)} />
+            <StatCard label="PA"  value={String(seasonBatting.pa)} />
+            <StatCard label="HR"  value={String(seasonBatting.hr)} />
+            <StatCard label="RBI" value={String(seasonBatting.rbi)} />
+            <StatCard label="BB"  value={String(seasonBatting.bb)} />
+            <StatCard label="K"   value={String(seasonBatting.k)} />
+            <StatCard label="HBP" value={String(seasonBatting.hbp)} />
+            <StatCard label="2B"  value={String(seasonBatting.doubles)} />
+            <StatCard label="3B"  value={String(seasonBatting.triples)} />
           </div>
         </>
       ) : (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-8 text-center mb-6">
-          <p className="text-gray-400 text-sm">No at-bats recorded yet this season.</p>
+        <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-6 text-center mb-6">
+          <p className="text-gray-400 text-sm">No at-bats recorded yet.</p>
         </div>
       )}
 
-      {/* Game log */}
+      {/* ── Pitching ── */}
+      {hasPitching && seasonPitching && (
+        <>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Pitching</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <StatCard label="W"   value={String(seasonW)} />
+            <StatCard label="L"   value={String(seasonL)} />
+            <StatCard label="ERA" value={fmtEra(seasonPitching.outs, seasonPitching.era)} />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <StatCard label="IP" value={fmtIp(seasonPitching.outs)} />
+            <StatCard label="K"  value={String(seasonPitching.k)} />
+            <StatCard label="BB" value={String(seasonPitching.bb)} />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <StatCard label="H"   value={String(seasonPitching.h)} />
+            <StatCard label="R"   value={String(seasonPitching.r)} />
+            <StatCard label="HBP" value={String(seasonPitching.hbp)} />
+          </div>
+        </>
+      )}
+
+      {/* ── Game log ── */}
       {gameLines.length > 0 && (
         <>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Game log</p>
           <div className="space-y-2">
-            {gameLines.map(({ game, atBats, line }) => {
+            {gameLines.map(({ game, battingAbs, batting, pitching, decision }) => {
               const isHome   = game.homeTeamId === teamId
               const opponent = teams[isHome ? (game.awayTeamId ?? '') : (game.homeTeamId ?? '')] ?? '—'
-              const score    = isHome
-                ? `${game.homeScore}–${game.awayScore}`
-                : `${game.awayScore}–${game.homeScore}`
-              const won = isHome ? game.homeScore > game.awayScore : game.awayScore > game.homeScore
+              const score    = isHome ? `${game.homeScore}–${game.awayScore}` : `${game.awayScore}–${game.homeScore}`
+              const won      = isHome ? game.homeScore > game.awayScore : game.awayScore > game.homeScore
+              const pitched  = pitching.outs > 0
 
               return (
                 <div key={game.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
@@ -175,23 +205,30 @@ export default function PlayerStatsPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      {line.ab > 0 ? (
+                      {batting.ab > 0 ? (
                         <>
-                          <p className="text-sm font-bold text-gray-900 tabular-nums">{line.h}/{line.ab}</p>
-                          <p className="text-xs text-gray-400">{fmtAvg(line.avg)}</p>
+                          <p className="text-sm font-bold text-gray-900 tabular-nums">{batting.h}/{batting.ab}</p>
+                          <p className="text-xs text-gray-400">{fmtAvg(batting.avg)}</p>
                         </>
-                      ) : (
-                        <p className="text-xs text-gray-400">{line.pa > 0 ? `${line.pa} PA` : 'DNS'}</p>
+                      ) : batting.pa > 0 ? (
+                        <p className="text-xs text-gray-400">{batting.pa} PA</p>
+                      ) : null}
+                      {pitched && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {decision && (
+                            <span className={`font-bold mr-1 ${decision === 'W' ? 'text-green-600' : 'text-red-500'}`}>{decision}</span>
+                          )}
+                          {fmtIp(pitching.outs)} IP · {pitching.k}K {pitching.bb}BB
+                          {' · '}{fmtEra(pitching.outs, pitching.era)} ERA
+                        </p>
                       )}
                     </div>
                   </div>
 
-                  {/* At-bat result chips */}
-                  {atBats.length > 0 && (
+                  {battingAbs.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {atBats.map((ab, i) => (
-                        <span key={i}
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-md ${resultBadge(ab.result ?? '')}`}>
+                      {battingAbs.map((ab, i) => (
+                        <span key={i} className={`text-xs font-semibold px-2 py-0.5 rounded-md ${resultBadge(ab.result ?? '')}`}>
                           {ab.result ?? '?'}
                           {ab.rbiCount ? ` (${ab.rbiCount} RBI)` : ''}
                         </span>

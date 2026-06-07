@@ -2,14 +2,16 @@ import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
+import { computePitchingLine, getPitcherDecisions, fmtIp, fmtEra } from '../utils/statsCalc'
+import type { LocalAtBat } from '../db/local'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const HIT_RESULTS  = new Set(['1B', '2B', '3B', 'HR'])
-const NO_AB_RESULTS = new Set(['BB', 'HBP', 'SAC', 'SF']) // don't count as official AB
+const HIT_RESULTS   = new Set(['1B', '2B', '3B', 'HR'])
+const NO_AB_RESULTS = new Set(['BB', 'HBP', 'SAC', 'SF'])
 
 function resultColor(r: string) {
-  if (HIT_RESULTS.has(r))  return 'bg-green-100 text-green-700'
+  if (HIT_RESULTS.has(r))   return 'bg-green-100 text-green-700'
   if (NO_AB_RESULTS.has(r)) return 'bg-blue-100 text-blue-700'
   return 'bg-red-100 text-red-600'
 }
@@ -25,6 +27,18 @@ type BatterLine = {
   hits: number
   rbi: number
   results: string[]
+}
+
+type PitcherLine = {
+  playerId: string
+  name: string
+  outs: number
+  h: number
+  r: number
+  bb: number
+  k: number
+  era: number
+  decision?: 'W' | 'L'
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -69,12 +83,8 @@ export default function GameSummaryPage() {
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const { linescore } = useMemo(() => {
-    if (!innings || !atBats) return { linescore: [], totalInnings: 9 }
-
-    // Map inningId → inning metadata
+    if (!innings || !atBats) return { linescore: [] }
     const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
-
-    // Accumulate runs per (inningNumber, half)
     const runMap: Record<string, number> = {}
     for (const ab of atBats) {
       if (!ab.rbiCount) continue
@@ -83,85 +93,96 @@ export default function GameSummaryPage() {
       const key = `${inn.inningNumber}:${inn.half}`
       runMap[key] = (runMap[key] ?? 0) + ab.rbiCount
     }
-
     const maxInning = Math.max(9, ...innings.map(i => i.inningNumber))
-    const lines: { inningNum: number; awayRuns: number; homeRuns: number }[] = []
+    const lines = []
     for (let n = 1; n <= maxInning; n++) {
-      lines.push({
-        inningNum:  n,
-        awayRuns:   runMap[`${n}:top`]    ?? 0,
-        homeRuns:   runMap[`${n}:bottom`] ?? 0,
-      })
+      lines.push({ inningNum: n, awayRuns: runMap[`${n}:top`] ?? 0, homeRuns: runMap[`${n}:bottom`] ?? 0 })
     }
     return { linescore: lines }
   }, [innings, atBats])
 
-  const { awayBatters, homeBatters, awayHits, homeHits } = useMemo(() => {
-    if (!atBats || !innings || !homeLineup || !awayLineup || !players) {
-      return { awayBatters: [], homeBatters: [], awayHits: 0, homeHits: 0 }
-    }
+  const { awayBatters, homeBatters, awayHits, homeHits, awayPitchers, homePitchers } = useMemo(() => {
+    const empty = { awayBatters: [], homeBatters: [], awayHits: 0, homeHits: 0, awayPitchers: [], homePitchers: [] }
+    if (!atBats || !innings || !homeLineup || !awayLineup || !players) return empty
 
     const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
 
-    // Group at-bats by batterId, tagged with team side
+    // ── Batting ──
     const absByBatter: Record<string, { results: string[]; rbi: number; side: 'top' | 'bottom' }> = {}
     for (const ab of atBats) {
       if (!ab.batterId) continue
       const inn = inningMeta[ab.inningId]
       if (!inn) continue
-      if (!absByBatter[ab.batterId]) {
-        absByBatter[ab.batterId] = { results: [], rbi: 0, side: inn.half }
-      }
+      if (!absByBatter[ab.batterId]) absByBatter[ab.batterId] = { results: [], rbi: 0, side: inn.half }
       if (ab.result) absByBatter[ab.batterId].results.push(ab.result)
       absByBatter[ab.batterId].rbi += ab.rbiCount ?? 0
     }
 
-    function buildLines(lineup: typeof homeLineup): BatterLine[] {
+    function buildBatterLines(lineup: typeof homeLineup): BatterLine[] {
       if (!lineup) return []
-      const starters = lineup.filter(e => e.battingOrder > 0)
-        .sort((a, b) => a.battingOrder - b.battingOrder)
-      const bench = lineup.filter(e => e.battingOrder === 0)
-      const all = [...starters, ...bench]
-
-      return all.map(entry => {
-        const player   = players![entry.playerId]
-        const stats    = absByBatter[entry.playerId]
-        const results  = stats?.results ?? []
-        const ab       = results.filter(r => !NO_AB_RESULTS.has(r)).length
-        const hits     = results.filter(r => HIT_RESULTS.has(r)).length
-        const rbi      = stats?.rbi ?? 0
-        return {
-          playerId:     entry.playerId,
-          battingOrder: entry.battingOrder,
-          name:         player?.name ?? '—',
-          jerseyNumber: player?.jerseyNumber,
-          ab, hits, rbi,
-          results,
-        }
+      const starters = lineup.filter(e => e.battingOrder > 0).sort((a, b) => a.battingOrder - b.battingOrder)
+      const bench    = lineup.filter(e => e.battingOrder === 0)
+      return [...starters, ...bench].map(entry => {
+        const player  = players![entry.playerId]
+        const stats   = absByBatter[entry.playerId]
+        const results = stats?.results ?? []
+        const ab      = results.filter(r => !NO_AB_RESULTS.has(r)).length
+        const hits    = results.filter(r => HIT_RESULTS.has(r)).length
+        return { playerId: entry.playerId, battingOrder: entry.battingOrder,
+          name: player?.name ?? '—', jerseyNumber: player?.jerseyNumber,
+          ab, hits, rbi: stats?.rbi ?? 0, results }
       }).filter(b => b.results.length > 0 || b.battingOrder > 0)
     }
 
-    const awayLines = buildLines(awayLineup)
-    const homeLines = buildLines(homeLineup)
+    const awayLines = buildBatterLines(awayLineup)
+    const homeLines = buildBatterLines(homeLineup)
 
-    const awayHits = awayLines.reduce((s, b) => s + b.hits, 0)
-    const homeHits = homeLines.reduce((s, b) => s + b.hits, 0)
+    // ── Pitching ──
+    // top half → home team pitches; bottom half → away team pitches
+    const absByPitcher: Record<string, { abs: LocalAtBat[]; side: 'top' | 'bottom' }> = {}
+    for (const ab of atBats) {
+      if (!ab.pitcherId) continue
+      const inn = inningMeta[ab.inningId]
+      if (!inn) continue
+      if (!absByPitcher[ab.pitcherId]) absByPitcher[ab.pitcherId] = { abs: [], side: inn.half }
+      absByPitcher[ab.pitcherId].abs.push(ab)
+    }
 
-    return { awayBatters: awayLines, homeBatters: homeLines, awayHits, homeHits }
+    const halfMap: Record<string, 'top' | 'bottom'> = {}
+    for (const inn of innings) halfMap[inn.id] = inn.half
+    const { winnerId, loserId } = getPitcherDecisions(atBats, halfMap, game?.homeScore ?? 0, game?.awayScore ?? 0)
+
+    function buildPitcherLines(side: 'top' | 'bottom'): PitcherLine[] {
+      return Object.entries(absByPitcher)
+        .filter(([, v]) => v.side === side)
+        .map(([pid, { abs }]) => {
+          const line = computePitchingLine(abs)
+          const decision: 'W' | 'L' | undefined = pid === winnerId ? 'W' : pid === loserId ? 'L' : undefined
+          return { playerId: pid, name: players![pid]?.name ?? '—', ...line, decision }
+        })
+        .sort((a, b) => b.outs - a.outs)
+    }
+
+    return {
+      awayBatters: awayLines,
+      homeBatters: homeLines,
+      awayHits:    awayLines.reduce((s, b) => s + b.hits, 0),
+      homeHits:    homeLines.reduce((s, b) => s + b.hits, 0),
+      // home pitches in top, away pitches in bottom
+      homePitchers: buildPitcherLines('top'),
+      awayPitchers: buildPitcherLines('bottom'),
+    }
   }, [atBats, innings, homeLineup, awayLineup, players])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  if (!game || !teams || !players) {
-    return <div className="p-4 text-gray-400">Loading…</div>
-  }
+  if (!game || !teams || !players) return <div className="p-4 text-gray-400">Loading…</div>
 
-  const homeName = teams[game.homeTeamId ?? ''] ?? '—'
-  const awayName = teams[game.awayTeamId ?? ''] ?? '—'
-
+  const homeName  = teams[game.homeTeamId ?? ''] ?? '—'
+  const awayName  = teams[game.awayTeamId ?? ''] ?? '—'
   const inningCols = linescore.map(l => l.inningNum)
-  const awayWon = game.awayScore > game.homeScore
-  const homeWon = game.homeScore > game.awayScore
+  const awayWon   = game.awayScore > game.homeScore
+  const homeWon   = game.homeScore > game.awayScore
 
   return (
     <div className="p-4 pb-10 max-w-2xl mx-auto">
@@ -237,15 +258,16 @@ export default function GameSummaryPage() {
         </div>
       )}
 
-      {/* Batting sections */}
-      {[
-        { label: awayName, batters: awayBatters },
-        { label: homeName, batters: homeBatters },
-      ].map(({ label, batters }) => (
-        <div key={label} className="mb-5">
+      {/* Batting + Pitching sections — one per team */}
+      {([
+        { label: awayName, batters: awayBatters, pitchers: awayPitchers },
+        { label: homeName, batters: homeBatters, pitchers: homePitchers },
+      ] as const).map(({ label, batters, pitchers }) => (
+        <div key={label} className="mb-6">
+
+          {/* Batting */}
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Batting</p>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Header row */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
             <div className="flex items-center px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-400">
               <span className="w-5 shrink-0 mr-3">#</span>
               <span className="flex-1">Player</span>
@@ -257,8 +279,7 @@ export default function GameSummaryPage() {
               <p className="text-sm text-gray-400 px-4 py-4 text-center">No batting data recorded.</p>
             )}
             {batters.map((b, i) => (
-              <div key={b.playerId}
-                className={`px-4 py-3 ${i < batters.length - 1 ? 'border-b border-gray-50' : ''}`}>
+              <div key={b.playerId} className={`px-4 py-3 ${i < batters.length - 1 ? 'border-b border-gray-50' : ''}`}>
                 <div className="flex items-center mb-1.5">
                   <span className="text-gray-300 text-xs w-5 shrink-0 mr-3 tabular-nums text-right">
                     {b.battingOrder > 0 ? b.battingOrder : '—'}
@@ -274,8 +295,7 @@ export default function GameSummaryPage() {
                 {b.results.length > 0 && (
                   <div className="flex flex-wrap gap-1 pl-8">
                     {b.results.map((r, ri) => (
-                      <span key={ri}
-                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${resultColor(r)}`}>
+                      <span key={ri} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${resultColor(r)}`}>
                         {r}
                       </span>
                     ))}
@@ -284,6 +304,41 @@ export default function GameSummaryPage() {
               </div>
             ))}
           </div>
+
+          {/* Pitching */}
+          {pitchers.length > 0 && (
+            <>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Pitching</p>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-2">
+                <div className="flex items-center px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-400">
+                  <span className="flex-1">Pitcher</span>
+                  <span className="w-12 text-center">ERA</span>
+                  <span className="w-10 text-center">IP</span>
+                  <span className="w-8 text-center">H</span>
+                  <span className="w-8 text-center">R</span>
+                  <span className="w-8 text-center">K</span>
+                </div>
+                {pitchers.map((p, i) => (
+                  <div key={p.playerId}
+                    className={`flex items-center px-4 py-3 ${i < pitchers.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                    <span className="flex-1 font-medium text-gray-800 text-sm truncate">
+                      {p.decision && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mr-1.5 ${p.decision === 'W' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                          {p.decision}
+                        </span>
+                      )}
+                      {p.name}
+                    </span>
+                    <span className="w-12 text-center text-sm text-gray-600 tabular-nums">{fmtEra(p.outs, p.era)}</span>
+                    <span className="w-10 text-center text-sm font-medium text-gray-700 tabular-nums">{fmtIp(p.outs)}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.h}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.r}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.k}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ))}
     </div>

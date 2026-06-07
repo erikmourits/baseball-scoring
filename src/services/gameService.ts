@@ -57,6 +57,28 @@ export const gameService = {
       .filter(g => g.homeTeamId === teamId || g.awayTeamId === teamId)
       .sort((a, b) => b.date.localeCompare(a.date))[0]
   },
+
+  async delete(id: string): Promise<void> {
+    // Cascade-delete all local game data in dependency order
+    const innings = await db.innings.where('gameId').equals(id).toArray()
+    const inningIds = innings.map(i => i.id)
+    if (inningIds.length > 0) {
+      const atBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
+      const atBatIds = atBats.map(ab => ab.id)
+      if (atBatIds.length > 0) {
+        await db.fieldingCredits.where('atBatId').anyOf(atBatIds).delete()
+        await db.baserunningEvents.where('atBatId').anyOf(atBatIds).delete()
+        await db.atBats.where('inningId').anyOf(inningIds).delete()
+      }
+    }
+    await db.innings.where('gameId').equals(id).delete()
+    await db.gameLineups.where('gameId').equals(id).delete()
+    await db.pitchingLines.where('gameId').equals(id).delete()
+    await db.games.delete(id)
+
+    // Delete from Supabase — cascade handles innings, at_bats, credits
+    await (supabase.from('games') as any).delete().eq('id', id)
+  },
 }
 
 async function syncGame(game: LocalGame) {

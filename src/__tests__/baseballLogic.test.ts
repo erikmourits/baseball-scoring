@@ -23,8 +23,8 @@ describe('outsFromResult', () => {
     expect(outsFromResult('SF')).toBe(1)
   })
 
-  it('returns 2 for GDP (double play)', () => {
-    expect(outsFromResult('GDP')).toBe(2)
+  it('returns 1 for GDP — batter is 1 out; second out comes from runner marked out in outcomes', () => {
+    expect(outsFromResult('GDP')).toBe(1)
   })
 
   it('returns 0 for hits and reaches', () => {
@@ -366,13 +366,15 @@ describe('RUNNER_OUTCOME_RESULTS set', () => {
     expect(RUNNER_OUTCOME_RESULTS.has('FC')).toBe(true)
     expect(RUNNER_OUTCOME_RESULTS.has('SAC')).toBe(true)
     expect(RUNNER_OUTCOME_RESULTS.has('SF')).toBe(true)
+    expect(RUNNER_OUTCOME_RESULTS.has('GO')).toBe(true)
+    expect(RUNNER_OUTCOME_RESULTS.has('GDP')).toBe(true)
   })
 
   it('does not include HR (auto-score), BB (force advance), or outs', () => {
     expect(RUNNER_OUTCOME_RESULTS.has('HR')).toBe(false)
     expect(RUNNER_OUTCOME_RESULTS.has('BB')).toBe(false)
     expect(RUNNER_OUTCOME_RESULTS.has('K')).toBe(false)
-    expect(RUNNER_OUTCOME_RESULTS.has('GO')).toBe(false)
+    expect(RUNNER_OUTCOME_RESULTS.has('GO')).toBe(true)
   })
 })
 
@@ -435,11 +437,199 @@ describe('edge cases', () => {
     expect(opts).toContain('third') // r3 scored so 3rd is free
   })
 
+  it('getAvailableOptions: runner on 3rd cannot hold when runner on 2nd is scoring (passes through 3rd)', () => {
+    const bases: Bases = { second: 'r2', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r2: 'score' }
+    const opts = getAvailableOptions('third', 'r3', bases, outcomes, 'first', '1B')
+    expect(opts).not.toContain('hold')
+    expect(opts).toContain('score')
+    expect(opts).toContain('out')
+  })
+
+  it('getAvailableOptions: runner on 3rd CAN hold when runner on 2nd is NOT scoring', () => {
+    const bases: Bases = { second: 'r2', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r2: 'third' }
+    const opts = getAvailableOptions('third', 'r3', bases, outcomes, 'first', '1B')
+    expect(opts).toContain('hold')
+  })
+
   it('computeProjectedBases: runner holds at their base', () => {
     const bases: Bases = { second: 'r2', third: 'r3' }
     const outcomes: Record<string, RunnerDest> = { r3: 'score', r2: 'hold' }
     const result = computeProjectedBases(bases, outcomes, 'SF', 'batter')
     expect(result.second).toBe('r2')  // held
     expect(result.third).toBeUndefined() // scored
+  })
+})
+
+// ── Bug-fix regression tests (2026-06-07) ─────────────────────────────────────
+
+describe('defaultOutcomes — GO (ground out)', () => {
+  it('runner on first advances to second by default', () => {
+    const o = defaultOutcomes('GO', { first: 'r1' })
+    expect(o['r1']).toBe('second')
+  })
+
+  it('runner on second holds by default', () => {
+    const o = defaultOutcomes('GO', { second: 'r2' })
+    expect(o['r2']).toBe('hold')
+  })
+
+  it('runner on third holds by default', () => {
+    const o = defaultOutcomes('GO', { third: 'r3' })
+    expect(o['r3']).toBe('hold')
+  })
+
+  it('bases loaded: first advances to second, second holds, third holds', () => {
+    const o = defaultOutcomes('GO', { first: 'r1', second: 'r2', third: 'r3' })
+    expect(o['r1']).toBe('second')
+    expect(o['r2']).toBe('hold')
+    expect(o['r3']).toBe('hold')
+  })
+
+  it('returns empty object with no runners', () => {
+    const o = defaultOutcomes('GO', {})
+    expect(Object.keys(o)).toHaveLength(0)
+  })
+})
+
+describe('defaultOutcomes — GDP (ground into double play)', () => {
+  it('runner on first is out by default', () => {
+    const o = defaultOutcomes('GDP', { first: 'r1' })
+    expect(o['r1']).toBe('out')
+  })
+
+  it('runner on second advances to third by default', () => {
+    const o = defaultOutcomes('GDP', { second: 'r2' })
+    expect(o['r2']).toBe('third')
+  })
+
+  it('runner on third scores by default', () => {
+    const o = defaultOutcomes('GDP', { third: 'r3' })
+    expect(o['r3']).toBe('score')
+  })
+
+  it('bases loaded: first out, second to third, third scores', () => {
+    const o = defaultOutcomes('GDP', { first: 'r1', second: 'r2', third: 'r3' })
+    expect(o['r1']).toBe('out')
+    expect(o['r2']).toBe('third')
+    expect(o['r3']).toBe('score')
+  })
+
+  it('runners on first and second: first out, second to third', () => {
+    const o = defaultOutcomes('GDP', { first: 'r1', second: 'r2' })
+    expect(o['r1']).toBe('out')
+    expect(o['r2']).toBe('third')
+  })
+})
+
+describe('outsFromResult — GDP counts batter only (runner out via outcomes)', () => {
+  it('GDP returns 1 — batter out; second out comes from runner marked out in outcomes', () => {
+    expect(outsFromResult('GDP')).toBe(1)
+  })
+
+  it('GDP + one runner out via outcomes = 2 total outs', () => {
+    // Simulate how GamePage tallies outs
+    const batterOuts = outsFromResult('GDP')            // 1
+    const runnerOuts = 1                                // one runner marked 'out'
+    expect(batterOuts + runnerOuts).toBe(2)
+  })
+})
+
+describe('RUNNER_OUTCOME_RESULTS — GO and GDP now require runner placement', () => {
+  it('GO is in RUNNER_OUTCOME_RESULTS', () => {
+    expect(RUNNER_OUTCOME_RESULTS.has('GO')).toBe(true)
+  })
+
+  it('GDP is in RUNNER_OUTCOME_RESULTS', () => {
+    expect(RUNNER_OUTCOME_RESULTS.has('GDP')).toBe(true)
+  })
+})
+
+describe('getAvailableOptions — GO', () => {
+  it('runner on first can advance to second on a GO', () => {
+    const opts = getAvailableOptions('first', 'r1', { first: 'r1' }, {}, undefined, 'GO')
+    expect(opts).toContain('second')
+  })
+
+  it('runner on first can hold or be put out on a GO', () => {
+    const opts = getAvailableOptions('first', 'r1', { first: 'r1' }, {}, undefined, 'GO')
+    expect(opts).toContain('hold')
+    expect(opts).toContain('out')
+  })
+
+  it('runner on second can hold on a GO (batter is out, no base occupied)', () => {
+    const opts = getAvailableOptions('second', 'r2', { second: 'r2' }, {}, undefined, 'GO')
+    expect(opts).toContain('hold')
+    expect(opts).toContain('third')
+    expect(opts).toContain('out')
+  })
+
+  it('runner on third can hold or score on a GO', () => {
+    const opts = getAvailableOptions('third', 'r3', { third: 'r3' }, {}, undefined, 'GO')
+    expect(opts).toContain('hold')
+    expect(opts).toContain('score')
+    expect(opts).toContain('out')
+  })
+})
+
+describe('getAvailableOptions — GDP', () => {
+  it('runner on first has out as an option', () => {
+    const opts = getAvailableOptions('first', 'r1', { first: 'r1' }, {}, undefined, 'GDP')
+    expect(opts).toContain('out')
+  })
+
+  it('runner on second has out as an option (user can specify which runner is out)', () => {
+    const opts = getAvailableOptions('second', 'r2', { second: 'r2' }, {}, undefined, 'GDP')
+    expect(opts).toContain('out')
+    expect(opts).toContain('third')
+    expect(opts).toContain('hold')
+  })
+
+  it('runner on third has out as an option', () => {
+    const opts = getAvailableOptions('third', 'r3', { third: 'r3' }, {}, undefined, 'GDP')
+    expect(opts).toContain('out')
+    expect(opts).toContain('score')
+    expect(opts).toContain('hold')
+  })
+
+  it('with bases loaded, runner on first marked out does not block others', () => {
+    const bases: Bases = { first: 'r1', second: 'r2', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r1: 'out' }
+    // r2 on second should be able to advance to third (r1 is out, not holding there)
+    const opts = getAvailableOptions('second', 'r2', bases, outcomes, undefined, 'GDP')
+    expect(opts).toContain('third')
+    expect(opts).toContain('score')
+  })
+})
+
+describe('getAvailableOptions — lower-runner blocking regression', () => {
+  it('runner on 3rd can hold when runner on 2nd advances to 3rd (not a block)', () => {
+    // Bug: r2 advancing toward 3rd was incorrectly blocking r3 from holding
+    const bases: Bases = { second: 'r2', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r2: 'third' }
+    const opts = getAvailableOptions('third', 'r3', bases, outcomes, 'first', '1B')
+    expect(opts).toContain('hold')
+    expect(opts).toContain('score')
+  })
+
+  it('runner on 3rd CANNOT hold when runner on 2nd is scoring through 3rd', () => {
+    // Bug: r2 scoring (passing through 3rd) was not blocking r3 from holding
+    const bases: Bases = { second: 'r2', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r2: 'score' }
+    const opts = getAvailableOptions('third', 'r3', bases, outcomes, 'first', '1B')
+    expect(opts).not.toContain('hold')
+    expect(opts).toContain('score')
+    expect(opts).toContain('out')
+  })
+
+  it('runner on 3rd CANNOT hold when runner on 1st is scoring (passes through 3rd en route to home)', () => {
+    // r1 on 1st must run through 3rd to score — two runners can't occupy the same base
+    const bases: Bases = { first: 'r1', third: 'r3' }
+    const outcomes: Record<string, RunnerDest> = { r1: 'score' }
+    const opts = getAvailableOptions('third', 'r3', bases, outcomes, 'first', '1B')
+    expect(opts).not.toContain('hold')
+    expect(opts).toContain('score')
+    expect(opts).toContain('out')
   })
 })

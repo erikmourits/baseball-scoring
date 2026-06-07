@@ -5,7 +5,7 @@ import { db } from '../db/local'
 import { teamService } from '../services/teamService'
 import { playerService } from '../services/playerService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
-import { computeBattingLine, fmtAvg, fmtOps } from '../utils/statsCalc'
+import { computeBattingLine, computePitchingLine, getPitcherDecisions, fmtAvg, fmtOps, fmtIp, fmtEra } from '../utils/statsCalc'
 
 type PendingAction =
   | { type: 'archivePlayer'; id: string; name: string }
@@ -17,6 +17,7 @@ type Tab = 'roster' | 'stats'
 
 function StatsTab({ teamId }: { teamId: string }) {
   const navigate = useNavigate()
+  const [statView, setStatView] = useState<'batting' | 'pitching'>('batting')
 
   const seasons = useLiveQuery(async () => {
     const all = await db.seasons.toArray()
@@ -26,7 +27,6 @@ function StatsTab({ teamId }: { teamId: string }) {
   const activeSeason = seasons?.find(s => s.isActive) ?? seasons?.[0]
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>(undefined)
 
-  // Resolve which season to filter by — default to active season
   const seasonId = selectedSeasonId ?? activeSeason?.id
 
   const players = useLiveQuery(async () => {
@@ -34,7 +34,6 @@ function StatsTab({ teamId }: { teamId: string }) {
     return all.filter(p => !p.deletedAt).sort((a, b) => a.name.localeCompare(b.name))
   }, [teamId])
 
-  // Games for this team in the selected season
   const games = useLiveQuery(async () => {
     let all = await db.games.toArray()
     all = all.filter(g =>
@@ -44,33 +43,56 @@ function StatsTab({ teamId }: { teamId: string }) {
     return all
   }, [teamId, seasonId])
 
-  // All at-bats for those games
+  // All at-bats for those games, grouped by batterId and pitcherId
   const playerStats = useLiveQuery(async () => {
-    if (!games?.length || !players?.length) return {}
+    if (!games?.length || !players?.length) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {} }
     const gameIds = games.map(g => g.id)
     const innings = await db.innings.where('gameId').anyOf(gameIds).toArray()
     const inningIds = innings.map(i => i.id)
     const allAtBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
 
-    // Group by batterId
-    const byPlayer: Record<string, typeof allAtBats> = {}
+    const batting:  Record<string, typeof allAtBats> = {}
+    const pitching: Record<string, typeof allAtBats> = {}
     for (const ab of allAtBats) {
-      if (!ab.batterId) continue
-      if (!byPlayer[ab.batterId]) byPlayer[ab.batterId] = []
-      byPlayer[ab.batterId].push(ab)
+      if (ab.batterId)  { if (!batting[ab.batterId])   batting[ab.batterId]   = []; batting[ab.batterId].push(ab) }
+      if (ab.pitcherId) { if (!pitching[ab.pitcherId]) pitching[ab.pitcherId] = []; pitching[ab.pitcherId].push(ab) }
     }
-    return byPlayer
+
+    const inningById = Object.fromEntries(innings.map(i => [i.id, i]))
+    const pitcherWins:   Record<string, number> = {}
+    const pitcherLosses: Record<string, number> = {}
+    for (const game of games) {
+      const halfMap: Record<string, 'top' | 'bottom'> = {}
+      for (const inn of innings) if (inn.gameId === game.id) halfMap[inn.id] = inn.half
+      const gameAtBats = allAtBats.filter(ab => inningById[ab.inningId]?.gameId === game.id)
+      const { winnerId, loserId } = getPitcherDecisions(gameAtBats, halfMap, game.homeScore, game.awayScore)
+      if (winnerId) pitcherWins[winnerId]   = (pitcherWins[winnerId]   ?? 0) + 1
+      if (loserId)  pitcherLosses[loserId]  = (pitcherLosses[loserId]  ?? 0) + 1
+    }
+    return { batting, pitching, pitcherWins, pitcherLosses }
   }, [games?.length, players?.length])
 
-  const rows = useMemo(() => {
-    if (!players || !playerStats) return []
-    return players
-      .map(p => ({ player: p, line: computeBattingLine(playerStats[p.id] ?? []) }))
+  const { battingRows, pitchingRows } = useMemo(() => {
+    if (!players || !playerStats) return { battingRows: [], pitchingRows: [] }
+    const battingRows = players
+      .map(p => ({ player: p, line: computeBattingLine(playerStats.batting[p.id] ?? []) }))
       .filter(r => r.line.pa > 0)
       .sort((a, b) => b.line.avg - a.line.avg)
+    const pitchingRows = players
+      .map(p => ({
+        player: p,
+        line: computePitchingLine(playerStats.pitching[p.id] ?? []),
+        w: playerStats.pitcherWins[p.id]   ?? 0,
+        l: playerStats.pitcherLosses[p.id] ?? 0,
+      }))
+      .filter(r => r.line.outs > 0)
+      .sort((a, b) => b.line.outs - a.line.outs)
+    return { battingRows, pitchingRows }
   }, [players, playerStats])
 
   if (!seasons || !players) return <div className="py-8 text-center text-gray-400 text-sm">Loading…</div>
+
+  const noData = statView === 'batting' ? battingRows.length === 0 : pitchingRows.length === 0
 
   return (
     <div>
@@ -94,11 +116,23 @@ function StatsTab({ teamId }: { teamId: string }) {
         <p className="text-sm text-gray-400 mb-4">No seasons yet — create one in the Seasons tab.</p>
       )}
 
-      {rows.length === 0 ? (
+      {/* Batting / Pitching toggle */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+        {(['batting', 'pitching'] as const).map(v => (
+          <button key={v} onClick={() => setStatView(v)}
+            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
+              statView === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            {v}
+          </button>
+        ))}
+      </div>
+
+      {noData ? (
         <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-8 text-center">
-          <p className="text-gray-400 text-sm">No stats recorded yet for this season.</p>
+          <p className="text-gray-400 text-sm">No {statView} stats recorded yet for this season.</p>
         </div>
-      ) : (
+      ) : statView === 'batting' ? (
         <div className="overflow-x-auto -mx-4">
           <table className="min-w-full text-sm">
             <thead>
@@ -115,7 +149,7 @@ function StatsTab({ teamId }: { teamId: string }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ player, line }, i) => {
+              {battingRows.map(({ player, line }, i) => {
                 const opsColor = line.ops >= 0.900 ? 'text-green-600 font-semibold'
                   : line.ops >= 0.700 ? 'text-yellow-600'
                   : 'text-red-500'
@@ -138,6 +172,40 @@ function StatsTab({ teamId }: { teamId: string }) {
                   </tr>
                 )
               })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-4">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Player</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">W</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">L</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">ERA</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">IP</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">K</th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right pr-4">BB</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pitchingRows.map(({ player, line, w, l }, i) => (
+                <tr key={player.id}
+                  className={`border-b border-gray-50 cursor-pointer hover:bg-brand-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                  onClick={() => navigate(`/teams/${teamId}/players/${player.id}/stats${seasonId ? `?season=${seasonId}` : ''}`)}>
+                  <td className="pl-4 pr-3 py-2.5">
+                    <p className="font-medium text-gray-900 truncate max-w-[100px]">{player.name}</p>
+                    {player.primaryPosition && <p className="text-xs text-gray-400">{player.primaryPosition}</p>}
+                  </td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-green-600 tabular-nums">{w}</td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-red-500 tabular-nums">{l}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-700 tabular-nums">{fmtEra(line.outs, line.era)}</td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-gray-900 tabular-nums">{fmtIp(line.outs)}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{line.k}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums pr-4">{line.bb}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

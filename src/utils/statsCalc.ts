@@ -64,3 +64,83 @@ export function fmtOps(n: number): string {
   if (!isFinite(n) || n === 0) return '.000'
   return n >= 1 ? n.toFixed(3) : n.toFixed(3).replace(/^0/, '')
 }
+
+// ── Pitching ───────────────────────────────────────────────────────────────────
+
+export interface PitchingLine {
+  outs: number   // total outs recorded
+  ip:   number   // decimal innings (outs / 3, e.g. 13 outs = 4.333)
+  h:    number   // hits allowed
+  r:    number   // runs allowed (via RBI, approximation)
+  bb:   number   // walks issued
+  k:    number   // strikeouts
+  hbp:  number   // hit batters
+  era:  number   // earned run average: (r * 27) / outs
+}
+
+const OUT_RESULTS = new Set(['K', 'KL', 'FO', 'GO', 'SAC', 'SF'])
+
+export function computePitchingLine(atBats: LocalAtBat[]): PitchingLine {
+  let outs = 0, h = 0, r = 0, bb = 0, k = 0, hbp = 0
+
+  for (const ab of atBats) {
+    const res = ab.result ?? ''
+    if (res === 'GDP')                   outs += 2
+    else if (OUT_RESULTS.has(res))       outs += 1
+    if (res === '1B' || res === '2B' || res === '3B' || res === 'HR') h++
+    if (res === 'BB')  bb++
+    if (res === 'HBP') hbp++
+    if (res === 'K' || res === 'KL') k++
+    r += ab.rbiCount ?? 0
+  }
+
+  const era = outs > 0 ? (r * 27) / outs : 0
+  return { outs, ip: outs / 3, h, r, bb, k, hbp, era }
+}
+
+
+/** Format ERA: show "—" when no innings pitched */
+export function fmtEra(outs: number, era: number): string {
+  if (outs === 0) return '—'
+  return era.toFixed(2)
+}
+
+const OUT_RESULTS_DECISION = new Set(['K', 'KL', 'FO', 'GO', 'SAC', 'SF'])
+
+/**
+ * For a completed game, return which pitcher gets the Win and which gets the Loss.
+ * The pitcher with the most outs for the winning team gets the W, and vice versa.
+ * Returns empty object for a tie game or when no pitchers are tracked.
+ */
+export function getPitcherDecisions(
+  atBats: LocalAtBat[],
+  inningHalfMap: Record<string, 'top' | 'bottom'>,
+  homeScore: number,
+  awayScore: number,
+): { winnerId?: string; loserId?: string } {
+  if (homeScore === awayScore) return {}
+  const homeWon = homeScore > awayScore
+  const winHalf  = homeWon ? 'top'    : 'bottom'
+  const loseHalf = homeWon ? 'bottom' : 'top'
+  const winOuts:  Record<string, number> = {}
+  const loseOuts: Record<string, number> = {}
+  for (const ab of atBats) {
+    if (!ab.pitcherId) continue
+    const half = inningHalfMap[ab.inningId]
+    if (!half) continue
+    const o = ab.result === 'GDP' ? 2 : OUT_RESULTS_DECISION.has(ab.result ?? '') ? 1 : 0
+    if (half === winHalf)  winOuts[ab.pitcherId]  = (winOuts[ab.pitcherId]  ?? 0) + o
+    if (half === loseHalf) loseOuts[ab.pitcherId] = (loseOuts[ab.pitcherId] ?? 0) + o
+  }
+  const topId = (map: Record<string, number>) =>
+    Object.entries(map).sort((a, b) => b[1] - a[1])[0]?.[0]
+  return { winnerId: topId(winOuts), loserId: topId(loseOuts) }
+}
+
+/** Format innings pitched: 13 outs → "4.1", 14 → "4.2", 15 → "5.0" */
+export function fmtIp(outs: number): string {
+  if (outs === 0) return '0.0'
+  const full = Math.floor(outs / 3)
+  const rem  = outs % 3
+  return `${full}.${rem}`
+}

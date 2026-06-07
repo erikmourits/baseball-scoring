@@ -6,7 +6,8 @@ export type GameSnapshot = {
   inningNumber: number
   half: 'top' | 'bottom'
   outs: number
-  batterIndex: number
+  awayBatterIndex: number
+  homeBatterIndex: number
   bases: Bases
   homeScore: number
   awayScore: number

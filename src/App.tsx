@@ -12,6 +12,8 @@ import GamePage from './pages/GamePage'
 import GameSummaryPage from './pages/GameSummaryPage'
 import PlayerStatsPage from './pages/PlayerStatsPage'
 import StatsPage from './pages/StatsPage'
+import ScorecardUploadPage from './pages/ScorecardUploadPage'
+import ScorecardReviewPage from './pages/ScorecardReviewPage'
 import AppShell from './components/layout/AppShell'
 
 function AuthenticatedApp() {
@@ -29,6 +31,8 @@ function AuthenticatedApp() {
         <Route path="/games/new"                                element={<NewGamePage />} />
         <Route path="/games/:gameId"                            element={<GamePage />} />
         <Route path="/games/:gameId/summary"                    element={<GameSummaryPage />} />
+        <Route path="/games/upload"                             element={<ScorecardUploadPage />} />
+        <Route path="/games/upload/review"                      element={<ScorecardReviewPage />} />
         <Route path="*"                                         element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

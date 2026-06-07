@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type LocalAtBat } from '../db/local'
 import { gameService } from '../services/gameService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
-import { useGameState } from '../hooks/useGameState'
+import { useGameState, clearGameState } from '../hooks/useGameState'
 import { SubstitutionPage } from '../components/game/SubstitutionPage'
 import { RunnerOutcomes } from '../components/game/RunnerOutcomes'
 import { BetweenEvents } from '../components/game/BetweenEvents'
@@ -27,14 +27,14 @@ const INNING_END_CSS = `
   .inning-end-card { animation: inning-in 2.4s cubic-bezier(.22,1,.36,1) forwards; }
 `
 
-const RESULT_BUTTONS: { label: string; value: string; color: string; tip: string; no2Outs?: boolean }[] = [
+const RESULT_BUTTONS: { label: string; value: string; color: string; tip: string; no2Outs?: boolean; needsRunner?: boolean }[] = [
   { label: 'K',   value: 'K',   color: 'btn-out',   tip: 'Strikeout swinging' },
   { label: 'KL',  value: 'KL',  color: 'btn-out',   tip: 'Strikeout looking' },
   { label: 'FO',  value: 'FO',  color: 'btn-out',   tip: 'Fly out' },
   { label: 'GO',  value: 'GO',  color: 'btn-out',   tip: 'Ground out' },
-  { label: 'SAC', value: 'SAC', color: 'btn-out',   tip: 'Sac bunt',    no2Outs: true },
-  { label: 'SF',  value: 'SF',  color: 'btn-out',   tip: 'Sac fly',     no2Outs: true },
-  { label: 'GDP', value: 'GDP', color: 'btn-out',   tip: 'Double play', no2Outs: true },
+  { label: 'SAC', value: 'SAC', color: 'btn-out',   tip: 'Sac bunt',    no2Outs: true, needsRunner: true },
+  { label: 'SF',  value: 'SF',  color: 'btn-out',   tip: 'Sac fly',     no2Outs: true, needsRunner: true },
+  { label: 'GDP', value: 'GDP', color: 'btn-out',   tip: 'Double play', no2Outs: true, needsRunner: true },
   { label: '1B',  value: '1B',  color: 'btn-hit',   tip: 'Single' },
   { label: '2B',  value: '2B',  color: 'btn-hit',   tip: 'Double' },
   { label: '3B',  value: '3B',  color: 'btn-hit',   tip: 'Triple' },
@@ -108,13 +108,53 @@ export default function GamePage() {
     return db.innings.where('gameId').equals(gameId).toArray()
   }, [gameId])
 
+
   // ── Game state (via hook) ──────────────────────────────────────────────────
 
   const {
-    inningNumber, half, outs, batterIndex, bases, history,
-    setHistory, setBases, setOuts, setBatterIndex,
+    inningNumber, half, outs, awayBatterIndex, homeBatterIndex, bases, history,
+    setHistory, setBases, setOuts, setAwayBatterIndex, setHomeBatterIndex,
     captureSnapshot, handleUndo, advanceHalf,
   } = useGameState(gameId!, game?.homeScore ?? 0, game?.awayScore ?? 0)
+
+  const batterIndex    = half === 'top' ? awayBatterIndex : homeBatterIndex
+  const setBatterIndex = half === 'top' ? setAwayBatterIndex : setHomeBatterIndex
+
+  // ── Pitcher state ──────────────────────────────────────────────────────────
+
+  const [homePitcherId, setHomePitcherId] = useState<string | undefined>(() => {
+    try { return localStorage.getItem(`baseball-pitcher-home-${gameId}`) ?? undefined } catch { return undefined }
+  })
+  const [awayPitcherId, setAwayPitcherId] = useState<string | undefined>(() => {
+    try { return localStorage.getItem(`baseball-pitcher-away-${gameId}`) ?? undefined } catch { return undefined }
+  })
+
+  // Auto-init starting pitchers from lineup if not restored from localStorage
+  useEffect(() => {
+    if (!homePitcherId && homeLineup) {
+      const sp = homeLineup.find(e => e.isStartingPitcher) ?? homeLineup.find(e => e.fieldingPosition === 'P')
+      if (sp) setHomePitcherId(sp.playerId)
+    }
+  }, [homeLineup])
+
+  useEffect(() => {
+    if (!awayPitcherId && awayLineup) {
+      const sp = awayLineup.find(e => e.isStartingPitcher) ?? awayLineup.find(e => e.fieldingPosition === 'P')
+      if (sp) setAwayPitcherId(sp.playerId)
+    }
+  }, [awayLineup])
+
+  // Persist pitcher IDs to localStorage
+  useEffect(() => {
+    try { if (homePitcherId) localStorage.setItem(`baseball-pitcher-home-${gameId}`, homePitcherId) } catch {}
+  }, [homePitcherId, gameId])
+
+  useEffect(() => {
+    try { if (awayPitcherId) localStorage.setItem(`baseball-pitcher-away-${gameId}`, awayPitcherId) } catch {}
+  }, [awayPitcherId, gameId])
+
+  const currentPitcherId = half === 'top' ? homePitcherId : awayPitcherId
+  const currentPitcher   = currentPitcherId ? players?.[currentPitcherId] : undefined
 
   // ── Local UI state ─────────────────────────────────────────────────────────
 
@@ -131,21 +171,46 @@ export default function GamePage() {
 
   // ── Derived state ──────────────────────────────────────────────────────────
 
-  const homeStarters   = (homeLineup ?? []).filter(e => e.battingOrder > 0)
-  const awayStarters   = (awayLineup ?? []).filter(e => e.battingOrder > 0)
-  const currentLineup  = half === 'top' ? awayStarters : homeStarters
+  const homeStarters    = (homeLineup ?? []).filter(e => e.battingOrder > 0)
+  const awayStarters    = (awayLineup ?? []).filter(e => e.battingOrder > 0)
+  const currentLineup   = half === 'top' ? awayStarters : homeStarters
   const currentBatterId = currentLineup[batterIndex % (currentLineup.length || 1)]?.playerId
-  const currentBatter  = currentBatterId ? players?.[currentBatterId] : undefined
-  const onDeckId       = currentLineup[(batterIndex + 1) % (currentLineup.length || 1)]?.playerId
-  const onDeckBatter   = onDeckId ? players?.[onDeckId] : undefined
-  const runnersOnBase  = (['first', 'second', 'third'] as BaseKey[]).filter(k => !!bases[k])
-  const batterDest     = selectedResult ? BATTER_DEST[selectedResult] : undefined
+  const currentBatter   = currentBatterId ? players?.[currentBatterId] : undefined
+
+  const currentBatterHistory = useLiveQuery(async () => {
+    if (!gameId || !currentBatterId) return []
+    const allInnings = await db.innings.where('gameId').equals(gameId).toArray()
+    const inningIds = allInnings.map(i => i.id)
+    const allAtBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
+    return allAtBats.filter(ab => ab.batterId === currentBatterId && ab.result)
+  }, [gameId, currentBatterId])
+  const onDeckId        = currentLineup[(batterIndex + 1) % (currentLineup.length || 1)]?.playerId
+  const onDeckBatter    = onDeckId ? players?.[onDeckId] : undefined
+  const runnersOnBase   = (['first', 'second', 'third'] as BaseKey[]).filter(k => !!bases[k])
+  const batterDest      = selectedResult ? BATTER_DEST[selectedResult] : undefined
   const showRunnerSection = selectedResult !== null && runnersOnBase.length > 0 &&
     (selectedResult === 'HR' || RUNNER_OUTCOME_RESULTS.has(selectedResult))
 
   useEffect(() => {
     if (game?.status === 'draft') gameService.updateStatus(gameId!, 'in_progress')
   }, [game?.status])
+
+  // ── Sub close — re-detect pitcher from DB ─────────────────────────────────
+
+  async function handleSubClose() {
+    setShowSub(false)
+    // Re-read the fielding team's lineup to pick up any pitcher substitution
+    const fieldingTeamId = half === 'top' ? game?.homeTeamId : game?.awayTeamId
+    if (!fieldingTeamId || !gameId) return
+    const lineup = await db.gameLineups
+      .where('[gameId+teamId]').equals([gameId, fieldingTeamId])
+      .toArray()
+    const pitcher = lineup.find(e => e.fieldingPosition === 'P')
+    if (pitcher) {
+      if (half === 'top') setHomePitcherId(pitcher.playerId)
+      else setAwayPitcherId(pitcher.playerId)
+    }
+  }
 
   // ── Result selection ───────────────────────────────────────────────────────
 
@@ -171,6 +236,7 @@ export default function GamePage() {
   // ── Between-at-bat events ──────────────────────────────────────────────────
 
   function handleBetweenEvent(ev: BetweenEvent) {
+    if (ev === activeEvent) { setActiveEvent(null); setPickedRunner(''); return }
     if (ev === 'BALK') {
       const snapshot = captureSnapshot()
       const runScored = !!bases.third
@@ -188,7 +254,9 @@ export default function GamePage() {
       }
       setHistory(h => [...h, { snapshot }]); return
     }
-    setActiveEvent(ev); setPickedRunner('')
+    const runners = (['first', 'second', 'third'] as BaseKey[]).filter(k => !!bases[k])
+    setActiveEvent(ev)
+    setPickedRunner(runners.length === 1 ? runners[0] : '')
   }
 
   function confirmBetweenEvent() {
@@ -212,7 +280,6 @@ export default function GamePage() {
       }
       setHistory(h => [...h, { snapshot }])
     } else {
-      // CS — runner is out
       setBases(prev => { const next = { ...prev }; delete next[pickedRunner]; return next })
       const newOuts = outs + 1
       if (newOuts >= 3) { setHistory(h => [...h, { snapshot }]); advanceHalf() }
@@ -231,7 +298,6 @@ export default function GamePage() {
     if (!selectedResult) return
     const snapshot = captureSnapshot()
 
-    // RBI count
     let rbiCount = 0
     if (selectedResult === 'HR') {
       rbiCount = [bases.first, bases.second, bases.third].filter(Boolean).length + 1
@@ -242,7 +308,6 @@ export default function GamePage() {
       rbiCount = 1
     }
 
-    // Persist to DB
     let inning = innings?.find(i => i.inningNumber === inningNumber && i.half === half)
     let newInningId: string | undefined
     if (!inning) {
@@ -253,7 +318,9 @@ export default function GamePage() {
     const existingAtBats = await db.atBats.where('inningId').equals(inning.id).toArray()
     const atBatId = crypto.randomUUID()
     const atBat: LocalAtBat = {
-      id: atBatId, inningId: inning.id, batterId: currentBatterId,
+      id: atBatId, inningId: inning.id,
+      batterId: currentBatterId,
+      pitcherId: currentPitcherId,
       result: selectedResult, rbiCount, sequenceNumber: existingAtBats.length + 1,
       createdAt: now(), updatedAt: now(), _dirty: true,
     }
@@ -272,7 +339,6 @@ export default function GamePage() {
         game.awayScore + (!home ? rbiCount : 0))
     }
 
-    // Compute new bases
     let newBases: Bases = {}
     if (selectedResult === 'HR') {
       newBases = {}
@@ -287,10 +353,6 @@ export default function GamePage() {
       }
       const batterBase: Record<string, BaseKey> = { '1B':'first','2B':'second','3B':'third','ROE':'first','FC':'first' }
       if (batterBase[selectedResult]) newBases[batterBase[selectedResult]] = currentBatterId
-    } else if (selectedResult === 'GDP') {
-      newBases = { ...bases }
-      if (newBases.first) delete newBases.first
-      else if (newBases.second) delete newBases.second
     } else {
       newBases = { ...bases }
     }
@@ -320,6 +382,11 @@ export default function GamePage() {
   }
 
   async function handleFinalizeGame() {
+    clearGameState(gameId!)
+    try {
+      localStorage.removeItem(`baseball-pitcher-home-${gameId}`)
+      localStorage.removeItem(`baseball-pitcher-away-${gameId}`)
+    } catch {}
     await gameService.updateStatus(gameId!, 'final')
     navigate(`/games/${gameId}/summary`)
   }
@@ -334,6 +401,9 @@ export default function GamePage() {
   const needsFielders = selectedResult && OUTS_RESULTS.has(selectedResult) &&
     selectedResult !== 'K' && selectedResult !== 'KL'
 
+  // Pitcher shown on the fielding team's side in the scoreboard
+  const pitcherLabel  = currentPitcher ? currentPitcher.name : null
+
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 z-10">
 
@@ -347,11 +417,19 @@ export default function GamePage() {
           </div>
         </div>
         <div className="flex items-center justify-between px-2">
+          {/* Away team */}
           <div className="text-center min-w-[80px]">
             <p className="text-xs text-white/60 mb-0.5">{awayName}</p>
             <p className={`text-4xl font-bold tabular-nums ${half === 'top' ? 'text-white' : 'text-white/40'}`}>{game.awayScore}</p>
-            {half === 'top' && <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>}
+            {half === 'top'
+              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>
+              : pitcherLabel
+                ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5 truncate max-w-[80px]">⚾ {pitcherLabel}</p>
+                : null
+            }
           </div>
+
+          {/* Center: inning / diamond / outs */}
           <div className="flex flex-col items-center gap-1">
             <p className="text-xs text-white/60">{half === 'top' ? '▲' : '▼'} {inningNumber}</p>
             <ScoreboardDiamond bases={bases} />
@@ -361,10 +439,17 @@ export default function GamePage() {
               ))}
             </div>
           </div>
+
+          {/* Home team */}
           <div className="text-center min-w-[80px]">
             <p className="text-xs text-white/60 mb-0.5">{homeName}</p>
             <p className={`text-4xl font-bold tabular-nums ${half === 'bottom' ? 'text-white' : 'text-white/40'}`}>{game.homeScore}</p>
-            {half === 'bottom' && <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>}
+            {half === 'bottom'
+              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>
+              : pitcherLabel
+                ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5 truncate max-w-[80px]">⚾ {pitcherLabel}</p>
+                : null
+            }
           </div>
         </div>
       </div>
@@ -376,7 +461,16 @@ export default function GamePage() {
             <p className="text-[10px] font-semibold text-brand-500 uppercase tracking-wider mb-0.5">
               At bat · {half === 'top' ? awayName : homeName} #{batterIndex % (currentLineup.length || 1) + 1}
             </p>
-            <p className="text-xl font-bold text-gray-900 leading-tight">{currentBatter?.name ?? '—'}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xl font-bold text-gray-900 leading-tight">{currentBatter?.name ?? '—'}</p>
+              {currentBatterHistory && currentBatterHistory.map((ab, i) => {
+                const r = ab.result!
+                const color = ['1B','2B','3B','HR'].includes(r) ? 'bg-green-100 text-green-700' :
+                              ['BB','HBP','ROE','FC'].includes(r) ? 'bg-blue-100 text-blue-600' :
+                              'bg-red-100 text-red-500'
+                return <span key={i} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${color}`}>{r}</span>
+              })}
+            </div>
             <p className="text-xs text-gray-400 mt-0.5">
               {[currentBatter?.jerseyNumber ? `#${currentBatter.jerseyNumber}` : null, currentBatter?.primaryPosition].filter(Boolean).join(' · ')}
             </p>
@@ -400,10 +494,11 @@ export default function GamePage() {
           <div className="grid grid-cols-4 gap-2">
             {RESULT_BUTTONS.map(btn => {
               const blockedBy2Outs = !!btn.no2Outs && outs === 2
+              const blocked = blockedBy2Outs || (!!btn.needsRunner && runnersOnBase.length === 0)
               return (
-                <button key={btn.value} onClick={() => !blockedBy2Outs && handleResultSelect(btn.value)}
+                <button key={btn.value} onClick={() => !blocked && handleResultSelect(btn.value)}
                   className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                    blockedBy2Outs
+                    blocked
                       ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
                       : selectedResult === btn.value
                         ? btn.color === 'btn-out' ? 'bg-red-500 border-red-500 text-white'
@@ -496,7 +591,7 @@ export default function GamePage() {
           players={players}
           homeName={homeName}
           awayName={awayName}
-          onClose={() => setShowSub(false)}
+          onClose={handleSubClose}
         />
       )}
 
