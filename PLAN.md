@@ -111,6 +111,61 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
 
 > **Never downgrade the Dexie version number.**
 
+### Dexie migration convention
+
+Every Dexie version bump must include an `upgrade()` handler alongside the schema change. The handler's job is to leave local IndexedDB in a consistent state so that the pull-then-sync chain succeeds on first open after update.
+
+**Rules:**
+1. **Always mark affected records `_dirty: true`** in the upgrade handler. This guarantees they are re-pushed to Supabase with the correct new shape, even if they were previously synced.
+2. **Populate defaults locally where possible.** If the new field can be derived from existing local data (e.g. a computed flag, a renamed field), do it in the upgrade handler so sync sends correct data immediately.
+3. **Never call Supabase from the upgrade handler.** The DB is not open yet and there is no auth session. For fields that require server data (e.g. a foreign key like `leagueId`), mark records dirty and rely on `pullFromServer()` → `stampMissingLeagueIds()` (or equivalent) to fill the value before sync runs.
+4. **Pair every Dexie bump with a Supabase migration.** The two must be released together. The Supabase migration adds/alters the column; the Dexie upgrade transforms local data.
+
+**Template:**
+```ts
+.version(N)
+.stores({
+  // full schema as always — Dexie requires the complete store definition each version
+  teams: 'id, userId, leagueId, newField',
+  // ...other stores unchanged...
+})
+.upgrade(async tx => {
+  // 1. Transform local data where the value is computable
+  await tx.table('teams').toCollection().modify(team => {
+    team.newField = deriveDefault(team)   // compute from existing local data
+    team._dirty = true                   // always mark dirty
+  })
+
+  // 2. For fields requiring server data, just mark dirty — pullFromServer
+  //    will fetch the authoritative value and stampMissing* will fill it in
+  await tx.table('seasons').toCollection().modify(season => {
+    season._dirty = true
+  })
+})
+```
+
+**Ordering guarantee on app open after update:**
+```
+Dexie upgrade handler (sync, before app mounts)
+  → app mounts, user authenticated
+  → pullFromServer()
+      → pull leagues (or whatever the dependency is)
+      → stampMissing*() fills server-dependent fields on dirty records
+  → syncAll() pushes dirty records with correct shape
+```
+
+**What v7 should have had (not retroactively fixed, documented for reference):**
+```ts
+.version(7).stores({ leagues: 'id, createdBy', teams: '...leagueId', ... })
+.upgrade(async tx => {
+  // Couldn't populate leagueId (requires Supabase), but should have marked dirty
+  // so stampMissingLeagueIds() in pullFromServer() would handle it reliably
+  await tx.table('teams').toCollection().modify(t => { t._dirty = true })
+  await tx.table('seasons').toCollection().modify(s => { s._dirty = true })
+  await tx.table('games').toCollection().modify(g => { g._dirty = true })
+})
+```
+
 ---
 
 ## Feature Breakdown
@@ -217,15 +272,26 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
 - [ ] Run `npm run migrate` on production
 - [ ] Run `npm run deploy-functions` (league-invite Edge Function)
 
-### Phase 6a - User admin + Soft open (invite only) ❌
+### Phase 7 — Remaining Features ❌
 - [ ] Only people with an invite can create a user and join the app (At the moment we are using free tier cloud and payed AI. We don't want to run into rate limits)
   - Site admin can create invite link
   - Site admin can view created users and manage (delete) them
+- [x] Leaugueid should not be nullable. This is probably held over from before League existed
+- [ ] Setup development supabase environment
+- [ ] Check if client is latest version
+- [ ] Dark mode
+- [ ] Import schedule (nice to have)
 
-### Phase 7 — Quality & Testing ❌
+### Phase 8 — Quality & Testing ❌
+- [ ] **Client versioning & update detection**
+  - Add `VITE_APP_VERSION` env var set at build time (semver, e.g. `1.0.0`)
+  - Add `app_config` Supabase table with a `minimum_client_version` row; bump only on breaking migrations
+  - Check version at top of `syncAll()` — if client is behind, throw a typed error and stop sync
+  - Show blocking "Please refresh your app" banner in `AppShell` when that error is detected
+  - Wire up vite-plugin-pwa update prompt so users are notified of new SW versions immediately
 - [ ] **Extend unit tests** (Vitest — currently 88 tests on baseballLogic.ts)
   - statsCalc.ts: batting/pitching calculation edge cases
-  - sync.ts: dirty flag, pull-prune, leagueId fallback logic
+  - sync.ts: dirty flag, pull-prune, leagueId stamp logic
   - teamService / seasonService / gameService
 - [ ] **E2E tests** (Playwright — not yet installed)
   - Auth: sign in, sign out
@@ -233,6 +299,7 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
   - League switching: verify data isolation between leagues
   - Invite flow: generate link → accept → member appears
   - Offline → back online → sync resolves correctly
+  - Version gate: old client blocked with banner
 - [ ] **Code review pass**
   - Add React error boundaries (none exist)
   - Audit missing loading/empty states across all pages
@@ -240,15 +307,14 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
   - Performance: large useLiveQuery queries, unnecessary re-renders
   - Security: RLS policy audit, Edge Function input validation
   - Dead code and unused imports cleanup
-  - Remove alert/confirm dialogs with modals
+- [ ] **Dexie migration convention audit** — verify all future version bumps include an `upgrade()` handler per the convention documented above
 
-### Phase 8 — Deployment & Polish ❌
+### Phase 9 — Deployment & Polish ❌
 - [ ] DNS A record: `baseball.mourits.nu` → server IP
 - [ ] Install Nginx; configure virtual host
 - [ ] Certbot SSL (`sudo certbot --nginx -d baseball.mourits.nu`)
 - [ ] GitHub Actions secrets + push-to-deploy pipeline
 - [ ] PWA install prompt (iOS and Android)
-- [ ] End-to-end mobile testing (Safari iOS, Chrome Android)
 
 ---
 
@@ -265,16 +331,7 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
 | Multi-tenancy | League as top-level container | Enables multiple leagues per user and scorer invites |
 | RLS | security definer helper functions | Avoids bootstrap problem; inline subqueries can't bypass RLS |
 | League switching | localStorage + StorageEvent | Simple; reactive across components without context provider |
+| Client versioning | Semver env var + Supabase minimum version | Blocks stale clients before they can corrupt data with a mismatched schema |
+| Dexie migrations | `upgrade()` handler required per version bump | Ensures local data is consistent before first sync after update |
 | Dialogs | Custom `ConfirmDialog` (no browser confirm/alert) | Consistent styling; better UX |
 | UI framework | Tailwind CSS only | Sufficient at current complexity |
-
----
-
-## Must haves
-- [x] leaugueid should not be nullable. This is probably held over from before League existed
-- [ ] setup development supabase environment
-- [ ] check if client is latest version
-
-## Nice to haves (todos)
-- [ ] Dark mode
-- [ ] import schedule
