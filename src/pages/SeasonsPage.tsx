@@ -47,7 +47,7 @@ export default function SeasonsPage() {
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Seasons</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Seasons</h1>
         <button
           onClick={() => setShowForm(v => !v)}
           className="bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors"
@@ -57,10 +57,10 @@ export default function SeasonsPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3 shadow-sm">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 border border-gray-200 rounded-xl p-4 mb-4 space-y-3 shadow-sm">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Name <span className="text-red-400 dark:text-red-300">*</span>
             </label>
             <input
               autoFocus
@@ -69,17 +69,17 @@ export default function SeasonsPage() {
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Spring 2026"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
             <input
               type="number"
               value={year}
               onChange={e => setYear(e.target.value)}
               placeholder="e.g. 2026"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <div className="flex gap-2">
@@ -93,7 +93,7 @@ export default function SeasonsPage() {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-gray-100 text-gray-600 dark:text-gray-400 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
@@ -106,13 +106,13 @@ export default function SeasonsPage() {
           {seasons.map(season => (
             <li
               key={season.id}
-              className={`bg-white rounded-xl border shadow-sm px-4 py-3 flex items-center gap-3 ${
-                season.isActive ? 'border-brand-500 ring-1 ring-brand-500' : 'border-gray-100'
+              className={`bg-white dark:bg-gray-800 rounded-xl border shadow-sm px-4 py-3 flex items-center gap-3 ${
+                season.isActive ? 'border-brand-500 dark:border-blue-500 ring-1 ring-brand-500 dark:ring-blue-400' : 'border-gray-100 dark:border-gray-700'
               }`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 truncate">{season.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{season.name}</p>
                   {season.isActive && (
                     <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-medium">
                       Active
@@ -127,7 +127,7 @@ export default function SeasonsPage() {
               {!season.isActive && (
                 <button
                   onClick={() => handleSetActive(season.id)}
-                  className="text-xs text-brand-500 hover:text-brand-600 font-medium px-2 py-1 transition-colors"
+                  className="text-xs text-brand-500 dark:text-brand-100 hover:text-brand-600 dark:hover:text-brand-100 font-medium px-2 py-1 transition-colors"
                 >
                   Set active
                 </button>

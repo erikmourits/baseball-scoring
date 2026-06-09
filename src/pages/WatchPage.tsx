@@ -36,9 +36,9 @@ interface WatchAtBat {
 // ── Result chip color ─────────────────────────────────────────────────────────
 
 function chipColor(r: string) {
-  if (['1B','2B','3B','HR'].includes(r)) return 'bg-green-100 text-green-700'
+  if (['1B','2B','3B','HR'].includes(r)) return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
   if (['BB','HBP','ROE','FC'].includes(r)) return 'bg-blue-100 text-blue-600'
-  return 'bg-red-100 text-red-500'
+  return 'bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400'
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -93,9 +93,9 @@ export default function WatchPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-5xl mb-4">⚾</div>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Game not found</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Game not found</h1>
         <p className="text-sm text-gray-400">{error}</p>
       </div>
     )
@@ -103,8 +103,8 @@ export default function WatchPage() {
 
   if (!game) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-500 dark:border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -121,11 +121,11 @@ export default function WatchPage() {
   }))
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Live banner */}
       {isLive && (
         <div className="bg-red-500 text-white text-xs text-center py-1.5 flex items-center justify-center gap-2 font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
           LIVE · Updates every 5 seconds
         </div>
       )}
@@ -161,14 +161,14 @@ export default function WatchPage() {
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                   {inning.half === 'top' ? '▲' : '▼'} Inning {inning.inning_number}
                 </p>
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50">
                   {abs.length === 0 && (
                     <p className="text-xs text-gray-300 text-center py-3">No at-bats yet</p>
                   )}
                   {abs.map((ab, i) => (
                     <div key={ab.id} className="flex items-center gap-3 px-3 py-2.5">
                       <span className="text-xs text-gray-300 tabular-nums w-4">{i + 1}</span>
-                      <span className="flex-1 text-sm text-gray-700">{ab.batter?.name ?? '—'}</span>
+                      <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{ab.batter?.name ?? '—'}</span>
                       {ab.rbi_count > 0 && (
                         <span className="text-[10px] text-gray-400">{ab.rbi_count} RBI</span>
                       )}

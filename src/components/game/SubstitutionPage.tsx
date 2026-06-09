@@ -30,14 +30,14 @@ function SubSortableRow({ entry, index, playerName, position, onPositionChange, 
     useSortable({ id: entry.id })
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-1.5 bg-white rounded-xl border px-2 py-3 ${
-        isDragging ? 'border-brand-400 shadow-lg z-10' : 'border-gray-100 shadow-sm'}`}>
+      className={`flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-xl border px-2 py-3 ${
+        isDragging ? 'border-brand-400 dark:border-blue-500 shadow-lg z-10' : 'border-gray-100 dark:border-gray-700 shadow-sm'}`}>
       <span className="text-gray-300 font-medium w-5 text-sm text-right shrink-0">{index + 1}</span>
       <div className="flex-1 min-w-0 px-1">
-        <p className="font-medium text-gray-900 truncate text-sm">{playerName}</p>
+        <p className="font-medium text-gray-900 dark:text-gray-100 truncate text-sm">{playerName}</p>
       </div>
       <select value={position ?? ''} onChange={e => onPositionChange(e.target.value)}
-        className="text-sm border border-gray-200 rounded-lg px-1.5 py-1.5 text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0">
+        className="text-sm border border-gray-200 rounded-lg px-1.5 py-1.5 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0">
         <option value="">—</option>
         {SUB_POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
       </select>
@@ -153,7 +153,7 @@ export function SubstitutionPage({
   const missingPositions = REQUIRED_POSITIONS.filter(p => !assignedPositions.has(p))
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-50 z-20">
+    <div className="fixed inset-0 flex flex-col bg-gray-50 dark:bg-gray-900 z-20">
       <div className="bg-brand-700 text-white px-4 pt-3 pb-4">
         <div className="flex items-center justify-between mb-3">
           <button onClick={onClose} className="text-white/70 text-sm">‹ Cancel</button>
@@ -196,12 +196,12 @@ export function SubstitutionPage({
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">Bench</p>
             <ul className="space-y-2 mb-4">
               {subState.bench.map(entry => (
-                <li key={entry.id} className="flex items-center gap-3 bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
+                <li key={entry.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-700 truncate text-sm">{players[entry.playerId]?.name ?? '?'}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300 truncate text-sm">{players[entry.playerId]?.name ?? '?'}</p>
                   </div>
                   <button onClick={() => moveToLineup(entry.id)}
-                    className="text-xs bg-brand-50 text-brand-600 hover:bg-brand-100 font-medium px-3 py-1.5 rounded-lg border border-brand-200 shrink-0 transition-colors">
+                    className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 dark:text-brand-100 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-700 shrink-0 transition-colors">
                     → Lineup
                   </button>
                 </li>
@@ -211,8 +211,8 @@ export function SubstitutionPage({
         )}
 
         {missingPositions.length > 0 && subState.starters.length > 0 && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <p className="text-sm font-medium text-amber-700">Missing field positions</p>
+          <div className="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Missing field positions</p>
             <p className="text-xs text-amber-600 mt-0.5">{missingPositions.join(', ')}</p>
           </div>
         )}

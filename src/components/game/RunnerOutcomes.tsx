@@ -61,11 +61,11 @@ export function RunnerOutcomes({
       <div className="flex gap-3 items-start">
         <div className="flex flex-col gap-3 flex-1">
           {isHR && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border-2 border-green-300 rounded-xl">
+            <div className="flex items-center gap-3 px-4 py-3 bg-green-50 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl">
               <span className="text-green-500 text-lg">✓</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-800 truncate">{currentBatterName ?? 'Batter'}</p>
-                <p className="text-xs text-green-600">Home run — batter scores</p>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{currentBatterName ?? 'Batter'}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Home run — batter scores</p>
               </div>
             </div>
           )}
@@ -76,11 +76,11 @@ export function RunnerOutcomes({
 
             if (isHR) {
               return (
-                <div key={k} className="flex items-center gap-3 px-4 py-3 bg-green-50 border-2 border-green-300 rounded-xl">
+                <div key={k} className="flex items-center gap-3 px-4 py-3 bg-green-50 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl">
                   <span className="text-green-500 text-lg">✓</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-green-800 truncate">{runner?.name ?? '?'}</p>
-                    <p className="text-xs text-green-600">on {baseLabel(k)}</p>
+                    <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{runner?.name ?? '?'}</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">on {baseLabel(k)}</p>
                   </div>
                 </div>
               )
@@ -88,11 +88,11 @@ export function RunnerOutcomes({
 
             const options = getAvailableOptions(k, runnerId, bases, runnerOutcomes, batterDest, selectedResult)
             return (
-              <div key={k} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+              <div key={k} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${
-                    dest === 'score' ? 'bg-green-500' : dest && dest !== 'hold' ? 'bg-yellow-400' : 'bg-gray-300'}`} />
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                    dest === 'score' ? 'bg-green-500' : dest && dest !== 'hold' ? 'bg-yellow-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                     {runner?.name ?? '?'} <span className="text-xs text-gray-400 font-normal">from {baseLabel(k)}</span>
                   </p>
                 </div>
@@ -105,10 +105,10 @@ export function RunnerOutcomes({
                           : opt === 'out'   ? 'bg-red-500 border-red-500 text-white'
                           : opt === 'hold'  ? 'bg-gray-500 border-gray-500 text-white'
                           :                   'bg-yellow-400 border-yellow-400 text-white'
-                          : opt === 'score' ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
-                          : opt === 'out'   ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                          : opt === 'hold'  ? 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                          :                   'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100'
+                          : opt === 'score' ? 'bg-green-50 dark:bg-green-900/30 border-green-200 text-green-600 dark:text-green-400 hover:bg-green-100'
+                          : opt === 'out'   ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100'
+                          : opt === 'hold'  ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          :                   'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100'
                       }`}>
                       {DEST_LABEL[opt]}
                     </button>

@@ -12,9 +12,9 @@ const HIT_RESULTS   = new Set(['1B', '2B', '3B', 'HR'])
 const NO_AB_RESULTS = new Set(['BB', 'HBP', 'SAC', 'SF'])
 
 function resultColor(r: string) {
-  if (HIT_RESULTS.has(r))   return 'bg-green-100 text-green-700'
+  if (HIT_RESULTS.has(r))   return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
   if (NO_AB_RESULTS.has(r)) return 'bg-blue-100 text-blue-700'
-  return 'bg-red-100 text-red-600'
+  return 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ export default function GameSummaryPage() {
     <div className="p-4 pb-10 max-w-2xl mx-auto">
 
       {/* Back */}
-      <button onClick={() => navigate('/')} className="text-brand-500 text-sm font-medium mb-4 flex items-center gap-1">
+      <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
         ‹ Games
       </button>
 
@@ -217,7 +217,7 @@ export default function GameSummaryPage() {
         {game.status !== 'final' && isLive && (
           <div className="flex justify-center mt-3">
             <span className="flex items-center gap-1.5 text-xs bg-red-500/80 px-3 py-1 rounded-full font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
               LIVE
             </span>
           </div>
@@ -226,39 +226,39 @@ export default function GameSummaryPage() {
 
       {/* Linescore */}
       {linescore.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-5 overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm mb-5 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-700">
                 <th className="text-left px-4 py-2 text-gray-400 font-medium w-20">Team</th>
                 {inningCols.map(n => (
                   <th key={n} className="text-center px-1.5 py-2 text-gray-400 font-medium w-8">{n}</th>
                 ))}
-                <th className="text-center px-2 py-2 text-gray-700 font-semibold border-l border-gray-100 w-8">R</th>
+                <th className="text-center px-2 py-2 text-gray-700 dark:text-gray-300 font-semibold border-l border-gray-100 dark:border-gray-700 w-8">R</th>
                 <th className="text-center px-2 py-2 text-gray-400 font-medium w-8">H</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-gray-50">
-                <td className="px-4 py-2.5 font-medium text-gray-700 truncate max-w-[80px]">{awayName}</td>
+              <tr className="border-b border-gray-50 dark:border-gray-800">
+                <td className="px-4 py-2.5 font-medium text-gray-700 dark:text-gray-300 truncate max-w-[80px]">{awayName}</td>
                 {linescore.map(l => (
-                  <td key={l.inningNum} className="text-center px-1.5 py-2.5 text-gray-600 tabular-nums">
+                  <td key={l.inningNum} className="text-center px-1.5 py-2.5 text-gray-600 dark:text-gray-400 tabular-nums">
                     {l.awayRuns > 0 ? l.awayRuns : <span className="text-gray-300">·</span>}
                   </td>
                 ))}
-                <td className={`text-center px-2 py-2.5 font-bold tabular-nums border-l border-gray-100 ${awayWon ? 'text-brand-600' : 'text-gray-700'}`}>
+                <td className={`text-center px-2 py-2.5 font-bold tabular-nums border-l border-gray-100 dark:border-gray-700 ${awayWon ? 'text-brand-600' : 'text-gray-700 dark:text-gray-300'}`}>
                   {game.awayScore}
                 </td>
                 <td className="text-center px-2 py-2.5 text-gray-500 tabular-nums">{awayHits}</td>
               </tr>
               <tr>
-                <td className="px-4 py-2.5 font-medium text-gray-700 truncate max-w-[80px]">{homeName}</td>
+                <td className="px-4 py-2.5 font-medium text-gray-700 dark:text-gray-300 truncate max-w-[80px]">{homeName}</td>
                 {linescore.map(l => (
-                  <td key={l.inningNum} className="text-center px-1.5 py-2.5 text-gray-600 tabular-nums">
+                  <td key={l.inningNum} className="text-center px-1.5 py-2.5 text-gray-600 dark:text-gray-400 tabular-nums">
                     {l.homeRuns > 0 ? l.homeRuns : <span className="text-gray-300">·</span>}
                   </td>
                 ))}
-                <td className={`text-center px-2 py-2.5 font-bold tabular-nums border-l border-gray-100 ${homeWon ? 'text-brand-600' : 'text-gray-700'}`}>
+                <td className={`text-center px-2 py-2.5 font-bold tabular-nums border-l border-gray-100 dark:border-gray-700 ${homeWon ? 'text-brand-600' : 'text-gray-700 dark:text-gray-300'}`}>
                   {game.homeScore}
                 </td>
                 <td className="text-center px-2 py-2.5 text-gray-500 tabular-nums">{homeHits}</td>
@@ -277,8 +277,8 @@ export default function GameSummaryPage() {
 
           {/* Batting */}
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Batting</p>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
-            <div className="flex items-center px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-400">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+            <div className="flex items-center px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-400">
               <span className="w-5 shrink-0 mr-3">#</span>
               <span className="flex-1">Player</span>
               <span className="w-8 text-center">AB</span>
@@ -289,18 +289,18 @@ export default function GameSummaryPage() {
               <p className="text-sm text-gray-400 px-4 py-4 text-center">No batting data recorded.</p>
             )}
             {batters.map((b, i) => (
-              <div key={b.playerId} className={`px-4 py-3 ${i < batters.length - 1 ? 'border-b border-gray-50' : ''}`}>
+              <div key={b.playerId} className={`px-4 py-3 ${i < batters.length - 1 ? 'border-b border-gray-50 dark:border-gray-800' : ''}`}>
                 <div className="flex items-center mb-1.5">
                   <span className="text-gray-300 text-xs w-5 shrink-0 mr-3 tabular-nums text-right">
                     {b.battingOrder > 0 ? b.battingOrder : '—'}
                   </span>
-                  <span className="flex-1 font-medium text-gray-800 text-sm truncate">
+                  <span className="flex-1 font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
                     {b.jerseyNumber ? <span className="text-gray-400 mr-1">#{b.jerseyNumber}</span> : null}
                     {b.name}
                   </span>
-                  <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{b.ab}</span>
-                  <span className="w-8 text-center text-sm font-medium text-gray-700 tabular-nums">{b.hits}</span>
-                  <span className="w-10 text-center text-sm text-gray-600 tabular-nums">{b.rbi}</span>
+                  <span className="w-8 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{b.ab}</span>
+                  <span className="w-8 text-center text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">{b.hits}</span>
+                  <span className="w-10 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{b.rbi}</span>
                 </div>
                 {b.results.length > 0 && (
                   <div className="flex flex-wrap gap-1 pl-8">
@@ -319,8 +319,8 @@ export default function GameSummaryPage() {
           {pitchers.length > 0 && (
             <>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Pitching</p>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-2">
-                <div className="flex items-center px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-400">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-2">
+                <div className="flex items-center px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-400">
                   <span className="flex-1">Pitcher</span>
                   <span className="w-12 text-center">ERA</span>
                   <span className="w-10 text-center">IP</span>
@@ -330,20 +330,20 @@ export default function GameSummaryPage() {
                 </div>
                 {pitchers.map((p, i) => (
                   <div key={p.playerId}
-                    className={`flex items-center px-4 py-3 ${i < pitchers.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                    <span className="flex-1 font-medium text-gray-800 text-sm truncate">
+                    className={`flex items-center px-4 py-3 ${i < pitchers.length - 1 ? 'border-b border-gray-50 dark:border-gray-800' : ''}`}>
+                    <span className="flex-1 font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
                       {p.decision && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mr-1.5 ${p.decision === 'W' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mr-1.5 ${p.decision === 'W' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'}`}>
                           {p.decision}
                         </span>
                       )}
                       {p.name}
                     </span>
-                    <span className="w-12 text-center text-sm text-gray-600 tabular-nums">{fmtEra(p.outs, p.era)}</span>
-                    <span className="w-10 text-center text-sm font-medium text-gray-700 tabular-nums">{fmtIp(p.outs)}</span>
-                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.h}</span>
-                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.r}</span>
-                    <span className="w-8 text-center text-sm text-gray-600 tabular-nums">{p.k}</span>
+                    <span className="w-12 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{fmtEra(p.outs, p.era)}</span>
+                    <span className="w-10 text-center text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">{fmtIp(p.outs)}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{p.h}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{p.r}</span>
+                    <span className="w-8 text-center text-sm text-gray-600 dark:text-gray-400 tabular-nums">{p.k}</span>
                   </div>
                 ))}
               </div>

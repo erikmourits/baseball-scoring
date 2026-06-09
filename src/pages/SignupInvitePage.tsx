@@ -68,11 +68,11 @@ export default function SignupInvitePage() {
         <h1 className="text-3xl font-bold text-white">Baseball Scoring</h1>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6">
+      <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
 
         {state === 'loading' && (
           <div className="flex justify-center py-6">
-            <div className="w-6 h-6 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-4 border-brand-500 dark:border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
@@ -80,29 +80,29 @@ export default function SignupInvitePage() {
           <>
             <div className="text-center mb-5">
               <div className="text-3xl mb-2">🎉</div>
-              <h2 className="text-lg font-semibold text-gray-900">You've been invited</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">You've been invited</h2>
               {inviteName && (
-                <p className="text-sm text-gray-500 mt-1">Invite for <strong>{inviteName}</strong></p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Invite for <strong>{inviteName}</strong></p>
               )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg">{error}</div>
+                <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">{error}</div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
                 <input
                   type="password"
                   required
@@ -110,7 +110,7 @@ export default function SignupInvitePage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
               <button
@@ -127,9 +127,9 @@ export default function SignupInvitePage() {
         {state === 'done' && (
           <div className="text-center py-4">
             <div className="text-3xl mb-2">✅</div>
-            <p className="font-medium text-gray-900">Account created!</p>
-            <p className="text-sm text-gray-500 mt-1 mb-4">You can now log in with your email and password.</p>
-            <button onClick={() => navigate('/auth')} className="text-sm text-brand-500">
+            <p className="font-medium text-gray-900 dark:text-gray-100">Account created!</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">You can now log in with your email and password.</p>
+            <button onClick={() => navigate('/auth')} className="text-sm text-brand-500 dark:text-brand-100">
               Go to login
             </button>
           </div>
@@ -138,9 +138,9 @@ export default function SignupInvitePage() {
         {state === 'error' && (
           <div className="text-center py-4">
             <div className="text-3xl mb-2">❌</div>
-            <p className="font-medium text-gray-900">Invite invalid</p>
-            <p className="text-sm text-gray-500 mt-1 mb-4">{error}</p>
-            <button onClick={() => navigate('/auth')} className="text-sm text-brand-500">
+            <p className="font-medium text-gray-900 dark:text-gray-100">Invite invalid</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">{error}</p>
+            <button onClick={() => navigate('/auth')} className="text-sm text-brand-500 dark:text-brand-100">
               Back to login
             </button>
           </div>

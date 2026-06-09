@@ -33,7 +33,7 @@ interface DialogState {
 }
 
 function inviteStatus(inv: SiteInvite): { label: string; color: string } {
-  if (inv.accepted_at) return { label: 'Accepted', color: 'text-green-600' }
+  if (inv.accepted_at) return { label: 'Accepted', color: 'text-green-600 dark:text-green-400' }
   if (new Date(inv.expires_at) < new Date()) return { label: 'Expired', color: 'text-gray-400' }
   return { label: 'Pending', color: 'text-yellow-600' }
 }
@@ -161,16 +161,16 @@ export default function AdminPage() {
     })
   }
 
-  if (!session) return <div className="p-6 text-gray-500 text-sm">Not signed in.</div>
-  if (loading)  return <div className="p-6 text-gray-500 text-sm">Loading…</div>
+  if (!session) return <div className="p-6 text-gray-500 dark:text-gray-400 text-sm">Not signed in.</div>
+  if (loading)  return <div className="p-6 text-gray-500 dark:text-gray-400 text-sm">Loading…</div>
 
   if (isAdmin === false) {
     return (
       <div className="p-6 max-w-lg mx-auto text-center">
         <p className="text-2xl mb-2">🚫</p>
-        <p className="text-gray-700 font-medium">Access denied</p>
-        <p className="text-sm text-gray-500 mt-1">You are not a site admin.</p>
-        <button onClick={() => navigate('/')} className="mt-4 text-sm text-brand-500">Go home</button>
+        <p className="text-gray-700 dark:text-gray-300 font-medium">Access denied</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">You are not a site admin.</p>
+        <button onClick={() => navigate('/')} className="mt-4 text-sm text-brand-500 dark:text-brand-100">Go home</button>
       </div>
     )
   }
@@ -179,13 +179,13 @@ export default function AdminPage() {
     <div className="p-6 max-w-lg mx-auto">
       <div className="flex items-center gap-2 mb-6">
         <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 text-sm">←</button>
-        <h1 className="text-xl font-bold text-gray-900">Site Admin</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Site Admin</h1>
       </div>
 
       {/* ── Create invite ─────────────────────────────────────────────────── */}
       <section className="mb-8">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Create invite link</h2>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Enter a name or label for this invite. The recipient chooses their own email when they follow the link.
         </p>
         <div className="flex gap-2">
@@ -194,7 +194,7 @@ export default function AdminPage() {
             onChange={e => setInvName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && createInvite()}
             placeholder="e.g. Jan de Vries"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
           />
           <button
             onClick={createInvite}
@@ -204,7 +204,7 @@ export default function AdminPage() {
             {invCopied ? '✅ Copied!' : invLoading ? 'Creating…' : 'Create & copy link'}
           </button>
         </div>
-        {invError && <p className="text-xs text-red-500 mt-1">{invError}</p>}
+        {invError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{invError}</p>}
       </section>
 
       {/* ── Invite list ───────────────────────────────────────────────────── */}
@@ -213,26 +213,26 @@ export default function AdminPage() {
         {invites.length === 0 ? (
           <p className="text-sm text-gray-400">No invites yet.</p>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm divide-y divide-gray-100 px-4">
             {invites.map(inv => {
               const { label, color } = inviteStatus(inv)
               const isPending = !inv.accepted_at && new Date(inv.expires_at) >= new Date()
               return (
                 <div key={inv.token} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm text-gray-900">{inv.name}</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{inv.name}</p>
                     <p className={`text-xs ${color}`}>
                       {label} · expires {new Date(inv.expires_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-3">
                     {isPending && (
-                      <button onClick={() => copyInviteLink(inv.token)} className="text-xs text-brand-500 hover:text-brand-700">
+                      <button onClick={() => copyInviteLink(inv.token)} className="text-xs text-brand-500 dark:text-brand-100 hover:text-brand-700 dark:hover:text-brand-100">
                         Copy link
                       </button>
                     )}
                     {isPending && (
-                      <button onClick={() => revokeInvite(inv.token)} className="text-xs text-red-500 hover:text-red-700">
+                      <button onClick={() => revokeInvite(inv.token)} className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400">
                         Revoke
                       </button>
                     )}
@@ -252,11 +252,11 @@ export default function AdminPage() {
         {users.length === 0 ? (
           <p className="text-sm text-gray-400">No users found.</p>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm divide-y divide-gray-100 px-4">
             {users.map(u => (
               <div key={u.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className={`text-sm ${u.banned ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                  <p className={`text-sm ${u.banned ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
                     {u.email}
                   </p>
                   <p className="text-xs text-gray-400">
@@ -269,7 +269,7 @@ export default function AdminPage() {
                 {u.id !== session.user.id && (
                   <button
                     onClick={() => setBanned(u.id, u.email, !u.banned)}
-                    className={`text-xs ${u.banned ? 'text-green-600 hover:text-green-800' : 'text-red-500 hover:text-red-700'}`}
+                    className={`text-xs ${u.banned ? 'text-green-600 dark:text-green-400 hover:text-green-800' : 'text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400'}`}
                   >
                     {u.banned ? 'Unban' : 'Ban'}
                   </button>

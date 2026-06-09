@@ -57,19 +57,19 @@ function SortablePlayer({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-1.5 bg-white rounded-xl border px-2 py-3 ${
-        isDragging ? 'border-brand-400 shadow-lg z-10' : 'border-gray-100 shadow-sm'
+      className={`flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-xl border px-2 py-3 ${
+        isDragging ? 'border-brand-400 shadow-lg z-10' : 'border-gray-100 dark:border-gray-700 shadow-sm'
       }`}
     >
       <span className="text-gray-300 font-medium w-5 text-sm text-right shrink-0">{index + 1}</span>
       <div className="flex-1 min-w-0 px-1">
-        <p className="font-medium text-gray-900 truncate text-sm">{player.name}</p>
+        <p className="font-medium text-gray-900 dark:text-gray-100 truncate text-sm">{player.name}</p>
         {player.jerseyNumber && <p className="text-xs text-gray-400">#{player.jerseyNumber}</p>}
       </div>
       <select
         value={position ?? ''}
         onChange={e => onPositionChange(e.target.value)}
-        className="text-sm border border-gray-200 rounded-lg px-1.5 py-1.5 text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0"
+        className="text-sm border border-gray-200 rounded-lg px-1.5 py-1.5 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0"
       >
         <option value="">—</option>
         {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -107,8 +107,8 @@ function AvailabilityStep({
 }) {
   return (
     <div className="p-4">
-      <button onClick={onBack} className="text-brand-500 text-sm font-medium mb-4">‹ Back</button>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Available players</h1>
+      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">‹ Back</button>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Available players</h1>
       <p className="text-sm text-gray-400 mb-4">{teamName} — who's playing today?</p>
 
       {players.length === 0 ? (
@@ -122,16 +122,16 @@ function AvailabilityStep({
                 <button
                   onClick={() => onToggle(player.id)}
                   className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                    checked ? 'bg-brand-50 border-brand-300' : 'bg-white border-gray-100 shadow-sm'
+                    checked ? 'bg-brand-50 dark:bg-blue-900/20 border-brand-300' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-sm'
                   }`}
                 >
                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
-                    checked ? 'bg-brand-500 border-brand-500' : 'border-gray-300'
+                    checked ? 'bg-brand-500 border-brand-500 dark:border-blue-500' : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {checked && <span className="text-white text-xs font-bold">✓</span>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{player.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{player.name}</p>
                     <p className="text-xs text-gray-400">
                       {[player.jerseyNumber ? `#${player.jerseyNumber}` : null, player.primaryPosition]
                         .filter(Boolean).join(' · ') || '—'}
@@ -181,8 +181,8 @@ function OrderStep({
 
   return (
     <div className="p-4">
-      <button onClick={onBack} className="text-brand-500 text-sm font-medium mb-4">‹ Back</button>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Lineup order</h1>
+      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">‹ Back</button>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Lineup order</h1>
       <p className="text-sm text-gray-400 mb-4">{teamName} — drag to reorder, pick position</p>
 
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Starting lineup</p>
@@ -212,14 +212,14 @@ function OrderStep({
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">Bench</p>
           <ul className="space-y-2 mb-4">
             {bench.map(player => (
-              <li key={player.id} className="flex items-center gap-3 bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
+              <li key={player.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-700 truncate text-sm">{player.name}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300 truncate text-sm">{player.name}</p>
                   {player.jerseyNumber && <p className="text-xs text-gray-400">#{player.jerseyNumber}</p>}
                 </div>
                 <button
                   onClick={() => onMoveToLineup(player.id)}
-                  className="text-xs bg-brand-50 text-brand-600 hover:bg-brand-100 font-medium px-3 py-1.5 rounded-lg border border-brand-200 shrink-0 transition-colors"
+                  className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-700 shrink-0 transition-colors"
                 >
                   → Lineup
                 </button>
@@ -230,8 +230,8 @@ function OrderStep({
       )}
 
       {missingPositions.length > 0 && starters.length > 0 && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <p className="text-sm font-medium text-amber-700">Missing field positions</p>
+        <div className="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Missing field positions</p>
           <p className="text-xs text-amber-600 mt-0.5">
             {missingPositions.join(', ')} — assign these before starting.
           </p>
@@ -270,15 +270,15 @@ function QuickAddToggle({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} <span className="text-red-400">*</span>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {label} <span className="text-red-400 dark:text-red-300">*</span>
       </label>
       <div className="flex rounded-lg border border-gray-200 overflow-hidden mb-3 text-sm">
         <button
           type="button"
           onClick={() => onToggle(false)}
           className={`flex-1 py-2 font-medium transition-colors ${
-            !isQuick ? 'bg-brand-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+            !isQuick ? 'bg-brand-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
           Known team
@@ -287,7 +287,7 @@ function QuickAddToggle({
           type="button"
           onClick={() => onToggle(true)}
           className={`flex-1 py-2 font-medium transition-colors ${
-            isQuick ? 'bg-brand-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+            isQuick ? 'bg-brand-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
           Quick add
@@ -297,7 +297,7 @@ function QuickAddToggle({
         <select
           value={teamId}
           onChange={e => setTeamId(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">— select team —</option>
           {teams
@@ -311,17 +311,17 @@ function QuickAddToggle({
             value={quickName}
             onChange={e => setQuickName(e.target.value)}
             placeholder={placeholder}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600 shrink-0">Batters in lineup</label>
+            <label className="text-sm text-gray-600 dark:text-gray-400 shrink-0">Batters in lineup</label>
             <input
               type="number"
               min={1}
               max={20}
               value={batterCount}
               onChange={e => setBatterCount(Math.max(1, parseInt(e.target.value) || 9))}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-20 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <p className="text-xs text-gray-400">
@@ -657,18 +657,18 @@ export default function NewGamePage() {
   if (step === 'info') {
     return (
       <div className="p-4">
-        <button onClick={() => navigate('/')} className="text-brand-500 text-sm font-medium mb-4">
+        <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">
           ‹ Cancel
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">New game</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">New game</h1>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Season</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Season</label>
             <select
               value={seasonId}
               onChange={e => setSeasonId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">— no season —</option>
               {(seasons ?? []).map(s => (
@@ -678,25 +678,25 @@ export default function NewGamePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date <span className="text-red-400 dark:text-red-300">*</span>
             </label>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
             <input
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="e.g. Sportpark De Bongerd"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 

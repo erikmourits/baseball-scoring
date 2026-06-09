@@ -12,8 +12,8 @@ const STATUS_LABEL: Record<string, string> = {
 }
 const STATUS_COLOR: Record<string, string> = {
   draft:       'bg-gray-100 text-gray-500',
-  in_progress: 'bg-amber-100 text-amber-700',
-  final:       'bg-green-100 text-green-700',
+  in_progress: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+  final:       'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
 }
 
 export default function HomePage() {
@@ -56,7 +56,7 @@ export default function HomePage() {
     return (
       <div className="p-4 text-center py-16">
         <p className="text-4xl mb-3">🏆</p>
-        <p className="text-xl font-bold text-gray-900 mb-1">Welcome!</p>
+        <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Welcome!</p>
         <p className="text-sm text-gray-500 mb-6">
           Set up a league to start scoring games. A league keeps your teams,
           seasons, and games together — and lets you invite other scorers.
@@ -78,7 +78,7 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Games</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Games</h1>
           {activeSeason && (
             <p className="text-sm text-gray-400">{activeSeason.name}</p>
           )}
@@ -94,7 +94,7 @@ export default function HomePage() {
             <button
               onClick={() => navigate('/games/upload')}
               title="Upload scorecard"
-              className="bg-gray-100 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors"
+              className="bg-gray-100 text-gray-600 dark:text-gray-400 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors"
             >
               📷
             </button>
@@ -110,7 +110,7 @@ export default function HomePage() {
           <p className="text-sm mb-4">Create a season before adding games.</p>
           <button
             onClick={() => navigate('/seasons')}
-            className="text-brand-500 text-sm font-medium hover:underline"
+            className="text-brand-500 dark:text-brand-100 text-sm font-medium hover:underline"
           >
             Go to Seasons →
           </button>
@@ -137,7 +137,7 @@ export default function HomePage() {
                 {/* Main game card */}
                 <button
                   onClick={() => navigate(game.status === 'final' ? `/games/${game.id}/summary` : `/games/${game.id}`)}
-                  className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 text-left hover:border-brand-400 transition-colors"
+                  className="flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 text-left hover:border-brand-400 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-400">
@@ -149,13 +149,13 @@ export default function HomePage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200">
                       <span>{away}</span>
                       <span className="text-gray-300">@</span>
                       <span>{home}</span>
                     </div>
                     {game.status !== 'draft' && (
-                      <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
                         {game.awayScore} – {game.homeScore}
                       </span>
                     )}
@@ -166,7 +166,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setDeletingId(game.id)}
                   aria-label="Delete game"
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -181,8 +181,8 @@ export default function HomePage() {
       {/* Delete confirm modal */}
       {deletingId && deletingGame && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-6 sm:pb-0">
-          <div className="bg-white rounded-2xl p-6 shadow-xl w-full max-w-sm">
-            <p className="font-semibold text-gray-900 mb-1">Delete game?</p>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-sm">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Delete game?</p>
             <p className="text-sm text-gray-500 mb-2">
               {teams?.[deletingGame.awayTeamId ?? ''] ?? '—'} @ {teams?.[deletingGame.homeTeamId ?? ''] ?? '—'}
               {' · '}
@@ -192,7 +192,7 @@ export default function HomePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingId(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancel
               </button>

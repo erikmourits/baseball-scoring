@@ -152,20 +152,20 @@ export default function InvitePage() {
       </p>
 
       {session ? (
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 text-center">
-          <p className="text-sm text-gray-500 mb-4">Logged in as <strong>{session.user.email}</strong></p>
+        <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Logged in as <strong>{session.user.email}</strong></p>
           <button onClick={acceptInvite}
             className="w-full bg-brand-500 text-white font-semibold py-3 rounded-xl hover:bg-brand-600 transition-colors">
             Join {contextName}
           </button>
         </div>
       ) : (
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6">
+        <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
           <div className="flex rounded-lg bg-gray-100 p-1 mb-5">
             {(['login', 'signup'] as const).map(m => (
               <button key={m} onClick={() => setAuthMode(m)}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  authMode === m ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  authMode === m ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400'
                 }`}>
                 {m === 'login' ? 'Log in' : 'Sign up'}
               </button>
@@ -174,18 +174,18 @@ export default function InvitePage() {
 
           <form onSubmit={handleAuth} className="space-y-4">
             {authError && (
-              <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg">{authError}</div>
+              <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">{authError}</div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="you@example.com" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
               <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="••••••••" />
             </div>
             <button type="submit" disabled={authLoading}

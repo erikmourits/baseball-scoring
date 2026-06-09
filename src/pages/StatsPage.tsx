@@ -16,7 +16,7 @@ export default function StatsPage() {
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <p className="text-5xl mb-4">📊</p>
-        <p className="text-gray-500 font-medium">No teams yet</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium">No teams yet</p>
         <p className="text-sm text-gray-400 mt-1">Add a team and record games to see stats here.</p>
       </div>
     )
@@ -30,15 +30,15 @@ export default function StatsPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Stats</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Stats</h1>
       <p className="text-sm text-gray-400 mb-5">Select a team to view player statistics.</p>
 
       <div className="space-y-2">
         {teams.map(team => (
           <button key={team.id} onClick={() => navigate(`/teams/${team.id}?tab=stats`)}
-            className="w-full bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-4 flex items-center justify-between hover:border-brand-300 transition-colors">
+            className="w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-4 flex items-center justify-between hover:border-brand-300 dark:hover:border-blue-600 transition-colors">
             <div className="text-left">
-              <p className="font-semibold text-gray-900">{team.name}</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100">{team.name}</p>
               {team.homeField && <p className="text-sm text-gray-400">{team.homeField}</p>}
             </div>
             <span className="text-gray-300 text-lg">›</span>

@@ -11,9 +11,9 @@ import {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-3 py-3 text-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-3 py-3 text-center">
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums leading-none">{value}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums leading-none">{value}</p>
       {sub && <p className="text-[10px] text-gray-400 mt-1">{sub}</p>}
     </div>
   )
@@ -23,9 +23,9 @@ function resultBadge(r: string) {
   const hits  = new Set(['1B', '2B', '3B', 'HR'])
   const reach = new Set(['BB', 'HBP', 'ROE', 'FC'])
   if (r === 'HR') return 'bg-green-600 text-white'
-  if (hits.has(r))  return 'bg-green-100 text-green-700'
+  if (hits.has(r))  return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
   if (reach.has(r)) return 'bg-blue-100 text-blue-700'
-  return 'bg-gray-100 text-gray-500'
+  return 'bg-gray-100 text-gray-500 dark:text-gray-400'
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -105,21 +105,21 @@ export default function PlayerStatsPage() {
 
   if (!player || !team || !teams) return <div className="p-4 text-gray-400">Loading…</div>
 
-  const opsColor = !seasonBatting ? 'text-gray-900'
+  const opsColor = !seasonBatting ? 'text-gray-900 dark:text-gray-100'
     : seasonBatting.ops >= 0.900 ? 'text-green-600'
     : seasonBatting.ops >= 0.700 ? 'text-yellow-600'
-    : 'text-red-500'
+    : 'text-red-500 dark:text-red-400'
 
   const hasPitching = (seasonPitching?.outs ?? 0) > 0
 
   return (
     <div className="p-4 pb-10">
-      <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 text-sm font-medium mb-4 flex items-center gap-1">
+      <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
         ‹ {team.name}
       </button>
 
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-900">{player.name}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{player.name}</h1>
         <p className="text-sm text-gray-400 mt-0.5">
           {[player.jerseyNumber ? `#${player.jerseyNumber}` : null, player.primaryPosition].filter(Boolean).join(' · ') || team.name}
         </p>
@@ -135,8 +135,8 @@ export default function PlayerStatsPage() {
             <StatCard label="OBP" value={fmtAvg(seasonBatting.obp)} />
             <StatCard label="SLG" value={fmtAvg(seasonBatting.slg)} />
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 mb-3 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-500">OPS</span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 mb-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">OPS</span>
             <span className={`text-2xl font-bold tabular-nums ${opsColor}`}>{fmtOps(seasonBatting.ops)}</span>
           </div>
           <div className="grid grid-cols-4 gap-2 mb-6">
@@ -151,7 +151,7 @@ export default function PlayerStatsPage() {
           </div>
         </>
       ) : (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-6 text-center mb-6">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-6 text-center mb-6">
           <p className="text-gray-400 text-sm">No at-bats recorded yet.</p>
         </div>
       )}
@@ -191,32 +191,32 @@ export default function PlayerStatsPage() {
               const pitched  = pitching.outs > 0
 
               return (
-                <div key={game.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+                <div key={game.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                         {isHome ? 'vs' : '@'} {opponent}
                       </p>
                       <p className="text-xs text-gray-400">
                         {new Date(game.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
                         {' · '}
-                        <span className={won ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>{won ? 'W' : 'L'}</span>
+                        <span className={won ? 'text-green-600 font-medium' : 'text-red-500 dark:text-red-400 font-medium'}>{won ? 'W' : 'L'}</span>
                         {' '}{score}
                       </p>
                     </div>
                     <div className="text-right">
                       {batting.ab > 0 ? (
                         <>
-                          <p className="text-sm font-bold text-gray-900 tabular-nums">{batting.h}/{batting.ab}</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">{batting.h}/{batting.ab}</p>
                           <p className="text-xs text-gray-400">{fmtAvg(batting.avg)}</p>
                         </>
                       ) : batting.pa > 0 ? (
                         <p className="text-xs text-gray-400">{batting.pa} PA</p>
                       ) : null}
                       {pitched && (
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {decision && (
-                            <span className={`font-bold mr-1 ${decision === 'W' ? 'text-green-600' : 'text-red-500'}`}>{decision}</span>
+                            <span className={`font-bold mr-1 ${decision === 'W' ? 'text-green-600' : 'text-red-500 dark:text-red-400'}`}>{decision}</span>
                           )}
                           {fmtIp(pitching.outs)} IP · {pitching.k}K {pitching.bb}BB
                           {' · '}{fmtEra(pitching.outs, pitching.era)} ERA

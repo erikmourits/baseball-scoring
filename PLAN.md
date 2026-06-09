@@ -376,7 +376,7 @@ To block an outdated client: bump `minimum_client_version` in the `app_config` t
 
 ---
 
-#### 7.4 — Dark mode ❌
+#### 7.4 — Dark mode ✅
 The app uses Tailwind CSS. Tailwind's `dark:` variant is the natural fit — it reads a `dark` class on `<html>` and the user's `prefers-color-scheme` media query.
 
 **Implementation:**

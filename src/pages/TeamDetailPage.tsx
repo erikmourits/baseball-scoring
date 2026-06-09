@@ -102,7 +102,7 @@ function StatsTab({ teamId }: { teamId: string }) {
           <select
             value={seasonId ?? ''}
             onChange={e => setSelectedSeasonId(e.target.value || undefined)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
             {seasons.map(s => (
               <option key={s.id} value={s.id}>
                 {s.name}{s.isActive ? ' (active)' : ''}
@@ -121,7 +121,7 @@ function StatsTab({ teamId }: { teamId: string }) {
         {(['batting', 'pitching'] as const).map(v => (
           <button key={v} onClick={() => setStatView(v)}
             className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-              statView === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              statView === v ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}>
             {v}
           </button>
@@ -129,14 +129,14 @@ function StatsTab({ teamId }: { teamId: string }) {
       </div>
 
       {noData ? (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-8 text-center">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-8 text-center">
           <p className="text-gray-400 text-sm">No {statView} stats recorded yet for this season.</p>
         </div>
       ) : statView === 'batting' ? (
         <div className="overflow-x-auto -mx-4">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-700">
                 <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Player</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">PA</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">AVG</th>
@@ -150,25 +150,25 @@ function StatsTab({ teamId }: { teamId: string }) {
             </thead>
             <tbody>
               {battingRows.map(({ player, line }, i) => {
-                const opsColor = line.ops >= 0.900 ? 'text-green-600 font-semibold'
+                const opsColor = line.ops >= 0.900 ? 'text-green-600 dark:text-green-400 font-semibold'
                   : line.ops >= 0.700 ? 'text-yellow-600'
-                  : 'text-red-500'
+                  : 'text-red-500 dark:text-red-400'
                 return (
                   <tr key={player.id}
-                    className={`border-b border-gray-50 cursor-pointer hover:bg-brand-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    className={`border-b border-gray-50 dark:border-gray-800 cursor-pointer hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors ${i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50'}`}
                     onClick={() => navigate(`/teams/${teamId}/players/${player.id}/stats${seasonId ? `?season=${seasonId}` : ''}`)}>
                     <td className="pl-4 pr-3 py-2.5">
-                      <p className="font-medium text-gray-900 truncate max-w-[100px]">{player.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">{player.name}</p>
                       {player.primaryPosition && <p className="text-xs text-gray-400">{player.primaryPosition}</p>}
                     </td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{line.pa}</td>
-                    <td className="px-2 py-2.5 text-right font-semibold text-gray-900 tabular-nums">{fmtAvg(line.avg)}</td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{fmtAvg(line.obp)}</td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{fmtAvg(line.slg)}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{line.pa}</td>
+                    <td className="px-2 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{fmtAvg(line.avg)}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{fmtAvg(line.obp)}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{fmtAvg(line.slg)}</td>
                     <td className={`px-2 py-2.5 text-right tabular-nums ${opsColor}`}>{fmtOps(line.ops)}</td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{line.hr}</td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{line.rbi}</td>
-                    <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums pr-4">{line.k}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{line.hr}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{line.rbi}</td>
+                    <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums pr-4">{line.k}</td>
                   </tr>
                 )
               })}
@@ -179,7 +179,7 @@ function StatsTab({ teamId }: { teamId: string }) {
         <div className="overflow-x-auto -mx-4">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-700">
                 <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Player</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">W</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">L</th>
@@ -192,18 +192,18 @@ function StatsTab({ teamId }: { teamId: string }) {
             <tbody>
               {pitchingRows.map(({ player, line, w, l }, i) => (
                 <tr key={player.id}
-                  className={`border-b border-gray-50 cursor-pointer hover:bg-brand-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                  className={`border-b border-gray-50 dark:border-gray-800 cursor-pointer hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors ${i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50'}`}
                   onClick={() => navigate(`/teams/${teamId}/players/${player.id}/stats${seasonId ? `?season=${seasonId}` : ''}`)}>
                   <td className="pl-4 pr-3 py-2.5">
-                    <p className="font-medium text-gray-900 truncate max-w-[100px]">{player.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">{player.name}</p>
                     {player.primaryPosition && <p className="text-xs text-gray-400">{player.primaryPosition}</p>}
                   </td>
-                  <td className="px-2 py-2.5 text-right font-semibold text-green-600 tabular-nums">{w}</td>
-                  <td className="px-2 py-2.5 text-right font-semibold text-red-500 tabular-nums">{l}</td>
-                  <td className="px-2 py-2.5 text-right text-gray-700 tabular-nums">{fmtEra(line.outs, line.era)}</td>
-                  <td className="px-2 py-2.5 text-right font-semibold text-gray-900 tabular-nums">{fmtIp(line.outs)}</td>
-                  <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums">{line.k}</td>
-                  <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums pr-4">{line.bb}</td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-green-600 dark:text-green-400 tabular-nums">{w}</td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-red-500 dark:text-red-400 tabular-nums">{l}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">{fmtEra(line.outs, line.era)}</td>
+                  <td className="px-2 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{fmtIp(line.outs)}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums">{line.k}</td>
+                  <td className="px-2 py-2.5 text-right text-gray-600 dark:text-gray-400 tabular-nums pr-4">{line.bb}</td>
                 </tr>
               ))}
             </tbody>
@@ -279,7 +279,7 @@ export default function TeamDetailPage() {
   return (
     <div className="p-4">
       {/* Back */}
-      <button onClick={() => navigate('/teams')} className="text-brand-500 text-sm font-medium mb-4 flex items-center gap-1">
+      <button onClick={() => navigate('/teams')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
         ‹ Teams
       </button>
 
@@ -287,13 +287,13 @@ export default function TeamDetailPage() {
       {editingName ? (
         <form onSubmit={handleRename} className="flex gap-2 mb-3">
           <input autoFocus value={nameValue} onChange={e => setNameValue(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-brand-500" />
           <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">Save</button>
-          <button type="button" onClick={() => setEditingName(false)} className="bg-gray-100 text-gray-600 px-4 rounded-lg font-medium text-sm">Cancel</button>
+          <button type="button" onClick={() => setEditingName(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">Cancel</button>
         </form>
       ) : (
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{team.name}</h1>
           <button onClick={() => { setNameValue(team.name); setEditingName(true) }} className="text-sm text-gray-400 hover:text-gray-600 px-2 py-1">Edit</button>
         </div>
       )}
@@ -303,16 +303,16 @@ export default function TeamDetailPage() {
         <form onSubmit={handleSaveHomeField} className="flex gap-2 mb-4">
           <input autoFocus value={homeFieldValue} onChange={e => setHomeFieldValue(e.target.value)}
             placeholder="e.g. Sportpark De Bongerd"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">Save</button>
-          <button type="button" onClick={() => setEditingHomeField(false)} className="bg-gray-100 text-gray-600 px-4 rounded-lg font-medium text-sm">Cancel</button>
+          <button type="button" onClick={() => setEditingHomeField(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">Cancel</button>
         </form>
       ) : (
         <div className="flex items-center justify-between mb-5 text-sm">
           <span className="text-gray-500">
             Home field:{' '}
             {team.homeField
-              ? <span className="text-gray-700 font-medium">{team.homeField}</span>
+              ? <span className="text-gray-700 dark:text-gray-300 font-medium">{team.homeField}</span>
               : <span className="text-gray-300 italic">not set</span>}
           </span>
           <button onClick={() => { setHomeFieldValue(team.homeField ?? ''); setEditingHomeField(true) }} className="text-gray-400 hover:text-gray-600 px-2 py-1">Edit</button>
@@ -324,7 +324,7 @@ export default function TeamDetailPage() {
         {(['roster', 'stats'] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-semibold capitalize border-b-2 -mb-px transition-colors ${
-              tab === t ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-400 hover:text-gray-600'
+              tab === t ? 'border-brand-500 dark:border-blue-500 text-brand-600' : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}>
             {t}
           </button>
@@ -345,8 +345,8 @@ export default function TeamDetailPage() {
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <span className="text-xs text-gray-400">Show inactive</span>
                 <div onClick={() => setShowArchived(v => !v)}
-                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${showArchived ? 'bg-brand-500' : 'bg-gray-200'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${showArchived ? 'translate-x-5' : 'translate-x-0'}`} />
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${showArchived ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-gray-800 rounded-full shadow transition-transform duration-200 ${showArchived ? 'translate-x-5' : 'translate-x-0'}`} />
                 </div>
               </label>
             )}
@@ -357,9 +357,9 @@ export default function TeamDetailPage() {
               {players && players.length > 0 ? (
                 <ul className="space-y-2 mb-4">
                   {players.map(player => (
-                    <li key={player.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                    <li key={player.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{player.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{player.name}</p>
                         <p className="text-sm text-gray-400">
                           {[
                             player.jerseyNumber ? `#${player.jerseyNumber}` : null,
@@ -369,7 +369,7 @@ export default function TeamDetailPage() {
                         </p>
                       </div>
                       <button onClick={() => navigate(`/teams/${teamId}/players/${player.id}`)}
-                        className="text-gray-400 hover:text-brand-500 text-sm px-1 transition-colors">✏️</button>
+                        className="text-gray-400 hover:text-brand-500 dark:hover:text-brand-100 text-sm px-1 transition-colors">✏️</button>
                       <button onClick={() => setPending({ type: 'archivePlayer', id: player.id, name: player.name })}
                         className="text-gray-300 hover:text-red-400 text-sm px-1 transition-colors">✕</button>
                     </li>
@@ -388,7 +388,7 @@ export default function TeamDetailPage() {
           {showArchived && (
             <ul className="space-y-2 mb-4">
               {archivedPlayers && archivedPlayers.length > 0 ? archivedPlayers.map(player => (
-                <li key={player.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                <li key={player.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-400 truncate">{player.name}</p>
                     <p className="text-sm text-gray-300">
@@ -396,7 +396,7 @@ export default function TeamDetailPage() {
                     </p>
                   </div>
                   <button onClick={() => handleRestorePlayer(player.id)}
-                    className="text-xs bg-brand-50 text-brand-600 hover:bg-brand-100 font-medium px-3 py-1.5 rounded-lg transition-colors border border-brand-200">
+                    className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg transition-colors border border-brand-200 dark:border-brand-700">
                     Reactivate
                   </button>
                 </li>
@@ -407,7 +407,7 @@ export default function TeamDetailPage() {
           )}
 
           <button onClick={() => setPending({ type: 'deleteTeam' })}
-            className="w-full text-red-400 text-sm py-2 hover:text-red-500 transition-colors">
+            className="w-full text-red-400 dark:text-red-300 text-sm py-2 hover:text-red-500 dark:hover:text-red-400 transition-colors">
             Delete this team
           </button>
         </>

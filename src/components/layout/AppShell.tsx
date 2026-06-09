@@ -19,7 +19,7 @@ function SyncBanner({ status, onSync }: {
   if (status === 'error') {
     return (
       <button onClick={onSync} className="w-full bg-red-600 text-white text-xs text-center py-1 px-3 flex items-center justify-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800" />
         Sync failed — tap to retry
       </button>
     )
@@ -49,7 +49,6 @@ function UpdateBanner({ onUpdate }: { onUpdate: () => void }) {
 export default function AppShell() {
   const { status, runSync, outdated } = useSync()
   const [showUpdate, setShowUpdate] = useState(false)
-
   const { updateServiceWorker } = useRegisterSW({
     onNeedRefresh() {
       setShowUpdate(true)
@@ -57,7 +56,7 @@ export default function AppShell() {
   })
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {outdated && <OutdatedBanner />}
       {!outdated && showUpdate && (
         <UpdateBanner onUpdate={() => updateServiceWorker(true)} />

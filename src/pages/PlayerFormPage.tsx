@@ -78,18 +78,18 @@ export default function PlayerFormPage() {
 
   return (
     <div className="p-4">
-      <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 text-sm font-medium mb-4 flex items-center gap-1">
+      <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
         ‹ Back
       </button>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
         {isEdit ? 'Edit Player' : 'Add Player'}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-400">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name <span className="text-red-400 dark:text-red-300">*</span></label>
           <input
             autoFocus
             type="text"
@@ -97,25 +97,25 @@ export default function PlayerFormPage() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Player name"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
 
         {/* Jersey number */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Jersey number</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jersey number</label>
           <input
             type="text"
             value={jersey}
             onChange={e => setJersey(e.target.value)}
             placeholder="e.g. 12"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
 
         {/* Primary position */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Primary position</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary position</label>
           <div className="flex flex-wrap gap-2">
             {ALL_POSITIONS.map(pos => (
               <button
@@ -124,8 +124,8 @@ export default function PlayerFormPage() {
                 onClick={() => handlePrimaryChange(pos === primary ? '' : pos)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
                   primary === pos
-                    ? 'bg-brand-500 text-white border-brand-500'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-brand-500'
+                    ? 'bg-brand-500 text-white border-brand-500 dark:border-blue-500'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-brand-500'
                 }`}
               >
                 {pos}
@@ -136,7 +136,7 @@ export default function PlayerFormPage() {
 
         {/* Secondary positions */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Secondary positions
             <span className="text-gray-400 font-normal ml-1">(can play)</span>
           </label>
@@ -149,7 +149,7 @@ export default function PlayerFormPage() {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
                   secondary.includes(pos)
                     ? 'bg-blue-100 text-blue-700 border-blue-300'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 hover:border-gray-400'
                 }`}
               >
                 {pos}
@@ -171,7 +171,7 @@ export default function PlayerFormPage() {
               type="button"
               disabled={saving || !name.trim()}
               onClick={handleSaveAndAddAnother}
-              className="flex-1 bg-gray-100 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50"
+              className="flex-1 bg-gray-100 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors disabled:opacity-50"
             >
               + Add another
             </button>

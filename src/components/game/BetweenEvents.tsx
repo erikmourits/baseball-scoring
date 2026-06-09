@@ -33,8 +33,8 @@ export function BetweenEvents({
           <button key={ev} onClick={() => onEventSelect(ev)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
               activeEvent === ev
-                ? 'bg-brand-500 border-brand-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+                ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white'
+                : 'bg-gray-100 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'
             }`}>
             {ev === 'BALK' ? 'Balk' : ev}
           </button>
@@ -42,8 +42,8 @@ export function BetweenEvents({
       </div>
 
       {showPicker && (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
-          <p className="text-sm font-medium text-gray-700 mb-2">{pickerTitle}</p>
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{pickerTitle}</p>
           {runnersOnBase.length === 0 ? (
             <p className="text-sm text-gray-400">No runners on base.</p>
           ) : (
@@ -52,8 +52,8 @@ export function BetweenEvents({
                 <button key={k} onClick={() => onPickRunner(k)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-colors ${
                     pickedRunner === k
-                      ? 'bg-brand-500 border-brand-500 text-white'
-                      : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300'
+                      ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-brand-300 dark:hover:border-blue-600'
                   }`}>
                   {baseLabel(k)}
                   {bases[k] && players[bases[k]!] ? ` — ${players[bases[k]!]!.name.split(' ')[0]}` : ''}
@@ -67,7 +67,7 @@ export function BetweenEvents({
               Confirm
             </button>
             <button onClick={onCancel}
-              className="flex-1 bg-gray-200 text-gray-600 text-sm font-medium py-2 rounded-lg hover:bg-gray-300 transition-colors">
+              className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium py-2 rounded-lg hover:bg-gray-300 transition-colors">
               Cancel
             </button>
           </div>

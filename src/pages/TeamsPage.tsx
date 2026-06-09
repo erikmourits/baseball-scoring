@@ -43,7 +43,7 @@ export default function TeamsPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Teams</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Teams</h1>
 
       {/* Team list */}
       {teams && teams.length > 0 ? (
@@ -52,10 +52,10 @@ export default function TeamsPage() {
             <li key={team.id}>
               <button
                 onClick={() => navigate(`/teams/${team.id}`)}
-                className="w-full flex items-center justify-between bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-brand-500 transition-colors text-left"
+                className="w-full flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700 hover:border-brand-500 transition-colors text-left"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{team.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{team.name}</p>
                   <p className="text-sm text-gray-400 mt-0.5">
                     {playerCounts?.[team.id] ?? 0} players
                   </p>
@@ -71,15 +71,15 @@ export default function TeamsPage() {
 
       {/* Inline new team form */}
       {showForm ? (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
-          <label className="block text-sm font-medium text-gray-700">Team name</label>
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Team name</label>
           <input
             autoFocus
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g. MF, Quick, 1958"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
           <div className="flex gap-2">
             <button
@@ -92,7 +92,7 @@ export default function TeamsPage() {
             <button
               type="button"
               onClick={() => { setShowForm(false); setName('') }}
-              className="flex-1 bg-gray-100 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+              className="flex-1 bg-gray-100 text-gray-600 dark:text-gray-400 font-medium py-2 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>

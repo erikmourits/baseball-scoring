@@ -424,7 +424,7 @@ export default function GamePage() {
   const pitcherLabel  = currentPitcher ? currentPitcher.name : null
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-50 z-10">
+    <div className="fixed inset-0 flex flex-col bg-gray-50 dark:bg-gray-900 z-10">
 
       {/* ── Scoreboard ── */}
       <div className="bg-brand-700 text-white px-4 pt-3 pb-4">
@@ -433,7 +433,7 @@ export default function GamePage() {
           <div className="flex items-center gap-2">
             {isLive && (
               <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-0.5 rounded-full font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
                 LIVE
               </span>
             )}
@@ -463,7 +463,7 @@ export default function GamePage() {
             <ScoreboardDiamond bases={bases} />
             <div className="flex gap-1.5">
               {[0,1,2].map(i => (
-                <div key={i} className={`w-2.5 h-2.5 rounded-full border ${i < outs ? 'bg-white border-white' : 'border-white/40'}`} />
+                <div key={i} className={`w-2.5 h-2.5 rounded-full border ${i < outs ? 'bg-white dark:bg-gray-800 border-white' : 'border-white/40'}`} />
               ))}
             </div>
           </div>
@@ -483,19 +483,19 @@ export default function GamePage() {
       </div>
 
       {/* ── At bat / On deck ── */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold text-brand-500 uppercase tracking-wider mb-0.5">
+            <p className="text-[10px] font-semibold text-brand-500 dark:text-brand-100 uppercase tracking-wider mb-0.5">
               At bat · {half === 'top' ? awayName : homeName} #{batterIndex % (currentLineup.length || 1) + 1}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xl font-bold text-gray-900 leading-tight">{currentBatter?.name ?? '—'}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">{currentBatter?.name ?? '—'}</p>
               {currentBatterHistory && currentBatterHistory.map((ab, i) => {
                 const r = ab.result!
-                const color = ['1B','2B','3B','HR'].includes(r) ? 'bg-green-100 text-green-700' :
+                const color = ['1B','2B','3B','HR'].includes(r) ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' :
                               ['BB','HBP','ROE','FC'].includes(r) ? 'bg-blue-100 text-blue-600' :
-                              'bg-red-100 text-red-500'
+                              'bg-red-100 dark:bg-red-900/40 text-red-500'
                 return <span key={i} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${color}`}>{r}</span>
               })}
             </div>
@@ -527,13 +527,13 @@ export default function GamePage() {
                 <button key={btn.value} onClick={() => !blocked && handleResultSelect(btn.value)}
                   className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                     blocked
-                      ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                      ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-300 cursor-not-allowed'
                       : selectedResult === btn.value
                         ? btn.color === 'btn-out' ? 'bg-red-500 border-red-500 text-white'
                         : btn.color === 'btn-hit' ? 'bg-green-500 border-green-500 text-white'
                         :                           'bg-blue-500 border-blue-500 text-white'
-                        : btn.color === 'btn-out' ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                        : btn.color === 'btn-hit' ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
+                        : btn.color === 'btn-out' ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100'
+                        : btn.color === 'btn-hit' ? 'bg-green-50 dark:bg-green-900/30 border-green-200 text-green-600 hover:bg-green-100'
                         :                           'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
                   }`}>
                   <span className="block leading-tight">{btn.label}</span>
@@ -552,7 +552,7 @@ export default function GamePage() {
               {FIELDER_POSITIONS.map(({ pos, label }) => (
                 <button key={pos} onClick={() => toggleFielder(pos)}
                   className={`py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
-                    fielders.includes(pos) ? 'bg-brand-500 border-brand-500 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300'
+                    fielders.includes(pos) ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 dark:text-gray-400 hover:border-brand-300 dark:hover:border-blue-600'
                   }`}>
                   <span className="block text-xs text-current/60">{pos}</span>
                   <span>{label}</span>
@@ -596,10 +596,10 @@ export default function GamePage() {
       </div>
 
       {/* ── Record button ── */}
-      <div className="px-4 pb-safe pt-3 border-t border-gray-100 bg-white flex gap-2">
+      <div className="px-4 pb-safe pt-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
         <button onClick={handleUndo} disabled={!canUndo}
           className={`px-5 py-3.5 rounded-xl font-semibold text-xl transition-colors ${
-            canUndo ? 'bg-yellow-400 hover:bg-yellow-300 text-yellow-900' : 'bg-gray-50 text-gray-300 cursor-default'}`}>
+            canUndo ? 'bg-yellow-400 hover:bg-yellow-300 text-yellow-900' : 'bg-gray-50 dark:bg-gray-900 text-gray-300 cursor-default'}`}>
           ↺
         </button>
         <button disabled={!selectedResult} onClick={recordAtBat}
@@ -626,21 +626,21 @@ export default function GamePage() {
       {/* ── Skip dialog ── */}
       {showSkipDialog && (
         <div className="fixed inset-0 bg-black/40 flex items-end z-30" onClick={() => setShowSkipDialog(false)}>
-          <div className="w-full bg-white rounded-t-3xl px-6 pt-6 pb-10 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="w-full bg-white dark:bg-gray-800 rounded-t-3xl px-6 pt-6 pb-10 shadow-2xl" onClick={e => e.stopPropagation()}>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-0.5">
               {half === 'top' ? '▲' : '▼'} {inningNumber} · {half === 'top' ? awayName : homeName} batting
             </p>
-            <p className="text-lg font-bold text-gray-900 text-center mb-6">How many runs scored?</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 text-center mb-6">How many runs scored?</p>
             <div className="flex items-center justify-center gap-6 mb-8">
               <button onClick={() => setSkipRuns(r => Math.max(0, r - 1))}
-                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 text-2xl font-bold text-gray-700 transition-colors flex items-center justify-center">−</button>
-              <span className="text-6xl font-bold text-gray-900 tabular-nums w-16 text-center">{skipRuns}</span>
+                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">−</button>
+              <span className="text-6xl font-bold text-gray-900 dark:text-gray-100 tabular-nums w-16 text-center">{skipRuns}</span>
               <button onClick={() => setSkipRuns(r => r + 1)}
-                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 text-2xl font-bold text-gray-700 transition-colors flex items-center justify-center">+</button>
+                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">+</button>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowSkipDialog(false)}
-                className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 font-semibold text-sm hover:bg-gray-200 transition-colors">Cancel</button>
+                className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 dark:text-gray-400 font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
               <button onClick={confirmSkip}
                 className="flex-1 py-3.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition-colors">Confirm</button>
             </div>

@@ -7,6 +7,7 @@ import { useSession } from '../hooks/useSession'
 import { supabase } from '../lib/supabase'
 import { clearLocalAndResync } from '../services/sync'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
+import { useTheme } from '../hooks/useTheme'
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
@@ -24,16 +25,16 @@ function MemberRow({
   return (
     <div className="flex items-center justify-between py-2">
       <div>
-        <p className="text-sm font-medium text-gray-900">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {member.email ?? member.userId.slice(0, 8) + '…'}
-          {isCurrentUser && <span className="ml-2 text-xs text-brand-500">(you)</span>}
+          {isCurrentUser && <span className="ml-2 text-xs text-brand-500 dark:text-brand-100">(you)</span>}
         </p>
-        <p className="text-xs text-gray-500 capitalize">{member.role}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{member.role}</p>
       </div>
       {isOwner && !isCurrentUser && (
         <button
           onClick={() => onRemove(member.id)}
-          className="text-red-500 text-xs hover:text-red-700"
+          className="text-red-500 dark:text-red-400 text-xs hover:text-red-700 dark:hover:text-red-400"
         >
           Remove
         </button>
@@ -61,6 +62,7 @@ export default function LeagueSettingsPage() {
   const [newLeagueName, setNewLeagueName] = useState('')
 
   const isOwner = !!league && !!session && league.createdBy === session.user.id
+  const { theme, toggleTheme } = useTheme()
 
   interface DialogState {
     title?: string
@@ -209,7 +211,6 @@ export default function LeagueSettingsPage() {
   // ── Sign out ─────────────────────────────────────────────────────────────────
   async function signOut() {
     await supabase.auth.signOut()
-    // Clear all local data so the next user on this device starts fresh
     await db.leagues.clear()
     await db.teams.clear()
     await db.players.clear()
@@ -224,14 +225,23 @@ export default function LeagueSettingsPage() {
   // ── Render: no leagues yet ───────────────────────────────────────────────────
 
   if (league === undefined) {
-    return <div className="p-6 text-gray-500 text-sm">Loading…</div>
+    return <div className="p-6 text-gray-500 dark:text-gray-400 text-sm">Loading…</div>
   }
 
   if (league === null) {
     return (
       <div className="p-6 max-w-lg mx-auto">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Create a League</h1>
-        <p className="text-sm text-gray-500 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Create a League</h1>
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-lg leading-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           A league is your data container — teams, seasons, and games all live inside it.
         </p>
         <div className="flex gap-2">
@@ -240,7 +250,7 @@ export default function LeagueSettingsPage() {
             onChange={e => setLeagueName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && createLeague(leagueName)}
             placeholder="League name (e.g. KNBSB Rotterdam)"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
           />
           <button
             onClick={() => createLeague(leagueName)}
@@ -250,8 +260,8 @@ export default function LeagueSettingsPage() {
             Create
           </button>
         </div>
-        <div className="mt-10 pt-6 border-t border-gray-200">
-          <button onClick={signOut} className="text-sm text-red-500">Sign out</button>
+        <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400">Sign out</button>
         </div>
       </div>
     )
@@ -262,30 +272,38 @@ export default function LeagueSettingsPage() {
   return (
     <div className="p-6 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">League</h1>
-        <button onClick={signOut} className="text-sm text-red-500 hover:text-red-700">
-          Sign out
-        </button>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">League</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-lg leading-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400">
+            Sign out
+          </button>
+        </div>
       </div>
 
       {/* League switcher */}
       {leagues.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Active league</h2>
-          <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm divide-y divide-gray-100 dark:divide-gray-700 px-4">
             {leagues.map(l => (
               <button
                 key={l.id}
                 onClick={() => switchLeague(l.id)}
                 className="w-full flex items-center justify-between py-3 text-left"
               >
-                <span className="text-sm text-gray-900">{l.name}</span>
-                {l.id === league.id && <span className="text-brand-500 text-xs font-medium">Active</span>}
+                <span className="text-sm text-gray-900 dark:text-gray-100">{l.name}</span>
+                {l.id === league.id && <span className="text-brand-500 dark:text-brand-100 text-xs font-medium">Active</span>}
               </button>
             ))}
           </div>
 
-          {/* Add new league */}
           {showNewForm ? (
             <div className="flex gap-2 mt-3">
               <input
@@ -294,7 +312,7 @@ export default function LeagueSettingsPage() {
                 onChange={e => setNewLeagueName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && createLeague(newLeagueName)}
                 placeholder="New league name"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
               />
               <button
                 onClick={() => createLeague(newLeagueName)}
@@ -303,12 +321,12 @@ export default function LeagueSettingsPage() {
               >
                 Create
               </button>
-              <button onClick={() => setShowNewForm(false)} className="text-sm text-gray-400 px-2">Cancel</button>
+              <button onClick={() => setShowNewForm(false)} className="text-sm text-gray-400 dark:text-gray-500 px-2">Cancel</button>
             </div>
           ) : (
             <button
               onClick={() => setShowNewForm(true)}
-              className="mt-3 text-sm text-brand-500 hover:text-brand-700"
+              className="mt-3 text-sm text-brand-500 dark:text-brand-100 hover:text-brand-700 dark:hover:text-brand-100"
             >
               + Create another league
             </button>
@@ -324,7 +342,7 @@ export default function LeagueSettingsPage() {
             value={leagueName}
             onChange={e => setLeagueName(e.target.value)}
             placeholder={league.name}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
           />
           {isOwner && (
             <button
@@ -341,7 +359,7 @@ export default function LeagueSettingsPage() {
       {/* Members */}
       <section className="mb-8">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Members</h2>
-        <div className="divide-y divide-gray-100 bg-white rounded-xl shadow-sm px-4">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4">
           {members.length === 0 ? (
             <p className="text-sm text-gray-400 py-3">No members yet.</p>
           ) : (
@@ -369,7 +387,7 @@ export default function LeagueSettingsPage() {
               onChange={e => setInviteEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendInvite()}
               placeholder="scorer@example.com"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
             />
             <button
               onClick={sendInvite}
@@ -379,23 +397,23 @@ export default function LeagueSettingsPage() {
               {inviteCopied ? '✅ Copied!' : inviteLoading ? 'Sending…' : 'Copy link'}
             </button>
           </div>
-          {inviteError && <p className="text-xs text-red-500 mt-1">{inviteError}</p>}
+          {inviteError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{inviteError}</p>}
 
           {invites.length > 0 && (
             <div className="mt-4">
               <p className="text-xs text-gray-400 mb-2">Pending invites</p>
-              <div className="divide-y divide-gray-100 bg-white rounded-xl shadow-sm px-4">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4">
                 {invites.map((inv: any) => (
                   <div key={inv.id} className="flex items-center justify-between py-2">
                     <div>
-                      <p className="text-sm text-gray-800">{inv.email}</p>
+                      <p className="text-sm text-gray-800 dark:text-gray-200">{inv.email}</p>
                       <p className="text-xs text-gray-400">
                         Expires {new Date(inv.expires_at).toLocaleDateString()}
                       </p>
                     </div>
                     <button
                       onClick={() => revokeInvite(inv.id)}
-                      className="text-xs text-red-500 hover:text-red-700"
+                      className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400"
                     >
                       Revoke
                     </button>
@@ -409,23 +427,23 @@ export default function LeagueSettingsPage() {
 
       {/* Admin link */}
       {isSiteAdmin && (
-        <div className="pt-6 border-t border-gray-200">
+        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={() => navigate('/admin')}
-            className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            ⚙ Site admin
+            ⚙️ Site admin
           </button>
         </div>
       )}
 
       {/* Troubleshooting */}
-      <div className="pt-4 mt-2 border-t border-gray-100">
+      <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Troubleshooting</p>
         <button
           onClick={handleClearAndResync}
           disabled={clearing}
-          className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-40"
+          className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 transition-colors disabled:opacity-40"
         >
           {clearing ? 'Clearing…' : '⚠ Clear local data & reload from server'}
         </button>
@@ -437,6 +455,7 @@ export default function LeagueSettingsPage() {
           v{import.meta.env.VITE_APP_VERSION}
         </p>
       )}
+
       {dialog && (
         <ConfirmDialog
           title={dialog.title}
