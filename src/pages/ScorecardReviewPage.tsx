@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { useSession } from '../hooks/useSession'
+import { useLeague } from '../hooks/useLeague'
 
 // ── Types mirroring Edge Function output ─────────────────────────────────────
 
@@ -179,6 +180,7 @@ export default function ScorecardReviewPage() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const { session } = useSession()
+  const { league } = useLeague()
 
   const rawGameLog = location.state?.gameLog as OcrGameLog | undefined
   const usage      = location.state?.usage as any
@@ -229,6 +231,7 @@ export default function ScorecardReviewPage() {
       await db.games.add({
         id: gameId,
         userId: session.user.id,
+        leagueId: league!.id,
         seasonId: seasonId || undefined,
         date: gameDate,
         homeTeamId: homeTeamId || undefined,

@@ -27,7 +27,7 @@ export default function SeasonsPage() {
     e.preventDefault()
     if (!name.trim() || !session) return
     setSaving(true)
-    await seasonService.create(session.user.id, name.trim(), year ? Number(year) : undefined, league?.id)
+    await seasonService.create(session.user.id, name.trim(), league!.id, year ? Number(year) : undefined)
     setName('')
     setYear(String(new Date().getFullYear()))
     setShowForm(false)

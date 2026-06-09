@@ -572,7 +572,7 @@ export default function NewGamePage() {
     let resolvedAwayTeamId = awayTeamId
 
     if (homeIsQuick) {
-      const t = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team', league?.id)
+      const t = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team', league!.id)
       resolvedHomeTeamId = t.id
       for (let i = 1; i <= quickHomeBatterCount; i++) {
         await playerService.create(t.id, { name: `Player ${i}` })
@@ -580,7 +580,7 @@ export default function NewGamePage() {
     }
 
     if (awayIsQuick) {
-      const t = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent', league?.id)
+      const t = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent', league!.id)
       resolvedAwayTeamId = t.id
       for (let i = 1; i <= quickAwayBatterCount; i++) {
         await playerService.create(t.id, { name: `Player ${i}` })
@@ -589,7 +589,7 @@ export default function NewGamePage() {
 
     const game = await gameService.create({
       userId:     session.user.id,
-      leagueId:   league?.id,
+      leagueId:   league!.id,
       seasonId:   seasonId || undefined,
       date,
       location:   location || undefined,

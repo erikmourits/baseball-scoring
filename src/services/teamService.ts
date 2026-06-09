@@ -6,7 +6,7 @@ import { syncTeams } from './sync'
 const now = () => new Date().toISOString()
 
 export const teamService = {
-  async create(userId: string, name: string, leagueId?: string): Promise<LocalTeam> {
+  async create(userId: string, name: string, leagueId: string): Promise<LocalTeam> {
     const team: LocalTeam = {
       id:        crypto.randomUUID(),
       userId,

@@ -6,7 +6,7 @@ const now = () => new Date().toISOString()
 
 export interface NewGameInput {
   userId: string
-  leagueId?: string
+  leagueId: string
   seasonId?: string
   date: string
   location?: string
@@ -87,7 +87,7 @@ async function syncGame(game: LocalGame) {
   const { error } = await (supabase.from('games') as any).upsert({
     id:               game.id,
     user_id:          game.userId,
-    league_id:        game.leagueId ?? null,
+    league_id:        game.leagueId,
     season_id:        game.seasonId ?? null,
     date:             game.date,
     location:         game.location ?? null,

@@ -35,6 +35,7 @@ export function useGameSubscription(gameId: string | undefined) {
             await db.games.put({
               id:              g.id,
               userId:          g.user_id,
+              leagueId:        g.league_id,
               seasonId:        g.season_id ?? undefined,
               date:            g.date,
               location:        g.location ?? undefined,

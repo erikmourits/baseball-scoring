@@ -21,13 +21,11 @@ export async function syncLeagues() {
 
 export async function syncTeams() {
   const dirty = await db.teams.filter(t => t._dirty).toArray()
-  const fallbackLeague = await db.leagues.toCollection().first()
   for (const team of dirty) {
-    const leagueId = team.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('teams') as any).upsert({
       id:         team.id,
       user_id:    team.userId,
-      league_id:  leagueId,
+      league_id:  team.leagueId,
       name:       team.name,
       home_field: team.homeField ?? null,
       created_at: team.createdAt,
@@ -61,13 +59,11 @@ export async function syncPlayers() {
 
 export async function syncSeasons() {
   const dirty = await db.seasons.filter(s => s._dirty).toArray()
-  const fallbackLeague = await db.leagues.toCollection().first()
   for (const season of dirty) {
-    const leagueId = season.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('seasons') as any).upsert({
       id:         season.id,
       user_id:    season.userId,
-      league_id:  leagueId,
+      league_id:  season.leagueId,
       name:       season.name,
       year:       season.year ?? null,
       start_date: season.startDate ?? null,
@@ -84,14 +80,11 @@ export async function syncSeasons() {
 
 export async function syncGames() {
   const dirty = await db.games.filter(g => g._dirty).toArray()
-  // Fallback league: used when a game has no leagueId (pre-migration records)
-  const fallbackLeague = await db.leagues.toCollection().first()
   for (const game of dirty) {
-    const leagueId = game.leagueId ?? fallbackLeague?.id ?? null
     const { error } = await (supabase.from('games') as any).upsert({
       id:               game.id,
       user_id:          game.userId,
-      league_id:        leagueId,
+      league_id:        game.leagueId,
       season_id:        game.seasonId ?? null,
       date:             game.date,
       location:         game.location ?? null,
@@ -216,7 +209,7 @@ async function pullTeams() {
       await db.teams.put({
         id:        t.id,
         userId:    t.user_id,
-        leagueId:  t.league_id ?? undefined,
+        leagueId:  t.league_id,
         name:      t.name,
         homeField: t.home_field ?? undefined,
         createdAt: t.created_at,
@@ -269,7 +262,7 @@ async function pullSeasons() {
       await db.seasons.put({
         id:        s.id,
         userId:    s.user_id,
-        leagueId:  s.league_id ?? undefined,
+        leagueId:  s.league_id,
         name:      s.name,
         year:      s.year ?? undefined,
         startDate: s.start_date ?? undefined,
@@ -314,7 +307,7 @@ async function pullGames() {
       await db.games.put({
         id:              g.id,
         userId:          g.user_id,
-        leagueId:        g.league_id ?? undefined,
+        leagueId:        g.league_id,
         seasonId:        g.season_id ?? undefined,
         date:            g.date,
         location:        g.location ?? undefined,

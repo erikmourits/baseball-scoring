@@ -34,7 +34,7 @@ export default function TeamsPage() {
     e.preventDefault()
     if (!session || !name.trim()) return
     setSaving(true)
-    const team = await teamService.create(session.user.id, name, league?.id)
+    const team = await teamService.create(session.user.id, name, league!.id)
     setSaving(false)
     setName('')
     setShowForm(false)

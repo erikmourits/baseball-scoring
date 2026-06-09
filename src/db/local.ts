@@ -15,7 +15,7 @@ export interface LocalTeam {
   id: string           // UUID, generated client-side
   serverId?: string    // set after sync
   userId: string
-  leagueId?: string
+  leagueId: string
   name: string
   homeField?: string   // default game location
   createdAt: string
@@ -41,7 +41,7 @@ export interface LocalPlayer {
 export interface LocalSeason {
   id: string
   userId: string
-  leagueId?: string
+  leagueId: string
   name: string
   year?: number
   startDate?: string
@@ -56,7 +56,7 @@ export interface LocalGame {
   id: string
   serverId?: string
   userId: string
-  leagueId?: string
+  leagueId: string
   seasonId?: string
   date: string
   location?: string

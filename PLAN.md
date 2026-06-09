@@ -271,9 +271,9 @@ All local records use a client-generated UUID and carry a `_dirty` flag for sync
 ---
 
 ## Must haves
-- leaugueid should not be nullable. This is probably held over from before League existed
-- setup development supabase environment
-- check if client is latest version
+- [x] leaugueid should not be nullable. This is probably held over from before League existed
+- [ ] setup development supabase environment
+- [ ] check if client is latest version
 
 ## Nice to haves (todos)
 - [ ] Dark mode
