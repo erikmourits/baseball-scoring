@@ -1,39 +1,44 @@
 interface Props {
+  title?: string
   message: string
   confirmLabel?: string
   cancelLabel?: string
   destructive?: boolean
+  alertOnly?: boolean   // single OK button, no cancel
   onConfirm: () => void
   onCancel: () => void
 }
 
 export default function ConfirmDialog({
+  title,
   message,
-  confirmLabel = 'Confirm',
+  confirmLabel = 'OK',
   cancelLabel = 'Cancel',
   destructive = false,
+  alertOnly = false,
   onConfirm,
   onCancel,
 }: Props) {
   return (
-    // Backdrop
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40"
-      onClick={onCancel}
+      onClick={alertOnly ? onConfirm : onCancel}
     >
-      {/* Panel */}
       <div
         className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 space-y-4"
         onClick={e => e.stopPropagation()}
       >
-        <p className="text-gray-800 text-sm leading-relaxed">{message}</p>
+        {title && <p className="text-gray-900 font-semibold text-base">{title}</p>}
+        <p className="text-gray-700 text-sm leading-relaxed">{message}</p>
         <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
-          >
-            {cancelLabel}
-          </button>
+          {!alertOnly && (
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors ${

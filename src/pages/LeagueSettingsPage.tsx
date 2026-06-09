@@ -5,7 +5,8 @@ import { db } from '../db/local'
 import { useLeague } from '../hooks/useLeague'
 import { useSession } from '../hooks/useSession'
 import { supabase } from '../lib/supabase'
-import { forceResyncAll, clearLocalAndResync } from '../services/sync'
+import { clearLocalAndResync } from '../services/sync'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,28 @@ export default function LeagueSettingsPage() {
 
   const isOwner = !!league && !!session && league.createdBy === session.user.id
 
+  interface DialogState {
+    title?: string
+    message: string
+    confirmLabel?: string
+    destructive?: boolean
+    alertOnly?: boolean
+    onConfirm?: () => void
+  }
+  const [dialog, setDialog] = useState<DialogState | null>(null)
+
+  function showAlert(message: string, title?: string) {
+    setDialog({ title, message, alertOnly: true })
+  }
+  function showConfirm(opts: Omit<DialogState, 'alertOnly'> & { onConfirm: () => void }) {
+    setDialog({ ...opts, alertOnly: false })
+  }
+  const [isSiteAdmin, setIsSiteAdmin] = useState(false)
+
+  useEffect(() => {
+    ;(supabase as any).rpc('is_site_admin').then(({ data }: any) => setIsSiteAdmin(!!data))
+  }, [session?.user.id])
+
   // Pre-populate name field + fetch members/invites whenever league changes
   useEffect(() => {
     if (!league) return
@@ -88,11 +111,11 @@ export default function LeagueSettingsPage() {
     const { error: lErr } = await (supabase.from('leagues') as any).upsert({
       id, name: name.trim(), created_by: session.user.id, created_at: now,
     })
-    if (lErr) { alert('Failed to create league: ' + lErr.message); return }
+    if (lErr) { showAlert('Failed to create league: ' + lErr.message, 'Error'); return }
     const { error: mErr } = await (supabase.from('league_members') as any).upsert({
       id: crypto.randomUUID(), league_id: id, user_id: session.user.id, role: 'owner', email: session.user.email,
     })
-    if (mErr) { alert('Failed to add you as owner: ' + mErr.message); return }
+    if (mErr) { showAlert('Failed to add you as owner: ' + mErr.message, 'Error'); return }
     await db.leagues.update(id, { _dirty: false })
     switchLeague(id)
     setShowNewForm(false)
@@ -105,7 +128,7 @@ export default function LeagueSettingsPage() {
     setSavingName(true)
     const { error } = await (supabase.from('leagues') as any).update({ name: leagueName.trim() }).eq('id', league.id)
     if (error) {
-      alert('Failed to save: ' + error.message)
+      showAlert('Failed to save: ' + error.message, 'Error')
     } else {
       await db.leagues.update(league.id, { name: leagueName.trim(), _dirty: false })
     }
@@ -141,10 +164,18 @@ export default function LeagueSettingsPage() {
   }
 
   // ── Remove member ───────────────────────────────────────────────────────────
-  async function removeMember(memberId: string) {
-    if (!confirm('Remove this member from the league?')) return
-    await (supabase.from('league_members') as any).delete().eq('id', memberId)
-    setMembers(prev => prev.filter(m => m.id !== memberId))
+  function removeMember(memberId: string) {
+    showConfirm({
+      title: 'Remove member',
+      message: 'This person will lose access to the league.',
+      confirmLabel: 'Remove',
+      destructive: true,
+      onConfirm: async () => {
+        setDialog(null)
+        await (supabase.from('league_members') as any).delete().eq('id', memberId)
+        setMembers(prev => prev.filter(m => m.id !== memberId))
+      },
+    })
   }
 
   // ── Revoke invite ───────────────────────────────────────────────────────────
@@ -153,36 +184,40 @@ export default function LeagueSettingsPage() {
     setInvites(prev => prev.filter(i => i.id !== inviteId))
   }
 
-  // ── Force resync ──────────────────────────────────────────────────────────────
-  const [resyncing, setResyncing] = useState(false)
-  async function handleForceResync() {
-    setResyncing(true)
-    try {
-      await forceResyncAll()
-      alert('Re-sync complete.')
-    } catch (e: any) {
-      alert('Re-sync failed: ' + e.message)
-    }
-    setResyncing(false)
-  }
-
   // ── Clear & resync from server ────────────────────────────────────────────────
   const [clearing, setClearing] = useState(false)
-  async function handleClearAndResync() {
-    if (!confirm('This will wipe all local data and replace it with what is on the server. Continue?')) return
-    setClearing(true)
-    try {
-      await clearLocalAndResync()
-      alert('Done — local database refreshed from server.')
-    } catch (e: any) {
-      alert('Failed: ' + e.message)
-    }
-    setClearing(false)
+  function handleClearAndResync() {
+    showConfirm({
+      title: 'Clear & reload from server',
+      message: 'This will wipe all local data and replace it with what is on the server.',
+      confirmLabel: 'Clear & reload',
+      destructive: true,
+      onConfirm: async () => {
+        setDialog(null)
+        setClearing(true)
+        try {
+          await clearLocalAndResync()
+          showAlert('Local database has been refreshed from the server.', 'Done')
+        } catch (e: any) {
+          showAlert('Failed: ' + e.message, 'Error')
+        }
+        setClearing(false)
+      },
+    })
   }
 
   // ── Sign out ─────────────────────────────────────────────────────────────────
   async function signOut() {
     await supabase.auth.signOut()
+    // Clear all local data so the next user on this device starts fresh
+    await db.leagues.clear()
+    await db.teams.clear()
+    await db.players.clear()
+    await db.seasons.clear()
+    await db.games.clear()
+    await db.innings.clear()
+    await db.atBats.clear()
+    localStorage.removeItem('currentLeagueId')
     navigate('/auth')
   }
 
@@ -226,7 +261,12 @@ export default function LeagueSettingsPage() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">League</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-gray-900">League</h1>
+        <button onClick={signOut} className="text-sm text-red-500 hover:text-red-700">
+          Sign out
+        </button>
+      </div>
 
       {/* League switcher */}
       {leagues.length > 0 && (
@@ -367,32 +407,47 @@ export default function LeagueSettingsPage() {
         </section>
       )}
 
-      {/* App version */}
-      {import.meta.env.VITE_APP_VERSION && (
-        <p className="text-xs text-gray-400 text-center mb-2">
-          v{import.meta.env.VITE_APP_VERSION}
-        </p>
+      {/* Admin link */}
+      {isSiteAdmin && (
+        <div className="pt-6 border-t border-gray-200">
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            ⚙ Site admin
+          </button>
+        </div>
       )}
 
-      {/* Danger zone */}
-      <div className="pt-6 border-t border-gray-200 space-y-3">
-        <button
-          onClick={handleForceResync}
-          disabled={resyncing}
-          className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40"
-        >
-          {resyncing ? 'Re-syncing…' : '↺ Re-sync all local data to server'}
-        </button>
+      {/* Troubleshooting */}
+      <div className="pt-4 mt-2 border-t border-gray-100">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Troubleshooting</p>
         <button
           onClick={handleClearAndResync}
           disabled={clearing}
-          className="text-sm text-orange-500 hover:text-orange-700 disabled:opacity-40"
+          className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-40"
         >
           {clearing ? 'Clearing…' : '⚠ Clear local data & reload from server'}
         </button>
-        <div />
-        <button onClick={signOut} className="text-sm text-red-500">Sign out</button>
       </div>
+
+      {/* App version */}
+      {import.meta.env.VITE_APP_VERSION && (
+        <p className="text-xs text-gray-400 text-center mt-6">
+          v{import.meta.env.VITE_APP_VERSION}
+        </p>
+      )}
+      {dialog && (
+        <ConfirmDialog
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          destructive={dialog.destructive}
+          alertOnly={dialog.alertOnly}
+          onConfirm={dialog.onConfirm ?? (() => setDialog(null))}
+          onCancel={() => setDialog(null)}
+        />
+      )}
     </div>
   )
 }

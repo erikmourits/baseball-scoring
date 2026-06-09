@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { pullFromServer } from '../services/sync'
 import { useSession } from '../hooks/useSession'
 
 const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string
@@ -12,12 +13,9 @@ type InviteState = 'loading' | 'ready' | 'accepting' | 'accepted' | 'error'
 export default function InvitePage() {
   const { token }    = useParams<{ token: string }>()
   const navigate     = useNavigate()
-  const location     = useLocation()
   const { session }  = useSession()
 
-  // Detect whether this is a league or team invite based on the URL
-  const isLeagueInvite = location.pathname.startsWith('/league-invite/')
-  const fnName = isLeagueInvite ? 'league-invite' : 'team-invite'
+  const fnName = 'league-invite'
 
   const [state, setState]             = useState<InviteState>('loading')
   const [contextName, setContextName] = useState<string>('')
@@ -38,11 +36,15 @@ export default function InvitePage() {
     })
       .then(r => r.json())
       .then(data => {
+        // Treat "already used" as success — user already joined, just redirect
+        if (data.error === 'Invite already used') {
+          setState('accepted')
+          setTimeout(() => navigate('/league'), 1500)
+          return
+        }
         if (data.error) { setErrorMsg(data.error); setState('error') }
         else {
-          const name = data.invite?.league_name
-            ?? (data.invite?.team as any)?.name
-            ?? 'a league'
+          const name = data.invite?.league_name ?? 'a league'
           setContextName(name)
           setState('ready')
         }
@@ -68,11 +70,21 @@ export default function InvitePage() {
         },
       })
       const data = await res.json()
-      if (!res.ok) { setErrorMsg(data.error ?? 'Failed to accept invite'); setState('error'); return }
+      if (!res.ok) {
+        // If already used (race condition / double-submit), just redirect
+        if (data.error === 'Invite already used') {
+          await pullFromServer()
+          navigate('/league')
+          return
+        }
+        setErrorMsg(data.error ?? 'Failed to accept invite')
+        setState('error')
+        return
+      }
       setState('accepted')
-      // Navigate to league settings or team, depending on invite type
-      const destination = isLeagueInvite ? '/league' : `/teams/${data.teamId}`
-      setTimeout(() => navigate(destination), 1500)
+      // Pull fresh data so the new league is visible immediately
+      await pullFromServer()
+      navigate('/league')
     } catch {
       setErrorMsg('Something went wrong'); setState('error')
     }
@@ -129,7 +141,7 @@ export default function InvitePage() {
   }
 
   // state === 'ready' — show invite card with login/signup if needed
-  const inviteLabel = isLeagueInvite ? 'score games in' : 'score games for'
+  const inviteLabel = 'score games in'
 
   return (
     <div className="min-h-screen bg-brand-500 flex flex-col items-center justify-center px-4">

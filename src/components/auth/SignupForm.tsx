@@ -19,7 +19,12 @@ export default function SignupForm({ onSuccess }: Props) {
 
     const { error } = await supabase.auth.signUp({ email, password })
     if (error) {
-      setError(error.message)
+      if (error.message.toLowerCase().includes('signups not allowed') ||
+          error.message.toLowerCase().includes('signup is disabled')) {
+        setError('Sign-ups are currently invite-only. Contact the admin to request access.')
+      } else {
+        setError(error.message)
+      }
     } else {
       setDone(true)
       setTimeout(onSuccess, 3000)

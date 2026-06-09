@@ -18,6 +18,8 @@ import WatchPage from './pages/WatchPage'
 import InvitePage from './pages/InvitePage'
 import LeagueSettingsPage from './pages/LeagueSettingsPage'
 import AppShell from './components/layout/AppShell'
+import AdminPage from './pages/AdminPage'
+import SignupInvitePage from './pages/SignupInvitePage'
 
 function AuthenticatedApp() {
   useSync()
@@ -40,6 +42,7 @@ function AuthenticatedApp() {
         <Route path="/watch/:token"                               element={<WatchPage />} />
         <Route path="/invite/:token"                              element={<InvitePage />} />
         <Route path="/league-invite/:token"                       element={<InvitePage />} />
+        <Route path="/admin"                                    element={<AdminPage />} />
         <Route path="*"                                         element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
@@ -65,8 +68,8 @@ export default function App() {
         <Routes>
           <Route path="/auth"          element={<AuthPage />} />
           <Route path="/watch/:token"         element={<WatchPage />} />
-          <Route path="/invite/:token"        element={<InvitePage />} />
           <Route path="/league-invite/:token" element={<InvitePage />} />
+          <Route path="/signup/:token"        element={<SignupInvitePage />} />
           <Route path="*"              element={<Navigate to="/auth" replace />} />
         </Routes>
       )}

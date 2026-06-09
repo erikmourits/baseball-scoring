@@ -273,27 +273,169 @@ Dexie upgrade handler (sync, before app mounts)
 - [ ] Run `npm run deploy-functions` (league-invite Edge Function)
 
 ### Phase 7 — Remaining Features ❌
-- [ ] Only people with an invite can create a user and join the app (At the moment we are using free tier cloud and payed AI. We don't want to run into rate limits)
-  - Site admin can create invite link
-  - Site admin can view created users and manage (delete) them
-- [x] Leaugueid should not be nullable. This is probably held over from before League existed
-- [ ] Setup development supabase environment
-- [ ] Check if client is latest version
-  - Add `VITE_APP_VERSION` env var set at build time (semver, e.g. `1.0.0`)
-  - Add `app_config` Supabase table with a `minimum_client_version` row; bump only on breaking migrations
-  - Check version at top of `syncAll()` — if client is behind, throw a typed error and stop sync
-  - Show blocking "Please refresh your app" banner in `AppShell` when that error is detected
-  - Wire up vite-plugin-pwa update prompt so users are notified of new SW versions immediately
-- [ ] Dark mode
-- [ ] Import schedule (nice to have)
+
+#### 7.1 — Invite-only signup ✅
+Right now anyone with the URL can create an account. The app runs on a free Supabase tier with a paid OpenAI key, so we need to control who can sign up.
+
+**Approach:** the signup gate lives entirely in Supabase Auth — not in client code. Toggle **"Enable email signups"** off in the Supabase dashboard (Auth → Settings → Email). When disabled, `supabase.auth.signUp()` returns a `"Signups not allowed"` error server-side regardless of what the client sends, so it cannot be bypassed. To re-enable open signups, flip the toggle back on in the dashboard — no code deploy needed. The `SignupForm` component is kept intact; it just handles the error gracefully.
+
+**Implementation:**
+
+1. **Supabase Auth toggle** — in the Supabase dashboard: Auth → Settings → Email → disable "Enable email signups". This is the single source of truth. To open signups again, re-enable it. No migration or code change required.
+
+2. **`SignupForm` error handling** — when signups are disabled, Supabase returns an error with message `"Signups not allowed"`. Update `SignupForm` to detect this specific error and show a friendly message: *"Sign-ups are currently invite-only. Contact the admin to request access."* All other error messages surface as-is. The form and tab remain visible and functional for when signups are re-enabled.
+
+3. **`is_site_admin()` helper** — a Postgres security-definer function used by RLS policies and Edge Functions to identify the admin:
+   ```sql
+   create table site_admins (user_id uuid primary key references auth.users);
+   -- Insert after first login: insert into site_admins values ('<your-user-id>');
+   create function is_site_admin() returns boolean
+     language sql security definer
+     as $$ select exists (select 1 from site_admins where user_id = auth.uid()) $$;
+   ```
+
+4. **`site_invites` table** — the admin enters a name/label (e.g. "Jan de Vries"); the invitee chooses their own email when following the link. Uses `name text not null` instead of `email`, so there is no email pre-assignment:
+   ```sql
+   create table site_invites (
+     token       uuid primary key default gen_random_uuid(),
+     name        text not null,
+     created_by  uuid references auth.users,
+     created_at  timestamptz default now(),
+     accepted_at timestamptz,
+     expires_at  timestamptz default now() + interval '7 days'
+   );
+   alter table site_invites enable row level security;
+   create policy "admin insert" on site_invites for insert using (is_site_admin());
+   create policy "public token read" on site_invites for select using (true);
+   ```
+   *(Migration 020 renamed the original `email` column to `name`.)*
+
+5. **`site-invite` Edge Function** — three modes:
+   - `GET ?token=` — public; validates token and returns `{ name, expires_at }`
+   - `POST` (no token, admin auth) — creates an invite row, returns `{ token }`
+   - `POST ?token=` — public; accepts `{ email, password }` from the body and calls `admin.createUser({ email, password, email_confirm: true })`, then marks `accepted_at = now()`. Using `createUser` (rather than `inviteUserByEmail`) lets the invitee set their own password immediately without a separate magic-link step.
+
+6. **`/signup/:token` route** — `SignupInvitePage` validates the token (GET), shows the invite name, collects email + password, calls POST `?token=` to create the account, then signs the user in automatically and navigates to `/`.
+
+7. **Admin UI** — add a `/admin` route, visible only to site admins (`is_site_admin()` check on load):
+   - **Invite form:** email input → calls `site-invite` Edge Function → copies invite link to clipboard
+   - **Invite table:** all invites with status (pending / accepted / expired) and a revoke button
+   - **User list:** all auth users via `admin-users` Edge Function (service role); email, created date, delete button
+   - **Note on the signup toggle:** controlled from the Supabase dashboard, not from this UI. The admin UI intentionally has no toggle here — keeping the gate server-side means it cannot be circumvented by a client-side workaround.
+
+**Files to create/change:**
+- `supabase/migrations/019_site_invites.sql` — `site_admins` table + `is_site_admin()`, `site_invites` table + RLS
+- `supabase/functions/site-invite/index.ts` — validate token, call `admin.inviteUserByEmail`, mark accepted
+- `supabase/functions/admin-users/index.ts` — list + delete auth users (service role)
+- `src/components/auth/SignupForm.tsx` — handle `"Signups not allowed"` error with friendly message; no other changes
+- `src/pages/AdminPage.tsx` — invite form, invite table, user list
+- `src/App.tsx` — add `/admin` and `/signup/:token` routes
+
+---
+
+#### 7.2 — Development Supabase environment ❌
+Running all development against the production database is risky — a bad migration or sync bug can corrupt live data.
+
+**Approach:** create a separate Supabase project for development, with its own URL and anon key. The app reads these from `.env` so switching environments is a matter of swapping the env file.
+
+**Implementation:**
+- Create a new Supabase project: `baseball-dev` (free tier, separate project)
+- Copy all migrations into the dev project: `npm run migrate` pointed at the dev DB URL
+- Deploy all Edge Functions to dev: `npm run deploy-functions` pointed at dev project ref
+- Add `.env.development` (already gitignored):
+  ```
+  VITE_SUPABASE_URL=https://<dev-project>.supabase.co
+  VITE_SUPABASE_ANON_KEY=<dev-anon-key>
+  VITE_APP_VERSION=1.0.0
+  ```
+- Rename current `.env` to `.env.production` and add it to `.gitignore`
+- Update `vite.config.ts` to load the right env file per mode (Vite does this automatically via `--mode`)
+- Update `scripts/migrate.js` and `scripts/deploy-functions.js` to accept a `--env` flag so you can target dev or prod explicitly:
+  ```
+  npm run migrate -- --env dev
+  npm run migrate -- --env prod
+  ```
+- Add a `scripts/.env.dev` and `scripts/.env.prod` holding the Supabase project ref and DB URL for each environment (gitignored)
+- Update `package.json`:
+  ```json
+  "dev": "vite --mode development",
+  "build": "vite build --mode production",
+  "migrate:dev": "node scripts/migrate.js --env dev",
+  "migrate:prod": "node scripts/migrate.js --env prod",
+  "deploy-functions:dev": "node scripts/deploy-functions.js --env dev",
+  "deploy-functions:prod": "node scripts/deploy-functions.js --env prod"
+  ```
+- Document the setup in `CONTRIBUTING.md` (or a `DEV_SETUP.md` section in this plan)
+
+---
+
+#### 7.3 — Check if client is latest version ✅
+Implemented. See `src/services/sync.ts` (`ClientOutdatedError`, `semverLt`, `checkClientVersion`), `src/hooks/useSync.ts` (`outdated` state), `src/components/layout/AppShell.tsx` (blocking `OutdatedBanner` + SW update prompt). Migration `018_app_config.sql` creates the `app_config` table.
+
+To block an outdated client: bump `minimum_client_version` in the `app_config` table.
+
+---
+
+#### 7.4 — Dark mode ❌
+The app uses Tailwind CSS. Tailwind's `dark:` variant is the natural fit — it reads a `dark` class on `<html>` and the user's `prefers-color-scheme` media query.
+
+**Implementation:**
+- Enable `darkMode: 'class'` in `tailwind.config.js`
+- Add a `useTheme` hook that:
+  1. Reads initial preference from `localStorage` (or falls back to `window.matchMedia('prefers-color-scheme: dark')`)
+  2. Toggles the `dark` class on `document.documentElement`
+  3. Persists preference to `localStorage`
+- Add a theme toggle button to `LeagueSettingsPage` (or the bottom of every page via `AppShell`)
+- Audit all existing Tailwind classes and pair them with `dark:` equivalents:
+  - `bg-gray-50` → `dark:bg-gray-900`
+  - `bg-white` → `dark:bg-gray-800`
+  - `text-gray-900` → `dark:text-gray-100`
+  - `text-gray-500` → `dark:text-gray-400`
+  - `border-gray-200` → `dark:border-gray-700`
+  - `shadow-sm` shadows may need `dark:shadow-gray-900`
+- Update `AppShell` background and `BottomNav` to respect dark tokens
+- Test on iOS Safari (dark mode from system settings) and Chrome
+
+**Files to create/change:**
+- `tailwind.config.js` — add `darkMode: 'class'`
+- `src/hooks/useTheme.ts` — new hook
+- `src/components/layout/AppShell.tsx` — apply `dark:` to shell bg
+- `src/components/layout/BottomNav.tsx` — dark variants
+- All page files — audit and add `dark:` classes
+- `src/pages/LeagueSettingsPage.tsx` — add theme toggle UI
+
+---
+
+#### 7.5 — Import schedule (nice to have) ❌
+Allow importing a season game schedule from a CSV or copy-paste, creating games in bulk rather than one by one.
+
+**Approach:** accept a simple CSV format, parse client-side, create `LocalGame` records in Dexie with `status: 'draft'` and let the normal sync push them to Supabase.
+
+**Expected CSV format:**
+```
+date,home_team,away_team,location
+2026-04-05,Rotterdam Neptunus,Hoofddorp Pioniers,Neptunus Veld
+2026-04-12,DSS,HCAW,Pim Mulier Stadion
+```
+
+**Implementation:**
+- Add an "Import schedule" button to `SeasonsPage` (or a new `ScheduleImportPage`)
+- Parse CSV client-side with PapaParse (already a listed available library)
+- Match team name strings to existing `LocalTeam` records by name (case-insensitive); warn on unmatched names
+- Show a preview table: date, home, away, location, status (matched ✅ / unmatched ❌)
+- On confirm: bulk-insert `LocalGame` records via `gameService.create()` (or direct Dexie add with `_dirty: true`)
+- Sync runs automatically after insert
+
+**Files to create/change:**
+- `src/pages/ScheduleImportPage.tsx` — upload/paste + preview + confirm
+- `src/App.tsx` — add `/seasons/:id/import` route
+- `src/pages/SeasonsPage.tsx` — add "Import schedule" link
+
+---
+
+- [x] leagueId should not be nullable (held over from before League existed)
 
 ### Phase 8 — Quality & Testing ❌
-- [ ] **Client versioning & update detection**
-  - Add `VITE_APP_VERSION` env var set at build time (semver, e.g. `1.0.0`)
-  - Add `app_config` Supabase table with a `minimum_client_version` row; bump only on breaking migrations
-  - Check version at top of `syncAll()` — if client is behind, throw a typed error and stop sync
-  - Show blocking "Please refresh your app" banner in `AppShell` when that error is detected
-  - Wire up vite-plugin-pwa update prompt so users are notified of new SW versions immediately
 - [ ] **Extend unit tests** (Vitest — currently 88 tests on baseballLogic.ts)
   - statsCalc.ts: batting/pitching calculation edge cases
   - sync.ts: dirty flag, pull-prune, leagueId stamp logic
@@ -335,8 +477,4 @@ Dexie upgrade handler (sync, before app mounts)
 | Stats storage | Computed on-the-fly from game log | No stale stats; game log is source of truth |
 | Multi-tenancy | League as top-level container | Enables multiple leagues per user and scorer invites |
 | RLS | security definer helper functions | Avoids bootstrap problem; inline subqueries can't bypass RLS |
-| League switching | localStorage + StorageEvent | Simple; reactive across components without context provider |
-| Client versioning | Semver env var + Supabase minimum version | Blocks stale clients before they can corrupt data with a mismatched schema |
-| Dexie migrations | `upgrade()` handler required per version bump | Ensures local data is consistent before first sync after update |
-| Dialogs | Custom `ConfirmDialog` (no browser confirm/alert) | Consistent styling; better UX |
-| UI framework | Tailwind CSS only | Sufficient at current complexity |
+| League switching | localStorage + StorageEvent | Simple; reactive                                    

@@ -209,6 +209,15 @@ async function pullLeagues() {
   const { data, error } = await (supabase.from('leagues') as any).select('*')
   if (error || !data) return
 
+  // Prune local leagues the server no longer returns (user lost membership or wrong account)
+  const serverIds = new Set((data as any[]).map((l: any) => l.id))
+  const localLeagues = await db.leagues.toArray()
+  for (const local of localLeagues) {
+    if (!local._dirty && !serverIds.has(local.id)) {
+      await db.leagues.delete(local.id)
+    }
+  }
+
   for (const l of data as any[]) {
     const local = await db.leagues.get(l.id)
     if (!local || !local._dirty) {
