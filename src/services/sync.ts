@@ -4,6 +4,40 @@ import { db } from '../db/local'
 
 // ── Push dirty local records to Supabase ─────────────────────────────────────
 
+
+// ── Client version gate ───────────────────────────────────────────────────────
+
+export class ClientOutdatedError extends Error {
+  constructor() { super('CLIENT_OUTDATED') }
+}
+
+/** Compares semver strings. Returns true if a < b. */
+function semverLt(a: string, b: string): boolean {
+  const parse = (s: string) => s.split('.').map(Number)
+  const [a1, a2, a3] = parse(a)
+  const [b1, b2, b3] = parse(b)
+  if (a1 !== b1) return a1 < b1
+  if (a2 !== b2) return a2 < b2
+  return a3 < b3
+}
+
+async function checkClientVersion() {
+  const clientVersion = import.meta.env.VITE_APP_VERSION as string | undefined
+  if (!clientVersion) return // dev builds without version set — skip
+  try {
+    const { data } = await (supabase.from('app_config') as any)
+      .select('value')
+      .eq('key', 'minimum_client_version')
+      .single()
+    if (data && semverLt(clientVersion, data.value)) {
+      throw new ClientOutdatedError()
+    }
+  } catch (e) {
+    if (e instanceof ClientOutdatedError) throw e
+    // Network error or table missing — don't block sync
+  }
+}
+
 export async function syncLeagues() {
   const dirty = await db.leagues.filter(l => l._dirty).toArray()
   for (const league of dirty) {
@@ -512,6 +546,7 @@ export async function pullFromServer() {
 }
 
 export async function syncAll() {
+  await checkClientVersion()
   // Leagues first
   await syncLeagues()
   // Independent tables

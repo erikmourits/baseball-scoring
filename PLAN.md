@@ -279,6 +279,11 @@ Dexie upgrade handler (sync, before app mounts)
 - [x] Leaugueid should not be nullable. This is probably held over from before League existed
 - [ ] Setup development supabase environment
 - [ ] Check if client is latest version
+  - Add `VITE_APP_VERSION` env var set at build time (semver, e.g. `1.0.0`)
+  - Add `app_config` Supabase table with a `minimum_client_version` row; bump only on breaking migrations
+  - Check version at top of `syncAll()` — if client is behind, throw a typed error and stop sync
+  - Show blocking "Please refresh your app" banner in `AppShell` when that error is detected
+  - Wire up vite-plugin-pwa update prompt so users are notified of new SW versions immediately
 - [ ] Dark mode
 - [ ] Import schedule (nice to have)
 

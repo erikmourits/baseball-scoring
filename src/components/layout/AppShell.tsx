@@ -1,4 +1,6 @@
 import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import BottomNav from './BottomNav'
 import { useSync } from '../../hooks/useSync'
 
@@ -25,12 +27,42 @@ function SyncBanner({ status, onSync }: {
   return null
 }
 
+function OutdatedBanner() {
+  return (
+    <div className="bg-yellow-500 text-black text-sm text-center py-2 px-3 font-medium">
+      A new version is required. Please refresh the app to continue syncing.
+    </div>
+  )
+}
+
+function UpdateBanner({ onUpdate }: { onUpdate: () => void }) {
+  return (
+    <div className="bg-blue-600 text-white text-xs py-1 px-3 flex items-center justify-between gap-2">
+      <span>A new version is available.</span>
+      <button onClick={onUpdate} className="underline font-medium">
+        Refresh
+      </button>
+    </div>
+  )
+}
+
 export default function AppShell() {
-  const { status, runSync } = useSync()
+  const { status, runSync, outdated } = useSync()
+  const [showUpdate, setShowUpdate] = useState(false)
+
+  const { updateServiceWorker } = useRegisterSW({
+    onNeedRefresh() {
+      setShowUpdate(true)
+    },
+  })
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <SyncBanner status={status} onSync={runSync} />
+      {outdated && <OutdatedBanner />}
+      {!outdated && showUpdate && (
+        <UpdateBanner onUpdate={() => updateServiceWorker(true)} />
+      )}
+      {!outdated && <SyncBanner status={status} onSync={runSync} />}
       <main className="flex-1 overflow-y-auto pb-20">
         <Outlet />
       </main>

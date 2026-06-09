@@ -367,6 +367,13 @@ export default function LeagueSettingsPage() {
         </section>
       )}
 
+      {/* App version */}
+      {import.meta.env.VITE_APP_VERSION && (
+        <p className="text-xs text-gray-400 text-center mb-2">
+          v{import.meta.env.VITE_APP_VERSION}
+        </p>
+      )}
+
       {/* Danger zone */}
       <div className="pt-6 border-t border-gray-200 space-y-3">
         <button

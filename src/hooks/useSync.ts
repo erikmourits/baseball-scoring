@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { pullFromServer, syncAll } from '../services/sync'
+import { pullFromServer, syncAll, ClientOutdatedError } from '../services/sync'
 import { useSession } from './useSession'
 import { db } from '../db/local'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -14,6 +14,7 @@ export function useSync() {
   const { session } = useSession()
   const [status, setStatus]   = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [outdated, setOutdated] = useState(false)
 
   // Count dirty records reactively
   const dirtyCount = useLiveQuery(async () => {
@@ -34,8 +35,13 @@ export function useSync() {
     try {
       await syncAll()
       setStatus('idle')
-    } catch {
-      setStatus('error')
+    } catch (e) {
+      if (e instanceof ClientOutdatedError) {
+        setOutdated(true)
+        setStatus('idle') // show outdated banner, not sync error
+      } else {
+        setStatus('error')
+      }
     }
   }, [session?.user.id])
 
@@ -48,7 +54,13 @@ export function useSync() {
     const handleOnline = () => {
       setIsOnline(true)
       setStatus('idle')
-      syncAll().catch(() => setStatus('error'))
+      syncAll().catch(e => {
+        if (e instanceof ClientOutdatedError) {
+          setOutdated(true)
+        } else {
+          setStatus('error')
+        }
+      })
     }
     const handleOffline = () => {
       setIsOnline(false)
@@ -72,5 +84,5 @@ export function useSync() {
 
   const displayStatus: SyncStatus = !isOnline ? 'offline' : status
 
-  return { status: displayStatus, dirtyCount, runSync }
+  return { status: displayStatus, dirtyCount, runSync, outdated }
 }
