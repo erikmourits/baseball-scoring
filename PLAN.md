@@ -333,39 +333,14 @@ Right now anyone with the URL can create an account. The app runs on a free Supa
 
 ---
 
-#### 7.2 — Development Supabase environment ❌
-Running all development against the production database is risky — a bad migration or sync bug can corrupt live data.
+#### 7.2 — Development Supabase environment ✅
+Dev project: `hfdyalavnpnqmpmxtdzg` (baseball-dev). Prod project: `eqnumwovwvubfmkprglg`.
 
-**Approach:** create a separate Supabase project for development, with its own URL and anon key. The app reads these from `.env` so switching environments is a matter of swapping the env file.
-
-**Implementation:**
-- Create a new Supabase project: `baseball-dev` (free tier, separate project)
-- Copy all migrations into the dev project: `npm run migrate` pointed at the dev DB URL
-- Deploy all Edge Functions to dev: `npm run deploy-functions` pointed at dev project ref
-- Add `.env.development` (already gitignored):
-  ```
-  VITE_SUPABASE_URL=https://<dev-project>.supabase.co
-  VITE_SUPABASE_ANON_KEY=<dev-anon-key>
-  VITE_APP_VERSION=1.0.0
-  ```
-- Rename current `.env` to `.env.production` and add it to `.gitignore`
-- Update `vite.config.ts` to load the right env file per mode (Vite does this automatically via `--mode`)
-- Update `scripts/migrate.js` and `scripts/deploy-functions.js` to accept a `--env` flag so you can target dev or prod explicitly:
-  ```
-  npm run migrate -- --env dev
-  npm run migrate -- --env prod
-  ```
-- Add a `scripts/.env.dev` and `scripts/.env.prod` holding the Supabase project ref and DB URL for each environment (gitignored)
-- Update `package.json`:
-  ```json
-  "dev": "vite --mode development",
-  "build": "vite build --mode production",
-  "migrate:dev": "node scripts/migrate.js --env dev",
-  "migrate:prod": "node scripts/migrate.js --env prod",
-  "deploy-functions:dev": "node scripts/deploy-functions.js --env dev",
-  "deploy-functions:prod": "node scripts/deploy-functions.js --env prod"
-  ```
-- Document the setup in `CONTRIBUTING.md` (or a `DEV_SETUP.md` section in this plan)
+- `.env.development` / `.env.production` — both gitignored; hold URL, anon key, project ref, DB URL per env
+- `npm run dev` → dev project; `npm run build` / CI → prod project
+- `scripts/migrate.js` runs `schema.sql` first, then numbered migrations; accepts `--env dev/prod`
+- `scripts/deploy-functions.js` reads `SUPABASE_PROJECT_REF` from env file and runs `supabase link` before deploying
+- New `package.json` scripts: `migrate:dev`, `migrate:prod`, `deploy-functions:dev`, `deploy-functions:prod`
 
 ---
 
