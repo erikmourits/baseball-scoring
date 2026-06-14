@@ -444,6 +444,12 @@ export default function LeagueSettingsPage() {
       <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Help</p>
         <button
+          onClick={() => navigate('/help')}
+          className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-brand-500 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          ❓ How to use this app
+        </button>
+        <button
           onClick={() => setShowOnboarding(true)}
           className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-brand-500 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors"
         >

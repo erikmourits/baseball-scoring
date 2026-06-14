@@ -446,8 +446,8 @@ date,home_team,away_team,location
 - [ ] Update `.github/workflows/deploy.yml` — change trigger to `release: types: [published]`
 - [ ] Add `.github/workflows/deploy-dev.yml` — triggers on push to `dev` branch, targets `development` environment
 
-#### 10.2 — Help page ❌
-A `/help` route explaining how to use the app: scoring conventions, OCR upload, league management, sync behaviour.
+#### 10.2 — Help page ✅
+A `/help` route covering: getting started, scoring conventions, OCR upload, stats, sync, and inviting scorers. Accessible from League Settings → Help → "How to use this app".
 
 #### 10.3 — First-time user introduction ✅
 Fullscreen onboarding wizard shown when `league === null`. Pulls from server first to handle invited scorers (who already have a league on the server). Two steps: welcome screen → create league. Accessible again via League Settings → Help → "Show introduction".

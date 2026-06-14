@@ -20,6 +20,7 @@ import LeagueSettingsPage from './pages/LeagueSettingsPage'
 import AppShell from './components/layout/AppShell'
 import AdminPage from './pages/AdminPage'
 import SignupInvitePage from './pages/SignupInvitePage'
+import HelpPage from './pages/HelpPage'
 
 function AuthenticatedApp() {
   useSync()
@@ -43,6 +44,7 @@ function AuthenticatedApp() {
         <Route path="/invite/:token"                              element={<InvitePage />} />
         <Route path="/league-invite/:token"                       element={<InvitePage />} />
         <Route path="/admin"                                    element={<AdminPage />} />
+        <Route path="/help"                                     element={<HelpPage />} />
         <Route path="*"                                         element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
