@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { clearLocalAndResync } from '../services/sync'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useTheme } from '../hooks/useTheme'
+import OnboardingWizard from '../components/OnboardingWizard'
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
@@ -185,6 +186,8 @@ export default function LeagueSettingsPage() {
     await (supabase.from('league_invites') as any).delete().eq('id', inviteId)
     setInvites(prev => prev.filter(i => i.id !== inviteId))
   }
+
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // ── Clear & resync from server ────────────────────────────────────────────────
   const [clearing, setClearing] = useState(false)
@@ -437,6 +440,17 @@ export default function LeagueSettingsPage() {
         </div>
       )}
 
+      {/* Help */}
+      <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Help</p>
+        <button
+          onClick={() => setShowOnboarding(true)}
+          className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-brand-500 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          👋 Show introduction
+        </button>
+      </div>
+
       {/* Troubleshooting */}
       <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Troubleshooting</p>
@@ -455,6 +469,8 @@ export default function LeagueSettingsPage() {
           v{import.meta.env.VITE_APP_VERSION}
         </p>
       )}
+
+      {showOnboarding && <OnboardingWizard onClose={() => setShowOnboarding(false)} />}
 
       {dialog && (
         <ConfirmDialog

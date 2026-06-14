@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { gameService } from '../services/gameService'
 import { useLeague } from '../hooks/useLeague'
+import OnboardingWizard from '../components/OnboardingWizard'
 
 const STATUS_LABEL: Record<string, string> = {
   draft:       'Draft',
@@ -51,25 +52,8 @@ export default function HomePage() {
     return <div className="p-4 text-gray-400">Loading…</div>
   }
 
-  // No league yet — prompt user to create or join one
-  if (league === null) {
-    return (
-      <div className="p-4 text-center py-16">
-        <p className="text-4xl mb-3">🏆</p>
-        <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Welcome!</p>
-        <p className="text-sm text-gray-500 mb-6">
-          Set up a league to start scoring games. A league keeps your teams,
-          seasons, and games together — and lets you invite other scorers.
-        </p>
-        <button
-          onClick={() => navigate('/league')}
-          className="bg-brand-500 text-white font-medium px-6 py-3 rounded-xl hover:bg-brand-600 transition-colors"
-        >
-          Create my league
-        </button>
-      </div>
-    )
-  }
+  // No league yet — show onboarding wizard
+  if (league === null) return <OnboardingWizard />
 
   const deletingGame = deletingId ? games?.find(g => g.id === deletingId) : null
 

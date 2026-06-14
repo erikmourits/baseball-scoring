@@ -431,12 +431,26 @@ date,home_team,away_team,location
   - Dead code and unused imports cleanup
 - [ ] **Dexie migration convention audit** — verify all future version bumps include an `upgrade()` handler per the convention documented above
 
-### Phase 9 — Deployment & Polish ❌
-- [ ] DNS A record: `baseball.mourits.nu` → server IP
-- [ ] Install Nginx; configure virtual host
-- [ ] Certbot SSL (`sudo certbot --nginx -d baseball.mourits.nu`)
-- [ ] GitHub Actions secrets + push-to-deploy pipeline
+### Phase 9 — Deployment & Polish ✅
+- [x] DNS A record: `baseball.mourits.nu` → server IP
+- [x] Apache virtual host config (`apache/baseball.mourits.nu.conf`)
+- [x] Certbot SSL (`sudo certbot --apache -d baseball.mourits.nu`)
+- [x] GitHub Actions CI/CD pipeline (migrate → deploy Edge Functions → build → rsync)
+- [x] GitHub release-based deploys (production triggered by GitHub Release, not every push)
+- [x] README.md + MIT license
 - [ ] PWA install prompt (iOS and Android)
+
+### Phase 10 — Release Management & Onboarding ❌
+
+#### 10.1 — GitHub release workflow ❌
+- [ ] Update `.github/workflows/deploy.yml` — change trigger to `release: types: [published]`
+- [ ] Add `.github/workflows/deploy-dev.yml` — triggers on push to `dev` branch, targets `development` environment
+
+#### 10.2 — Help page ❌
+A `/help` route explaining how to use the app: scoring conventions, OCR upload, league management, sync behaviour.
+
+#### 10.3 — First-time user introduction ✅
+Fullscreen onboarding wizard shown when `league === null`. Pulls from server first to handle invited scorers (who already have a league on the server). Two steps: welcome screen → create league. Accessible again via League Settings → Help → "Show introduction".
 
 ---
 
