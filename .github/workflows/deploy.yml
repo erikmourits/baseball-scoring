@@ -3,6 +3,7 @@ name: Deploy to baseball.mourits.nu
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   deploy:
