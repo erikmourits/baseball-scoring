@@ -442,9 +442,9 @@ date,home_team,away_team,location
 
 ### Phase 10 — Release Management & Onboarding ❌
 
-#### 10.1 — GitHub release workflow ❌
-- [ ] Update `.github/workflows/deploy.yml` — change trigger to `release: types: [published]`
-- [ ] Add `.github/workflows/deploy-dev.yml` — triggers on push to `dev` branch, targets `development` environment
+#### 10.1 — GitHub release workflow ✅
+- [x] Updated `.github/workflows/deploy.yml` — triggers on GitHub Release published + manual dispatch
+- [x] Added `.github/workflows/deploy-dev.yml` — triggers on push to `dev` branch, targets `development` environment
 
 #### 10.2 — Help page ✅
 A `/help` route covering: getting started, scoring conventions, OCR upload, stats, sync, and inviting scorers. Accessible from League Settings → Help → "How to use this app".

@@ -1,14 +1,14 @@
-name: Deploy to baseball.mourits.nu
+name: Deploy to dev
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [dev]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
 
     steps:
       - name: Checkout
@@ -48,7 +48,7 @@ jobs:
         with:
           switches: -avzr --delete
           path: dist/
-          remote_path: /export/www/baseball.mourits.nu/
+          remote_path: /export/www/baseball-dev.mourits.nu/
           remote_host: ${{ vars.DEPLOY_HOST }}
           remote_user: ${{ vars.DEPLOY_USER }}
           remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
