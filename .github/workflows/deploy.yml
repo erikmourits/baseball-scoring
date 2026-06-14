@@ -30,8 +30,8 @@ jobs:
 
       - name: Debug
         run: |
-          echo "HOST='${{ vars.REMOTE_HOST }}'"
-          echo "USER='${{ vars.REMOTE_USER }}'"
+          echo "HOST='${{ vars.DEPLOY_HOST }}'"
+          echo "USER='${{ vars.DEPLOY_USER }}'"
 
       - name: Deploy via rsync
         uses: burnett01/rsync-deployments@7.0.1
@@ -39,6 +39,6 @@ jobs:
           switches: -avzr --delete
           path: dist/
           remote_path: /export/www/baseball.mourits.nu/
-          remote_host: ${{ vars.REMOTE_HOST }}
-          remote_user: ${{ vars.REMOTE_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          remote_host: ${{ vars.DEPLOY_HOST }}
+          remote_user: ${{ vars.DEPLOY_USER }}
+          remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
