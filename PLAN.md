@@ -452,6 +452,37 @@ A `/help` route covering: getting started, scoring conventions, OCR upload, stat
 #### 10.3 — First-time user introduction ✅
 Fullscreen onboarding wizard shown when `league === null`. Pulls from server first to handle invited scorers (who already have a league on the server). Two steps: welcome screen → create league. Accessible again via League Settings → Help → "Show introduction".
 
+#### 10.4 — Dev environment setup ❌ (server-side, manual)
+- [ ] Create Apache vhost for `baseball-dev.mourits.nu` (same config as production, root: `/export/www/baseball-dev.mourits.nu`)
+- [ ] Run Certbot for `baseball-dev.mourits.nu`
+- [ ] Create `development` environment in GitHub (Settings → Environments) with its own secrets/variables pointing to the dev Supabase project
+- [ ] Create a `dev` branch — pushes to it auto-deploy to `baseball-dev.mourits.nu`
+
+---
+
+### Phase 11 — Internationalisation (i18n) ❌
+Make the app available in English and Dutch. Dutch should be the default for this app.
+
+#### Approach
+Use **react-i18next** (industry standard, works well with Vite). Language stored in `localStorage`, auto-detected from browser locale on first visit.
+
+#### Implementation steps
+- [ ] Install `react-i18next` and `i18next-browser-languagedetector`
+- [ ] Create translation files: `public/locales/en/translation.json` and `public/locales/nl/translation.json`
+- [ ] Wrap app with `I18nextProvider`, configure auto-detection (browser locale → localStorage fallback)
+- [ ] Replace all hardcoded UI strings with `t('key')` calls across all pages and components
+- [ ] Add language toggle to League Settings (next to dark mode toggle)
+- [ ] Translate the Dutch file (`nl/translation.json`) — all strings from the English base
+- [ ] Update `HelpPage.tsx` content for both languages
+- [ ] Update `OnboardingWizard.tsx` content for both languages
+
+#### Key files to touch
+All pages in `src/pages/`, shared components in `src/components/`, bottom nav labels, error messages, confirm dialogs.
+
+#### Notes
+- Baseball terminology in Dutch: at-bat = slagbeurt, inning = inning, pitcher = werper, batter = slager, out = uit, safe = veilig, home run = homerun, walk = vier ballen (BB), strikeout = uitgeslagen (K)
+- Keep baseball abbreviations (1B, 2B, HR, BB, K, etc.) in English — they are universal in Dutch baseball
+
 ---
 
 ## Key Decisions
