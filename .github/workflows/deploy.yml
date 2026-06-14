@@ -28,6 +28,11 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Debug
+        run: |
+          echo "HOST='${{ vars.REMOTE_HOST }}'"
+          echo "USER='${{ vars.REMOTE_USER }}'"
+
       - name: Deploy via rsync
         uses: burnett01/rsync-deployments@7.0.1
         with:
