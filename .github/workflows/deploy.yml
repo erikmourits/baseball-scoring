@@ -28,20 +28,12 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Debug secrets
-        run: |
-          echo "REMOTE_HOST is set: ${{ secrets.REMOTE_HOST != '' }}"
-          echo "REMOTE_USER is set: ${{ secrets.REMOTE_USER != '' }}"
-          echo "Host length: ${#REMOTE_HOST}"
-        env:
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-
       - name: Deploy via rsync
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avzr --delete
           path: dist/
           remote_path: /export/www/baseball.mourits.nu/
-          remote_host: ${{ secrets.REMOTE_HOST }}
-          remote_user: ${{ secrets.REMOTE_USER }}
+          remote_host: ${{ vars.REMOTE_HOST }}
+          remote_user: ${{ vars.REMOTE_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
