@@ -438,7 +438,7 @@ export default function GamePage() {
               <button onClick={handleShare} className="flex items-center gap-1 text-xs bg-red-500/80 hover:bg-red-500 px-2 py-0.5 rounded-full font-semibold transition-colors">
                 {shareCopied
                   ? <>{t('game.copied')}</>
-                  : <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{t('game.live')}{viewerCount > 0 && ` · ${viewerCount}`}</>
+                  : <><span className={`w-1.5 h-1.5 rounded-full animate-pulse ${viewerCount > 0 ? 'bg-green-400' : 'bg-white'}`} />{t('game.live')}{viewerCount > 0 && ` · ${viewerCount}`}</>
                 }
               </button>
             ) : (

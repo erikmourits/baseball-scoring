@@ -12,8 +12,7 @@ Your task is to transcribe a handwritten scorecard photo into a structured JSON 
 ## KNBSB Scorecard Notation
 
 ### Outs (circled on the card)
-- (K) or (K/) = strikeout swinging
-- (KL) or (ꓘ) = strikeout looking
+- (K) or (K/) = strikeout
 - (F7), (F8), (F9) etc = flyout to left/center/right field
 - (F3), (F4) etc = flyout to first, second base
 - (3-U), (6-3), (4-3) etc = groundout (fielder positions: 1=P, 2=C, 3=1B, 4=2B, 5=3B, 6=SS, 7=LF, 8=CF, 9=RF)

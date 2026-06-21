@@ -78,13 +78,6 @@ export default function HomePage() {
             >
               {t('home.newGame')}
             </button>
-            <button
-              onClick={() => navigate('/games/upload')}
-              title={t('home.uploadScorecard')}
-              className="bg-gray-100 text-gray-600 dark:text-gray-400 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors"
-            >
-              📷
-            </button>
           </div>
         )}
       </div>

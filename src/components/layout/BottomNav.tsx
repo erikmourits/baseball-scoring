@@ -2,11 +2,11 @@ import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 const navItems = [
-  { to: '/',               icon: '🏟️', labelKey: 'nav.games'   },
-  { to: '/teams',          icon: '👥', labelKey: 'nav.teams'   },
-  { to: '/seasons',        icon: '📅', labelKey: 'nav.seasons' },
-  { to: '/stats',          icon: '📊', labelKey: 'nav.stats'   },
-  { to: '/league',         icon: '🏆', labelKey: 'nav.league'  },
+  { to: '/',       icon: 'ti-ball-baseball', labelKey: 'nav.games'   },
+  { to: '/teams',  icon: 'ti-shirt',         labelKey: 'nav.teams'   },
+  { to: '/seasons',icon: 'ti-calendar',      labelKey: 'nav.seasons' },
+  { to: '/stats',  icon: 'ti-chart-bar',     labelKey: 'nav.stats'   },
+  { to: '/league', icon: 'ti-settings',      labelKey: 'nav.league'  },
 ]
 
 export default function BottomNav() {
@@ -25,7 +25,7 @@ export default function BottomNav() {
               }`
             }
           >
-            <span className="text-xl">{item.icon}</span>
+            <i className={`ti ${item.icon} text-2xl`} aria-hidden="true" />
             <span>{t(item.labelKey)}</span>
           </NavLink>
         ))}
