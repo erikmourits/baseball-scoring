@@ -123,6 +123,3 @@ Go to **Actions** tab in your GitHub repo to watch the deployment. Once green, v
 
 ---
 
-## You're live! Next steps
-
-Phase 1 is teams and roster management. Ready when you are.

@@ -7,3 +7,6 @@ dist-ssr
 !.env.example
 .DS_Store
 supabase/.temp/
+e2e/.auth/
+playwright-report/
+test-results/
