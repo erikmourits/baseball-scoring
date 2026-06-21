@@ -460,21 +460,21 @@ Fullscreen onboarding wizard shown when `league === null`. Pulls from server fir
 
 ---
 
-### Phase 11 — Internationalisation (i18n) ❌
+### Phase 11 — Internationalisation (i18n) ✅
 Make the app available in English and Dutch. Dutch should be the default for this app.
 
 #### Approach
 Use **react-i18next** (industry standard, works well with Vite). Language stored in `localStorage`, auto-detected from browser locale on first visit.
 
 #### Implementation steps
-- [ ] Install `react-i18next` and `i18next-browser-languagedetector`
-- [ ] Create translation files: `public/locales/en/translation.json` and `public/locales/nl/translation.json`
-- [ ] Wrap app with `I18nextProvider`, configure auto-detection (browser locale → localStorage fallback)
-- [ ] Replace all hardcoded UI strings with `t('key')` calls across all pages and components
-- [ ] Add language toggle to League Settings (next to dark mode toggle)
-- [ ] Translate the Dutch file (`nl/translation.json`) — all strings from the English base
-- [ ] Update `HelpPage.tsx` content for both languages
-- [ ] Update `OnboardingWizard.tsx` content for both languages
+- [x] Install `react-i18next` and `i18next-browser-languagedetector`
+- [x] Create translation files: `src/locales/en/translation.json` and `src/locales/nl/translation.json`
+- [x] Wrap app with `I18nextProvider`, configure auto-detection (browser locale → localStorage fallback)
+- [x] Replace all hardcoded UI strings with `t('key')` calls across all pages and components
+- [x] Add language toggle to League Settings (next to dark mode toggle)
+- [x] Translate the Dutch file (`nl/translation.json`) — all strings from the English base
+- [x] Update `HelpPage.tsx` content for both languages
+- [x] Update `OnboardingWizard.tsx` content for both languages
 
 #### Key files to touch
 All pages in `src/pages/`, shared components in `src/components/`, bottom nav labels, error messages, confirm dialogs.

@@ -10,6 +10,7 @@ Project-specific knowledge for AI-assisted development. Read this before making 
 - Supabase — Postgres backend, RLS, Edge Functions, Auth
 - vite-plugin-pwa — PWA with service worker; deployed at baseball.mourits.nu
 - React Router v6 — Outlet-based layout with AppShell
+- react-i18next — i18n, English + Dutch, Dutch default
 
 ## Critical File-Write Convention
 
@@ -46,6 +47,31 @@ Never use alert(), confirm(), or prompt(). Always use the ConfirmDialog componen
       alertOnly
       onConfirm={() => setShowAlert(false)}
     />
+
+## Internationalisation (i18n)
+
+All user-visible strings must use react-i18next. Never add hardcoded UI strings.
+
+Pattern:
+
+    import { useTranslation } from 'react-i18next'
+    const { t } = useTranslation()
+    // then: t('namespace.key') or t('namespace.key', { var: value })
+
+Translation files: src/locales/en/translation.json and src/locales/nl/translation.json
+i18n config:       src/i18n.ts  (imported once in src/main.tsx)
+
+Language detection: browser locale -> localStorage key 'i18nextLng'. Default: 'nl'.
+Language toggle: LeagueSettingsPage — uses i18n.changeLanguage('en' | 'nl').
+
+Key namespaces: nav, common, shell, auth, home, newGame, game, gameSummary,
+playerStats, teams, teamDetail, playerForm, seasons, stats, league, help,
+admin, invite, signupInvite, scorecard, review, watch, onboarding, runners,
+betweenEvents, substitution.
+
+Baseball abbreviations (1B, 2B, 3B, HR, BB, HBP, K, RoE, FC, SAC, SF, GDP,
+FO, GO, SB, CS, WP, PB, BALK, AVG, OBP, SLG, OPS, ERA, WHIP, IP, AB, PA,
+RBI, R, H, E) are universal and must NOT be translated.
 
 ## Dark Mode
 
@@ -131,9 +157,13 @@ Soft ban (user removal):
   src/hooks/useSync.ts                   Orchestrates push/pull for all entities
   src/hooks/useLeague.ts                 Active league state, switchLeague()
   src/hooks/useTheme.ts                  Dark mode toggle, persists to localStorage
+  src/hooks/useWakeLock.ts               Screen wake lock — active on GamePage only
+  src/i18n.ts                            i18next setup; imports bundled locale JSON files
+  src/locales/en/translation.json        English strings (~230 keys)
+  src/locales/nl/translation.json        Dutch strings (~230 keys)
   src/components/layout/AppShell.tsx     Root layout: sync banner, update banner, Outlet
   src/components/ConfirmDialog.tsx       All confirmation/alert dialogs
-  src/pages/LeagueSettingsPage.tsx       League management + dark mode toggle (sun/moon)
+  src/pages/LeagueSettingsPage.tsx       League management + dark mode + language toggle
   tailwind.config.ts                     Brand colors + darkMode: class
   index.html                             Blocking theme script to prevent flash
   supabase/functions/                    Edge Functions (site-invite, etc.)
@@ -153,11 +183,12 @@ Current version: v7 (adds leagues table, leagueId indexes on teams/seasons/games
 
 Deploy by copying dist/ to the server. Nginx config in nginx/.
 
-## PLAN.md Status (as of 2026-06-13)
+## PLAN.md Status (as of 2026-06-21)
 
   DONE  Phase 1-6: Core scoring, sync, auth, seasons, lineups, league management
   DONE  Phase 7.1: Invite-only signup
   DONE  Phase 7.4: Dark mode
+  DONE  Phase 11: Internationalisation (English + Dutch)
   TODO  Phase 7.5: Import schedule from CSV
   SKIP  Phase 7.2: Dev Supabase environment (advised against for free tier)
   TODO  Phase 4 remaining: Excel export, print box score, fielding stats
