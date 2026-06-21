@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { teamService } from '../services/teamService'
 import { playerService } from '../services/playerService'
@@ -17,6 +18,7 @@ type Tab = 'roster' | 'stats'
 
 function StatsTab({ teamId }: { teamId: string }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [statView, setStatView] = useState<'batting' | 'pitching'>('batting')
 
   const seasons = useLiveQuery(async () => {
@@ -90,7 +92,7 @@ function StatsTab({ teamId }: { teamId: string }) {
     return { battingRows, pitchingRows }
   }, [players, playerStats])
 
-  if (!seasons || !players) return <div className="py-8 text-center text-gray-400 text-sm">Loading…</div>
+  if (!seasons || !players) return <div className="py-8 text-center text-gray-400 text-sm">{t('common.loading')}</div>
 
   const noData = statView === 'batting' ? battingRows.length === 0 : pitchingRows.length === 0
 
@@ -113,7 +115,7 @@ function StatsTab({ teamId }: { teamId: string }) {
       )}
 
       {seasons.length === 0 && (
-        <p className="text-sm text-gray-400 mb-4">No seasons yet — create one in the Seasons tab.</p>
+        <p className="text-sm text-gray-400 mb-4">{t('teamDetail.noSeasons')}</p>
       )}
 
       {/* Batting / Pitching toggle */}
@@ -130,14 +132,14 @@ function StatsTab({ teamId }: { teamId: string }) {
 
       {noData ? (
         <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-8 text-center">
-          <p className="text-gray-400 text-sm">No {statView} stats recorded yet for this season.</p>
+          <p className="text-gray-400 text-sm">{t('teamDetail.noStats', { statView })}</p>
         </div>
       ) : statView === 'batting' ? (
         <div className="overflow-x-auto -mx-4">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700">
-                <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Player</th>
+                <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('teamDetail.playerCol')}</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">PA</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">AVG</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">OBP</th>
@@ -180,7 +182,7 @@ function StatsTab({ teamId }: { teamId: string }) {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700">
-                <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Player</th>
+                <th className="text-left pl-4 pr-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('teamDetail.playerCol')}</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">W</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">L</th>
                 <th className="px-2 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">ERA</th>
@@ -221,6 +223,7 @@ function StatsTab({ teamId }: { teamId: string }) {
 export default function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState<Tab>(() => searchParams.get('tab') === 'stats' ? 'stats' : 'roster')
   const [editingName, setEditingName] = useState(false)
@@ -239,7 +242,7 @@ export default function TeamDetailPage() {
   const players = allPlayers?.filter(p => !p.deletedAt)
   const archivedPlayers = allPlayers?.filter(p => !!p.deletedAt)
 
-  if (team === undefined) return <div className="p-4 text-gray-400">Loading…</div>
+  if (team === undefined) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
   if (team === null) return <div className="p-4 text-gray-400">Team not found.</div>
 
   async function handleRename(e: React.FormEvent) {
@@ -280,7 +283,7 @@ export default function TeamDetailPage() {
     <div className="p-4">
       {/* Back */}
       <button onClick={() => navigate('/teams')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
-        ‹ Teams
+        {t('teamDetail.backTeams')}
       </button>
 
       {/* Team name */}
@@ -288,13 +291,13 @@ export default function TeamDetailPage() {
         <form onSubmit={handleRename} className="flex gap-2 mb-3">
           <input autoFocus value={nameValue} onChange={e => setNameValue(e.target.value)}
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">Save</button>
-          <button type="button" onClick={() => setEditingName(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">Cancel</button>
+          <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">{t('common.save')}</button>
+          <button type="button" onClick={() => setEditingName(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">{t('common.cancel')}</button>
         </form>
       ) : (
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{team.name}</h1>
-          <button onClick={() => { setNameValue(team.name); setEditingName(true) }} className="text-sm text-gray-400 hover:text-gray-600 px-2 py-1">Edit</button>
+          <button onClick={() => { setNameValue(team.name); setEditingName(true) }} className="text-sm text-gray-400 hover:text-gray-600 px-2 py-1">{t('common.edit')}</button>
         </div>
       )}
 
@@ -304,29 +307,29 @@ export default function TeamDetailPage() {
           <input autoFocus value={homeFieldValue} onChange={e => setHomeFieldValue(e.target.value)}
             placeholder="e.g. Sportpark De Bongerd"
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">Save</button>
-          <button type="button" onClick={() => setEditingHomeField(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">Cancel</button>
+          <button type="submit" className="bg-brand-500 text-white px-4 rounded-lg font-medium text-sm">{t('common.save')}</button>
+          <button type="button" onClick={() => setEditingHomeField(false)} className="bg-gray-100 text-gray-600 dark:text-gray-400 px-4 rounded-lg font-medium text-sm">{t('common.cancel')}</button>
         </form>
       ) : (
         <div className="flex items-center justify-between mb-5 text-sm">
           <span className="text-gray-500">
-            Home field:{' '}
+            {t('teamDetail.homefield')}{' '}
             {team.homeField
               ? <span className="text-gray-700 dark:text-gray-300 font-medium">{team.homeField}</span>
-              : <span className="text-gray-300 italic">not set</span>}
+              : <span className="text-gray-300 italic">{t('teamDetail.notSet')}</span>}
           </span>
-          <button onClick={() => { setHomeFieldValue(team.homeField ?? ''); setEditingHomeField(true) }} className="text-gray-400 hover:text-gray-600 px-2 py-1">Edit</button>
+          <button onClick={() => { setHomeFieldValue(team.homeField ?? ''); setEditingHomeField(true) }} className="text-gray-400 hover:text-gray-600 px-2 py-1">{t('common.edit')}</button>
         </div>
       )}
 
       {/* Tab bar */}
       <div className="flex border-b border-gray-200 mb-5">
-        {(['roster', 'stats'] as Tab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {([['roster', t('teamDetail.roster')], ['stats', t('teamDetail.stats')]] as [Tab, string][]).map(([tabKey, label]) => (
+          <button key={tabKey} onClick={() => setTab(tabKey)}
             className={`px-4 py-2 text-sm font-semibold capitalize border-b-2 -mb-px transition-colors ${
-              tab === t ? 'border-brand-500 dark:border-blue-500 text-brand-600' : 'border-transparent text-gray-400 hover:text-gray-600'
+              tab === tabKey ? 'border-brand-500 dark:border-blue-500 text-brand-600' : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}>
-            {t}
+            {label}
           </button>
         ))}
       </div>
@@ -336,14 +339,14 @@ export default function TeamDetailPage() {
         <>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-              {showArchived ? 'Inactive players' : 'Roster'}
+              {showArchived ? t('teamDetail.inactivePlayers') : t('teamDetail.rosterHeading')}
               {showArchived && archivedPlayers && archivedPlayers.length > 0 && (
                 <span className="ml-1 text-gray-400 normal-case font-normal">({archivedPlayers.length})</span>
               )}
             </h2>
             {archivedPlayers && archivedPlayers.length > 0 && (
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <span className="text-xs text-gray-400">Show inactive</span>
+                <span className="text-xs text-gray-400">{t('teamDetail.showInactive')}</span>
                 <div onClick={() => setShowArchived(v => !v)}
                   className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${showArchived ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
                   <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-gray-800 rounded-full shadow transition-transform duration-200 ${showArchived ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -376,11 +379,11 @@ export default function TeamDetailPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-400 text-sm mb-4">No players yet.</p>
+                <p className="text-gray-400 text-sm mb-4">{t('teamDetail.noPlayers')}</p>
               )}
               <button onClick={() => navigate(`/teams/${teamId}/players/new`)}
                 className="w-full bg-brand-500 text-white font-medium py-3 rounded-xl hover:bg-brand-600 active:bg-brand-700 transition-colors mb-4">
-                + Add Player
+                {t('teamDetail.addPlayer')}
               </button>
             </>
           )}
@@ -397,18 +400,18 @@ export default function TeamDetailPage() {
                   </div>
                   <button onClick={() => handleRestorePlayer(player.id)}
                     className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg transition-colors border border-brand-200 dark:border-brand-700">
-                    Reactivate
+                    {t('teamDetail.reactivate')}
                   </button>
                 </li>
               )) : (
-                <p className="text-gray-400 text-sm">No inactive players.</p>
+                <p className="text-gray-400 text-sm">{t('teamDetail.noInactive')}</p>
               )}
             </ul>
           )}
 
           <button onClick={() => setPending({ type: 'deleteTeam' })}
             className="w-full text-red-400 dark:text-red-300 text-sm py-2 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-            Delete this team
+            {t('teamDetail.deleteTeam')}
           </button>
         </>
       )}

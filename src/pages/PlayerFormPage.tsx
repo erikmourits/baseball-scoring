@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { playerService } from '../services/playerService'
 
@@ -8,6 +9,7 @@ const ALL_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH',
 export default function PlayerFormPage() {
   const { teamId, playerId } = useParams<{ teamId: string; playerId?: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const isEdit = playerId !== 'new' && !!playerId
 
   const [name, setName] = useState('')
@@ -72,50 +74,50 @@ export default function PlayerFormPage() {
     setSaving(false)
   }
 
-  if (loading) return <div className="p-4 text-gray-400">Loading…</div>
+  if (loading) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
 
   const secondaryOptions = ALL_POSITIONS.filter(p => p !== primary)
 
   return (
     <div className="p-4">
       <button onClick={() => navigate(`/teams/${teamId}`)} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
-        ‹ Back
+        {t('playerForm.back')}
       </button>
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-        {isEdit ? 'Edit Player' : 'Add Player'}
+        {isEdit ? t('playerForm.editTitle') : t('playerForm.addTitle')}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name <span className="text-red-400 dark:text-red-300">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.name')} <span className="text-red-400 dark:text-red-300">*</span></label>
           <input
             autoFocus
             type="text"
             required
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Player name"
+            placeholder={t('playerForm.namePlaceholder')}
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
 
         {/* Jersey number */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jersey number</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('playerForm.jerseyNumber')}</label>
           <input
             type="text"
             value={jersey}
             onChange={e => setJersey(e.target.value)}
-            placeholder="e.g. 12"
+            placeholder={t('playerForm.jerseyPlaceholder')}
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
 
         {/* Primary position */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Primary position</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('playerForm.primaryPosition')}</label>
           <div className="flex flex-wrap gap-2">
             {ALL_POSITIONS.map(pos => (
               <button
@@ -137,8 +139,8 @@ export default function PlayerFormPage() {
         {/* Secondary positions */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Secondary positions
-            <span className="text-gray-400 font-normal ml-1">(can play)</span>
+            {t('playerForm.secondaryPositions')}
+            <span className="text-gray-400 font-normal ml-1">{t('playerForm.canPlay')}</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {secondaryOptions.map(pos => (
@@ -164,7 +166,7 @@ export default function PlayerFormPage() {
             disabled={saving || !name.trim()}
             className="flex-1 w-full bg-brand-500 text-white font-medium py-3 rounded-xl hover:bg-brand-600 active:bg-brand-700 transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add player'}
+            {saving ? t('playerForm.saving') : isEdit ? t('playerForm.saveChanges') : t('playerForm.addPlayer')}
           </button>
           {!isEdit && (
             <button
@@ -173,7 +175,7 @@ export default function PlayerFormPage() {
               onClick={handleSaveAndAddAnother}
               className="flex-1 bg-gray-100 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors disabled:opacity-50"
             >
-              + Add another
+              {t('playerForm.addAnother')}
             </button>
           )}
         </div>

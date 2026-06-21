@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
@@ -31,6 +32,7 @@ function resultBadge(r: string) {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function PlayerStatsPage() {
+  const { t } = useTranslation()
   const { teamId, playerId, seasonId } = useParams<{ teamId: string; playerId: string; seasonId?: string }>()
   const navigate = useNavigate()
 
@@ -126,7 +128,7 @@ export default function PlayerStatsPage() {
       </div>
 
       {/* ── Batting ── */}
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Batting</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('playerStats.batting')}</p>
 
       {seasonBatting && seasonBatting.pa > 0 ? (
         <>
@@ -152,14 +154,14 @@ export default function PlayerStatsPage() {
         </>
       ) : (
         <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-6 text-center mb-6">
-          <p className="text-gray-400 text-sm">No at-bats recorded yet.</p>
+          <p className="text-gray-400 text-sm">{t('playerStats.noAtBats')}</p>
         </div>
       )}
 
       {/* ── Pitching ── */}
       {hasPitching && seasonPitching && (
         <>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Pitching</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('playerStats.pitching')}</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             <StatCard label="W"   value={String(seasonW)} />
             <StatCard label="L"   value={String(seasonL)} />
@@ -181,7 +183,7 @@ export default function PlayerStatsPage() {
       {/* ── Game log ── */}
       {gameLines.length > 0 && (
         <>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Game log</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('playerStats.gameLog')}</p>
           <div className="space-y-2">
             {gameLines.map(({ game, battingAbs, batting, pitching, decision }) => {
               const isHome   = game.homeTeamId === teamId
@@ -195,7 +197,7 @@ export default function PlayerStatsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {isHome ? 'vs' : '@'} {opponent}
+                        {isHome ? t('playerStats.vs') : t('playerStats.at')} {opponent}
                       </p>
                       <p className="text-xs text-gray-400">
                         {new Date(game.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}

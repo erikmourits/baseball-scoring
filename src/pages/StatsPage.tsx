@@ -1,23 +1,25 @@
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 
 export default function StatsPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const teams = useLiveQuery(async () => {
     const all = await db.teams.toArray()
     return all.sort((a, b) => a.name.localeCompare(b.name))
   })
 
-  if (!teams) return <div className="p-4 text-gray-400">Loading…</div>
+  if (!teams) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
 
   if (teams.length === 0) {
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <p className="text-5xl mb-4">📊</p>
-        <p className="text-gray-500 dark:text-gray-400 font-medium">No teams yet</p>
-        <p className="text-sm text-gray-400 mt-1">Add a team and record games to see stats here.</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium">{t('stats.noTeams')}</p>
+        <p className="text-sm text-gray-400 mt-1">{t('stats.noTeamsText')}</p>
       </div>
     )
   }
@@ -30,8 +32,8 @@ export default function StatsPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Stats</h1>
-      <p className="text-sm text-gray-400 mb-5">Select a team to view player statistics.</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('stats.title')}</h1>
+      <p className="text-sm text-gray-400 mb-5">{t('stats.selectTeam')}</p>
 
       <div className="space-y-2">
         {teams.map(team => (

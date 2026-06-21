@@ -1,16 +1,12 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { gameService } from '../services/gameService'
 import { useLeague } from '../hooks/useLeague'
 import OnboardingWizard from '../components/OnboardingWizard'
 
-const STATUS_LABEL: Record<string, string> = {
-  draft:       'Draft',
-  in_progress: 'In progress',
-  final:       'Final',
-}
 const STATUS_COLOR: Record<string, string> = {
   draft:       'bg-gray-100 text-gray-500',
   in_progress: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
@@ -19,6 +15,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const { league } = useLeague()
 
@@ -49,7 +46,7 @@ export default function HomePage() {
 
   // Still loading
   if (activeSeason === undefined || league === undefined) {
-    return <div className="p-4 text-gray-400">Loading…</div>
+    return <div className="p-4 text-gray-400">{t('common.loading')}</div>
   }
 
   // No league yet — show onboarding wizard
@@ -57,12 +54,18 @@ export default function HomePage() {
 
   const deletingGame = deletingId ? games?.find(g => g.id === deletingId) : null
 
+  const STATUS_LABEL: Record<string, string> = {
+    draft:       t('home.draft'),
+    in_progress: t('home.inProgress'),
+    final:       t('home.final'),
+  }
+
   return (
     <div className="p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Games</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nav.games')}</h1>
           {activeSeason && (
             <p className="text-sm text-gray-400">{activeSeason.name}</p>
           )}
@@ -73,11 +76,11 @@ export default function HomePage() {
               onClick={() => navigate('/games/new')}
               className="bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-600 active:bg-brand-700 transition-colors"
             >
-              + New game
+              {t('home.newGame')}
             </button>
             <button
               onClick={() => navigate('/games/upload')}
-              title="Upload scorecard"
+              title={t('home.uploadScorecard')}
               className="bg-gray-100 text-gray-600 dark:text-gray-400 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors"
             >
               📷
@@ -90,13 +93,13 @@ export default function HomePage() {
       {!activeSeason && (
         <div className="text-center py-16 text-gray-400">
           <p className="text-4xl mb-3">📅</p>
-          <p className="font-medium text-gray-500 mb-1">No active season</p>
-          <p className="text-sm mb-4">Create a season before adding games.</p>
+          <p className="font-medium text-gray-500 mb-1">{t('home.noActiveSeason')}</p>
+          <p className="text-sm mb-4">{t('home.noActiveSeasonText')}</p>
           <button
             onClick={() => navigate('/seasons')}
             className="text-brand-500 dark:text-brand-100 text-sm font-medium hover:underline"
           >
-            Go to Seasons →
+            {t('home.goToSeasons')}
           </button>
         </div>
       )}
@@ -105,8 +108,8 @@ export default function HomePage() {
       {activeSeason && games?.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <p className="text-4xl mb-3">🏟️</p>
-          <p className="font-medium text-gray-500 mb-1">No games yet</p>
-          <p className="text-sm">Tap "+ New game" to score your first game.</p>
+          <p className="font-medium text-gray-500 mb-1">{t('home.noGames')}</p>
+          <p className="text-sm">{t('home.noGamesText')}</p>
         </div>
       )}
 
@@ -149,7 +152,7 @@ export default function HomePage() {
                 {/* Delete button — separate full-height target */}
                 <button
                   onClick={() => setDeletingId(game.id)}
-                  aria-label="Delete game"
+                  aria-label={t('common.delete')}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
@@ -166,25 +169,25 @@ export default function HomePage() {
       {deletingId && deletingGame && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-6 sm:pb-0">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-sm">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Delete game?</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('home.deleteGame')}</p>
             <p className="text-sm text-gray-500 mb-2">
               {teams?.[deletingGame.awayTeamId ?? ''] ?? '—'} @ {teams?.[deletingGame.homeTeamId ?? ''] ?? '—'}
               {' · '}
               {new Date(deletingGame.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
             </p>
-            <p className="text-xs text-gray-400 mb-5">This will permanently delete the game and all its at-bats.</p>
+            <p className="text-xs text-gray-400 mb-5">{t('home.deleteGameText')}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingId(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => handleDelete(deletingId)}
                 className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-medium text-white hover:bg-red-600 active:bg-red-700 transition-colors"
               >
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </div>

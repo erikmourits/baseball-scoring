@@ -1,4 +1,4 @@
-import {
+﻿import {
   DndContext, closestCenter, PointerSensor, TouchSensor,
   useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -8,6 +8,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { db, type LocalGameLineup } from '../../db/local'
 
 const SUB_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH']
@@ -22,9 +23,9 @@ type SubState = {
 
 type PlayerMap = Record<string, { name: string }>
 
-function SubSortableRow({ entry, index, playerName, position, onPositionChange, onMoveToBench }: {
+function SubSortableRow({ entry, index, playerName, position, onPositionChange, onMoveToBench, benchLabel }: {
   entry: LocalGameLineup; index: number; playerName: string
-  position?: string; onPositionChange: (pos: string) => void; onMoveToBench: () => void
+  position?: string; onPositionChange: (pos: string) => void; onMoveToBench: () => void; benchLabel: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: entry.id })
@@ -43,7 +44,7 @@ function SubSortableRow({ entry, index, playerName, position, onPositionChange, 
       </select>
       <button type="button" onClick={onMoveToBench}
         className="text-xs text-gray-400 hover:text-orange-500 border border-gray-200 hover:border-orange-300 rounded-lg px-2 py-1.5 shrink-0 transition-colors">
-        Bench
+        {benchLabel}
       </button>
       <button {...attributes} {...listeners}
         className="text-gray-300 hover:text-gray-500 px-1 touch-none cursor-grab active:cursor-grabbing shrink-0"
@@ -78,6 +79,7 @@ export function SubstitutionPage({
   players, homeName, awayName,
   onClose,
 }: SubstitutionPageProps) {
+  const { t } = useTranslation()
   const [subState, setSubState] = useState<SubState>(() =>
     lineupToSubState(
       defaultTeamId,
@@ -156,9 +158,9 @@ export function SubstitutionPage({
     <div className="fixed inset-0 flex flex-col bg-gray-50 dark:bg-gray-900 z-20">
       <div className="bg-brand-700 text-white px-4 pt-3 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <button onClick={onClose} className="text-white/70 text-sm">‹ Cancel</button>
-          <span className="text-sm font-semibold">Substitutions</span>
-          <button onClick={confirm} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">Confirm</button>
+          <button onClick={onClose} className="text-white/70 text-sm">{t('substitution.cancel')}</button>
+          <span className="text-sm font-semibold">{t('substitution.title')}</span>
+          <button onClick={confirm} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('common.confirm')}</button>
         </div>
         <div className="flex rounded-lg border border-white/20 overflow-hidden text-sm">
           <button onClick={() => switchTeam(homeTeamId)}
@@ -173,19 +175,20 @@ export function SubstitutionPage({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Starting lineup</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('substitution.startingLineup')}</p>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={subState.starters.map(e => e.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2 mb-4">
               {subState.starters.length === 0 && (
-                <li className="text-gray-400 text-sm text-center py-4">No starters.</li>
+                <li className="text-gray-400 text-sm text-center py-4">{t('substitution.noStarters')}</li>
               )}
               {subState.starters.map((entry, i) => (
                 <SubSortableRow key={entry.id} entry={entry} index={i}
                   playerName={players[entry.playerId]?.name ?? '?'}
                   position={subState.positions[entry.playerId]}
                   onPositionChange={pos => positionChange(entry.playerId, pos)}
-                  onMoveToBench={() => moveToBench(entry.id)} />
+                  onMoveToBench={() => moveToBench(entry.id)}
+                  benchLabel={t('substitution.bench')} />
               ))}
             </ul>
           </SortableContext>
@@ -193,7 +196,7 @@ export function SubstitutionPage({
 
         {subState.bench.length > 0 && (
           <>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">Bench</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">{t('substitution.bench')}</p>
             <ul className="space-y-2 mb-4">
               {subState.bench.map(entry => (
                 <li key={entry.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-3">
@@ -202,7 +205,7 @@ export function SubstitutionPage({
                   </div>
                   <button onClick={() => moveToLineup(entry.id)}
                     className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 dark:text-brand-100 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-700 shrink-0 transition-colors">
-                    → Lineup
+                    {t('substitution.toLineup')}
                   </button>
                 </li>
               ))}
@@ -212,7 +215,7 @@ export function SubstitutionPage({
 
         {missingPositions.length > 0 && subState.starters.length > 0 && (
           <div className="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Missing field positions</p>
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">{t('substitution.missingPositions')}</p>
             <p className="text-xs text-amber-600 mt-0.5">{missingPositions.join(', ')}</p>
           </div>
         )}

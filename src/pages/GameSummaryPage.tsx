@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useGameSubscription } from '../hooks/useGameSubscription'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -6,7 +7,7 @@ import { db } from '../db/local'
 import { computePitchingLine, getPitcherDecisions, fmtIp, fmtEra } from '../utils/statsCalc'
 import type { LocalAtBat } from '../db/local'
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────────────────────────
 
 const HIT_RESULTS   = new Set(['1B', '2B', '3B', 'HR'])
 const NO_AB_RESULTS = new Set(['BB', 'HBP', 'SAC', 'SF'])
@@ -17,7 +18,7 @@ function resultColor(r: string) {
   return 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────────────────────────────────────────
 
 type BatterLine = {
   playerId: string
@@ -42,12 +43,13 @@ type PitcherLine = {
   decision?: 'W' | 'L'
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────────────────────────
 
 export default function GameSummaryPage() {
   const { gameId } = useParams<{ gameId: string }>()
   const { isLive } = useGameSubscription(gameId)
   const navigate   = useNavigate()
+  const { t } = useTranslation()
 
   const game = useLiveQuery(() => db.games.get(gameId!), [gameId])
 
@@ -82,7 +84,7 @@ export default function GameSummaryPage() {
     return db.atBats.where('inningId').anyOf(inningIds).toArray()
   }, [innings?.length])
 
-  // ── Derived data ──────────────────────────────────────────────────────────
+  // ── Derived data ───────────────────────────────────────────────────────────────────────────────────
 
   const { linescore } = useMemo(() => {
     if (!innings || !atBats) return { linescore: [] }
@@ -176,9 +178,9 @@ export default function GameSummaryPage() {
     }
   }, [atBats, innings, homeLineup, awayLineup, players])
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────────────────────
 
-  if (!game || !teams || !players) return <div className="p-4 text-gray-400">Loading…</div>
+  if (!game || !teams || !players) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
 
   const homeName  = teams[game.homeTeamId ?? ''] ?? '—'
   const awayName  = teams[game.awayTeamId ?? ''] ?? '—'
@@ -191,7 +193,7 @@ export default function GameSummaryPage() {
 
       {/* Back */}
       <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
-        ‹ Games
+        {t('gameSummary.backGames')}
       </button>
 
       {/* Score header */}
@@ -212,13 +214,13 @@ export default function GameSummaryPage() {
           </div>
         </div>
         {game.status === 'final' && (
-          <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">Final</p>
+          <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">{t('gameSummary.final')}</p>
         )}
         {game.status !== 'final' && isLive && (
           <div className="flex justify-center mt-3">
             <span className="flex items-center gap-1.5 text-xs bg-red-500/80 px-3 py-1 rounded-full font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
-              LIVE
+              {t('gameSummary.live')}
             </span>
           </div>
         )}
@@ -230,12 +232,12 @@ export default function GameSummaryPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700">
-                <th className="text-left px-4 py-2 text-gray-400 font-medium w-20">Team</th>
+                <th className="text-left px-4 py-2 text-gray-400 font-medium w-20">{t('gameSummary.team')}</th>
                 {inningCols.map(n => (
                   <th key={n} className="text-center px-1.5 py-2 text-gray-400 font-medium w-8">{n}</th>
                 ))}
-                <th className="text-center px-2 py-2 text-gray-700 dark:text-gray-300 font-semibold border-l border-gray-100 dark:border-gray-700 w-8">R</th>
-                <th className="text-center px-2 py-2 text-gray-400 font-medium w-8">H</th>
+                <th className="text-center px-2 py-2 text-gray-700 dark:text-gray-300 font-semibold border-l border-gray-100 dark:border-gray-700 w-8">{t('gameSummary.runs')}</th>
+                <th className="text-center px-2 py-2 text-gray-400 font-medium w-8">{t('gameSummary.hits')}</th>
               </tr>
             </thead>
             <tbody>
@@ -276,17 +278,17 @@ export default function GameSummaryPage() {
         <div key={label} className="mb-6">
 
           {/* Batting */}
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Batting</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('gameSummary.batting', { label })}</p>
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
             <div className="flex items-center px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-400">
-              <span className="w-5 shrink-0 mr-3">#</span>
-              <span className="flex-1">Player</span>
-              <span className="w-8 text-center">AB</span>
+              <span className="w-5 shrink-0 mr-3">{t('gameSummary.number')}</span>
+              <span className="flex-1">{t('gameSummary.player')}</span>
+              <span className="w-8 text-center">{t('gameSummary.ab')}</span>
               <span className="w-8 text-center">H</span>
-              <span className="w-10 text-center">RBI</span>
+              <span className="w-10 text-center">{t('gameSummary.rbi')}</span>
             </div>
             {batters.length === 0 && (
-              <p className="text-sm text-gray-400 px-4 py-4 text-center">No batting data recorded.</p>
+              <p className="text-sm text-gray-400 px-4 py-4 text-center">{t('gameSummary.noBattingData')}</p>
             )}
             {batters.map((b, i) => (
               <div key={b.playerId} className={`px-4 py-3 ${i < batters.length - 1 ? 'border-b border-gray-50 dark:border-gray-800' : ''}`}>
@@ -318,15 +320,15 @@ export default function GameSummaryPage() {
           {/* Pitching */}
           {pitchers.length > 0 && (
             <>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} — Pitching</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('gameSummary.pitching', { label })}</p>
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-2">
                 <div className="flex items-center px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-400">
-                  <span className="flex-1">Pitcher</span>
-                  <span className="w-12 text-center">ERA</span>
-                  <span className="w-10 text-center">IP</span>
+                  <span className="flex-1">{t('gameSummary.pitcher')}</span>
+                  <span className="w-12 text-center">{t('gameSummary.era')}</span>
+                  <span className="w-10 text-center">{t('gameSummary.ip')}</span>
                   <span className="w-8 text-center">H</span>
                   <span className="w-8 text-center">R</span>
-                  <span className="w-8 text-center">K</span>
+                  <span className="w-8 text-center">{t('gameSummary.strikeouts')}</span>
                 </div>
                 {pitchers.map((p, i) => (
                   <div key={p.playerId}

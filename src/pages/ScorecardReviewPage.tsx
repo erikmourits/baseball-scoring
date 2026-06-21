@@ -1,12 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { useSession } from '../hooks/useSession'
 import { useLeague } from '../hooks/useLeague'
 
-// ── Types mirroring Edge Function output ─────────────────────────────────────
+// -- Types mirroring Edge Function output
 
 interface OcrRunnerOutcome {
   runnerName: string | null
@@ -50,7 +51,7 @@ interface OcrGameLog {
   innings: OcrInning[]
 }
 
-// ── Editable at-bat row ───────────────────────────────────────────────────────
+// -- Editable at-bat row
 
 const VALID_RESULTS = ['1B','2B','3B','HR','BB','HBP','ROE','FC','K','KL','FO','GO','SAC','SF','GDP']
 
@@ -78,6 +79,7 @@ interface AtBatRowProps {
 }
 
 function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(ab.confidence === 'low')
 
   return (
@@ -90,7 +92,7 @@ function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
         <span className="text-xs text-gray-400 tabular-nums w-4">{index + 1}</span>
         {confidenceDot(ab.confidence)}
         <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-          {ab.batterName ?? <span className="text-gray-400 italic">Unknown batter</span>}
+          {ab.batterName ?? <span className="text-gray-400 italic">{t('review.unknownBatter')}</span>}
         </span>
         {ab.result ? (
           <span className={`text-xs font-bold px-2 py-0.5 rounded ${RESULT_COLOR[ab.result] ?? 'bg-gray-100 text-gray-600 dark:text-gray-400'}`}>
@@ -106,19 +108,19 @@ function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
         <div className="mt-3 space-y-2 pl-6">
           {/* Batter name */}
           <div>
-            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Batter</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">{t('review.batterLabel')}</label>
             <input
               type="text"
               value={ab.batterName ?? ''}
               onChange={e => onChange({ ...ab, batterName: e.target.value || null })}
-              placeholder="Batter name"
+              placeholder={t('review.batterPlaceholder')}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           {/* Result */}
           <div>
-            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Result</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">{t('review.resultLabel')}</label>
             <div className="flex flex-wrap gap-1.5">
               {VALID_RESULTS.map(r => (
                 <button key={r} onClick={() => onChange({ ...ab, result: r })}
@@ -135,7 +137,7 @@ function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
 
           {/* RBI */}
           <div className="flex items-center gap-3">
-            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">RBI</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{t('review.rbiLabel')}</label>
             <div className="flex items-center gap-2">
               <button onClick={() => onChange({ ...ab, rbiCount: Math.max(0, ab.rbiCount - 1) })}
                 className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-bold text-gray-600 dark:text-gray-400 flex items-center justify-center">−</button>
@@ -154,14 +156,14 @@ function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
 
           {/* Confidence override */}
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Confidence</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{t('review.confidence')}</label>
             <div className="flex gap-1">
               {(['high', 'medium', 'low'] as const).map(c => (
                 <button key={c} onClick={() => onChange({ ...ab, confidence: c })}
                   className={`px-2 py-0.5 rounded text-xs font-medium capitalize transition-colors ${
                     ab.confidence === c ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}>
-                  {c}
+                  {c === 'high' ? t('review.high') : c === 'medium' ? t('review.medium') : t('review.low')}
                 </button>
               ))}
             </div>
@@ -172,7 +174,7 @@ function AtBatRow({ ab, index, onChange }: AtBatRowProps) {
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// -- Main component
 
 const now = () => new Date().toISOString()
 
@@ -181,6 +183,7 @@ export default function ScorecardReviewPage() {
   const location  = useLocation()
   const { session } = useSession()
   const { league } = useLeague()
+  const { t } = useTranslation()
 
   const rawGameLog = location.state?.gameLog as OcrGameLog | undefined
   const usage      = location.state?.usage as any
@@ -295,55 +298,55 @@ export default function ScorecardReviewPage() {
     }
   }
 
-  // ── No data guard ───────────────────────────────────────────────────────────
+  // -- No data guard
 
   if (!gameLog) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-400 mb-4">No scorecard data. Please upload a scorecard first.</p>
+        <p className="text-gray-400 mb-4">{t('review.noData')}</p>
         <button onClick={() => navigate('/games/upload')}
           className="bg-brand-500 text-white px-6 py-3 rounded-xl font-medium">
-          Upload scorecard
+          {t('review.upload')}
         </button>
       </div>
     )
   }
 
-  // ── Saved confirmation ──────────────────────────────────────────────────────
+  // -- Saved confirmation
 
   if (savedGameId) {
     return (
       <div className="p-6 text-center">
         <div className="text-5xl mb-4">✅</div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Game saved!</h2>
-        <p className="text-sm text-gray-400 mb-6">The scorecard has been added to your game log.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('review.gameSaved')}</h2>
+        <p className="text-sm text-gray-400 mb-6">{t('review.savedText')}</p>
         <div className="flex gap-3 justify-center">
           <button onClick={() => navigate(`/games/${savedGameId}/summary`)}
             className="bg-brand-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-brand-600 transition-colors">
-            View game summary
+            {t('review.viewSummary')}
           </button>
           <button onClick={() => navigate('/')}
             className="bg-gray-100 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            Home
+            {t('review.home')}
           </button>
         </div>
       </div>
     )
   }
 
-  // ── Review screen ───────────────────────────────────────────────────────────
+  // -- Review screen
 
   const { gameInfo } = gameLog
 
   return (
     <div className="p-4 pb-32 max-w-lg mx-auto">
       <button onClick={() => navigate('/games/upload')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
-        ‹ Upload
+        {t('review.backUpload')}
       </button>
 
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Review Scorecard</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('review.title')}</h1>
       <p className="text-sm text-gray-400 mb-5">
-        Check the at-bats below. Entries marked in red were unclear — please correct them before saving.
+        {t('review.instruction')}
       </p>
 
       {/* Confidence summary */}
@@ -351,34 +354,34 @@ export default function ScorecardReviewPage() {
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
           <span className="text-2xl">⚠️</span>
           <div>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-400">{lowConfidenceCount} entry{lowConfidenceCount > 1 ? 's' : ''} need attention</p>
-            <p className="text-xs text-red-500">These are expanded automatically — review and correct before saving.</p>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">{t('review.needAttention', { count: lowConfidenceCount })}</p>
+            <p className="text-xs text-red-500">{t('review.reviewNote')}</p>
           </div>
         </div>
       )}
 
       {/* What the AI detected */}
       <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 mb-5">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Detected game info</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('review.detectedInfo')}</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <span className="text-gray-400">Home</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.homeTeam ?? '—'}</span>
-          <span className="text-gray-400">Away</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.awayTeam ?? '—'}</span>
-          <span className="text-gray-400">Date</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.date ?? '—'}</span>
-          <span className="text-gray-400">Location</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.location ?? '—'}</span>
+          <span className="text-gray-400">{t('review.home')}</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.homeTeam ?? '—'}</span>
+          <span className="text-gray-400">{t('review.away')}</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.awayTeam ?? '—'}</span>
+          <span className="text-gray-400">{t('common.date')}</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.date ?? '—'}</span>
+          <span className="text-gray-400">{t('common.location')}</span><span className="font-medium text-gray-800 dark:text-gray-200">{gameInfo.location ?? '—'}</span>
         </div>
         {usage && (
           <p className="text-[10px] text-gray-300 mt-2">
-            Tokens used: {usage.total_tokens ?? '?'} · Est. cost: ~€{((usage.total_tokens ?? 0) * 0.000165 / 1000).toFixed(3)}
+            {t('review.tokens', { tokens: usage.total_tokens ?? '?', cost: ((usage.total_tokens ?? 0) * 0.000165 / 1000).toFixed(3) })}
           </p>
         )}
       </div>
 
       {/* Game metadata for saving */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-4 mb-5 space-y-3">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Save as</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('review.saveAs')}</p>
 
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Date</label>
+          <label className="text-xs text-gray-500 block mb-1">{t('common.date')}</label>
           <input type="date" value={gameDate} onChange={e => setGameDate(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
         </div>
@@ -388,7 +391,7 @@ export default function ScorecardReviewPage() {
             <label className="text-xs text-gray-500 block mb-1">Season</label>
             <select value={seasonId} onChange={e => setSeasonId(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-              <option value="">— no season —</option>
+              <option value="">{t('review.noSeason')}</option>
               {seasons.map(s => <option key={s.id} value={s.id}>{s.name}{s.isActive ? ' (active)' : ''}</option>)}
             </select>
           </div>
@@ -397,19 +400,19 @@ export default function ScorecardReviewPage() {
         {teams && teams.length > 0 && (
           <>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Home team</label>
+              <label className="text-xs text-gray-500 block mb-1">{t('newGame.homeTeam')}</label>
               <select value={homeTeamId} onChange={e => setHomeTeamId(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="">— select team —</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t('review.selectTeam')}</option>
+                {teams.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Away team</label>
+              <label className="text-xs text-gray-500 block mb-1">{t('newGame.awayTeam')}</label>
               <select value={awayTeamId} onChange={e => setAwayTeamId(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="">— select team —</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t('review.selectTeam')}</option>
+                {teams.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
               </select>
             </div>
           </>
@@ -420,8 +423,8 @@ export default function ScorecardReviewPage() {
       {gameLog.innings.map((inning, ii) => (
         <div key={`${inning.inningNumber}-${inning.half}`} className="mb-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-            {inning.half === 'top' ? '▲' : '▼'} Inning {inning.inningNumber}
-            <span className="ml-1 font-normal normal-case">· {inning.atBats.length} at-bat{inning.atBats.length !== 1 ? 's' : ''}</span>
+            {inning.half === 'top' ? '▲' : '▼'} {t('review.inning', { number: inning.inningNumber })}
+            <span className="ml-1 font-normal normal-case">· {t('review.atBats', { count: inning.atBats.length })}</span>
           </p>
           <div className="space-y-2">
             {inning.atBats.map((ab, ai) => (
@@ -433,7 +436,7 @@ export default function ScorecardReviewPage() {
               />
             ))}
             {inning.atBats.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-3">No at-bats recorded for this half-inning.</p>
+              <p className="text-sm text-gray-400 text-center py-3">{t('review.noAtBats')}</p>
             )}
           </div>
         </div>
@@ -443,13 +446,13 @@ export default function ScorecardReviewPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3 shadow-lg">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           {lowConfidenceCount > 0 && (
-            <p className="text-xs text-red-500 flex-1">{lowConfidenceCount} low-confidence entr{lowConfidenceCount > 1 ? 'ies' : 'y'} remaining</p>
+            <p className="text-xs text-red-500 flex-1">{t('review.lowConfidence', { count: lowConfidenceCount })}</p>
           )}
           <button
             onClick={handleSave}
             disabled={saving}
             className="flex-1 bg-brand-500 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-600 disabled:opacity-50 transition-colors">
-            {saving ? 'Saving…' : 'Save game'}
+            {saving ? t('review.saving') : t('review.saveGame')}
           </button>
         </div>
       </div>

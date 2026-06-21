@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { useLeague } from '../hooks/useLeague'
 import { useSession } from '../hooks/useSession'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function OnboardingWizard({ onClose }: Props) {
+  const { t } = useTranslation()
   const { session } = useSession()
   const { switchLeague } = useLeague()
   const [step, setStep] = useState<Step>(onClose ? 'welcome' : 'checking')
@@ -61,15 +63,15 @@ export default function OnboardingWizard({ onClose }: Props) {
         <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
       )}
       <p className="text-6xl mb-5">⚾</p>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Welcome to Baseball Scorer</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">{t('onboarding.welcomeTitle')}</h1>
       <p className="text-gray-500 dark:text-gray-400 mb-10 max-w-xs leading-relaxed">
-        Score games play-by-play, track batting and pitching stats, and share live results — all from your phone.
+        {t('onboarding.welcomeDesc')}
       </p>
       <button
         onClick={() => setStep('league')}
         className="bg-brand-500 text-white font-semibold px-8 py-3 rounded-xl hover:bg-brand-600 transition-colors w-full max-w-xs"
       >
-        Get started
+        {t('onboarding.getStarted')}
       </button>
     </div>
   )
@@ -80,15 +82,15 @@ export default function OnboardingWizard({ onClose }: Props) {
         <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
       )}
       <p className="text-5xl mb-4">🏆</p>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center">Create your league</h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center">{t('onboarding.createLeagueTitle')}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 text-center max-w-xs leading-relaxed">
-        A league holds your teams, seasons, and games. You can invite other scorers later.
+        {t('onboarding.createLeagueDesc')}
       </p>
       <input
         value={name}
         onChange={e => setName(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && handleCreate()}
-        placeholder="e.g. Amsterdam Aces"
+        placeholder={t('onboarding.leaguePlaceholder')}
         className="w-full max-w-xs border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 mb-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
         autoFocus
       />
@@ -98,10 +100,10 @@ export default function OnboardingWizard({ onClose }: Props) {
         disabled={!name.trim() || loading}
         className="bg-brand-500 text-white font-semibold px-8 py-3 rounded-xl hover:bg-brand-600 transition-colors w-full max-w-xs disabled:opacity-40 mb-3"
       >
-        {loading ? 'Creating…' : 'Create league'}
+        {loading ? t('onboarding.creating') : t('onboarding.createLeague')}
       </button>
       <button onClick={() => setStep('welcome')} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-        ← Back
+        {t('onboarding.back')}
       </button>
     </div>
   )

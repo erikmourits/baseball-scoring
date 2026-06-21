@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
@@ -45,6 +46,7 @@ function chipColor(r: string) {
 
 export default function WatchPage() {
   const { token } = useParams<{ token: string }>()
+  const { t } = useTranslation()
 
   const [game, setGame]     = useState<WatchGame | null>(null)
   const [innings, setInnings] = useState<WatchInning[]>([])
@@ -95,7 +97,7 @@ export default function WatchPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-5xl mb-4">⚾</div>
-        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Game not found</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{t('watch.notFound')}</h1>
         <p className="text-sm text-gray-400">{error}</p>
       </div>
     )
@@ -126,7 +128,7 @@ export default function WatchPage() {
       {isLive && (
         <div className="bg-red-500 text-white text-xs text-center py-1.5 flex items-center justify-center gap-2 font-semibold">
           <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
-          LIVE · Updates every 5 seconds
+          {t('watch.liveUpdates')}
         </div>
       )}
 
@@ -149,7 +151,7 @@ export default function WatchPage() {
             </div>
           </div>
           {game.status === 'final' && (
-            <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">Final</p>
+            <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">{t('watch.final')}</p>
           )}
         </div>
 
@@ -163,7 +165,7 @@ export default function WatchPage() {
                 </p>
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50">
                   {abs.length === 0 && (
-                    <p className="text-xs text-gray-300 text-center py-3">No at-bats yet</p>
+                    <p className="text-xs text-gray-300 text-center py-3">{t('watch.noAtBats')}</p>
                   )}
                   {abs.map((ab, i) => (
                     <div key={ab.id} className="flex items-center gap-3 px-3 py-2.5">
@@ -188,7 +190,7 @@ export default function WatchPage() {
         {/* Last updated */}
         {lastUpdated && (
           <p className="text-center text-[10px] text-gray-300 mt-6">
-            Last updated {lastUpdated.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {t('watch.lastUpdated', { time: lastUpdated.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) })}
           </p>
         )}
       </div>

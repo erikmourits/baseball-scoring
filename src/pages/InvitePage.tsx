@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { pullFromServer } from '../services/sync'
 import { useSession } from '../hooks/useSession'
@@ -14,6 +15,7 @@ export default function InvitePage() {
   const { token }    = useParams<{ token: string }>()
   const navigate     = useNavigate()
   const { session }  = useSession()
+  const { t }        = useTranslation()
 
   const fnName = 'league-invite'
 
@@ -115,7 +117,7 @@ export default function InvitePage() {
     return (
       <div className="min-h-screen bg-brand-500 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-5xl mb-4">⚾</div>
-        <h1 className="text-2xl font-bold text-white mb-2">Invite not valid</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">{t('invite.invalid')}</h1>
         <p className="text-blue-200 text-sm">{errorMsg}</p>
       </div>
     )
@@ -125,7 +127,7 @@ export default function InvitePage() {
     return (
       <div className="min-h-screen bg-brand-500 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-white font-medium">Joining {contextName}…</p>
+        <p className="text-white font-medium">{t('invite.joining', { name: contextName })}</p>
       </div>
     )
   }
@@ -134,29 +136,28 @@ export default function InvitePage() {
     return (
       <div className="min-h-screen bg-brand-500 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-5xl mb-4">✅</div>
-        <h1 className="text-2xl font-bold text-white mb-2">You're in!</h1>
-        <p className="text-blue-200 text-sm">Taking you to {contextName}…</p>
+        <h1 className="text-2xl font-bold text-white mb-2">{t('invite.youreIn')}</h1>
+        <p className="text-blue-200 text-sm">{t('invite.takingYou', { name: contextName })}</p>
       </div>
     )
   }
 
   // state === 'ready' — show invite card with login/signup if needed
-  const inviteLabel = 'score games in'
 
   return (
     <div className="min-h-screen bg-brand-500 flex flex-col items-center justify-center px-4">
       <div className="text-6xl mb-4">⚾</div>
-      <h1 className="text-2xl font-bold text-white mb-1 text-center">You've been invited</h1>
+      <h1 className="text-2xl font-bold text-white mb-1 text-center">{t('invite.invited')}</h1>
       <p className="text-blue-200 mb-6 text-center">
-        {inviteLabel} <strong className="text-white">{contextName}</strong>
+        {t('invite.scoreGamesIn')} <strong className="text-white">{contextName}</strong>
       </p>
 
       {session ? (
         <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Logged in as <strong>{session.user.email}</strong></p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('invite.loggedInAs', { email: session.user.email })}</p>
           <button onClick={acceptInvite}
             className="w-full bg-brand-500 text-white font-semibold py-3 rounded-xl hover:bg-brand-600 transition-colors">
-            Join {contextName}
+            {t('invite.join', { name: contextName })}
           </button>
         </div>
       ) : (
@@ -167,7 +168,7 @@ export default function InvitePage() {
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                   authMode === m ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400'
                 }`}>
-                {m === 'login' ? 'Log in' : 'Sign up'}
+                {m === 'login' ? t('auth.login') : t('auth.signup')}
               </button>
             ))}
           </div>
@@ -177,21 +178,21 @@ export default function InvitePage() {
               <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">{authError}</div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.email')}</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                placeholder="you@example.com" />
+                placeholder={t('auth.emailPlaceholder')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.password')}</label>
               <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="••••••••" />
             </div>
             <button type="submit" disabled={authLoading}
               className="w-full bg-brand-500 text-white font-medium py-2.5 rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors">
-              {authLoading ? (authMode === 'login' ? 'Signing in…' : 'Creating account…')
-                           : (authMode === 'login' ? 'Sign in & join' : 'Sign up & join')}
+              {authLoading ? (authMode === 'login' ? t('invite.signingIn') : t('invite.creatingAccount'))
+                           : (authMode === 'login' ? t('invite.signInJoin') : t('invite.signUpJoin'))}
             </button>
           </form>
         </div>

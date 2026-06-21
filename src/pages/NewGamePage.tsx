@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   DndContext,
   closestCenter,
@@ -25,12 +26,12 @@ import { lineupService } from '../services/lineupService'
 import { teamService } from '../services/teamService'
 import { playerService } from '../services/playerService'
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH']
 const REQUIRED_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 
 type Step =
   | 'info'
@@ -39,7 +40,7 @@ type Step =
   | 'away-availability'
   | 'away-order'
 
-// ── Sortable player row (starter with bench button) ───────────────────────────
+// ── Sortable player row (starter with bench button) ───────────────────────
 
 function SortablePlayer({
   player, index, position, onPositionChange, onMoveToBench,
@@ -50,6 +51,7 @@ function SortablePlayer({
   onPositionChange: (pos: string) => void
   onMoveToBench: () => void
 }) {
+  const { t } = useTranslation()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: player.id })
 
@@ -79,7 +81,7 @@ function SortablePlayer({
         onClick={onMoveToBench}
         className="text-xs text-gray-400 hover:text-orange-500 border border-gray-200 hover:border-orange-300 rounded-lg px-2 py-1.5 shrink-0 transition-colors"
       >
-        Bench
+        {t('newGame.bench')}
       </button>
       <button
         {...attributes}
@@ -87,13 +89,13 @@ function SortablePlayer({
         className="text-gray-300 hover:text-gray-500 px-1 touch-none cursor-grab active:cursor-grabbing shrink-0"
         aria-label="Drag to reorder"
       >
-        ⠿
+        ⠷
       </button>
     </li>
   )
 }
 
-// ── Availability step ─────────────────────────────────────────────────────────
+// ── Availability step ─────────────────────────────────────────────────────
 
 function AvailabilityStep({
   teamName, players, available, onToggle, onNext, onBack,
@@ -105,14 +107,15 @@ function AvailabilityStep({
   onNext: () => void
   onBack: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="p-4">
-      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">‹ Back</button>
-      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Available players</h1>
-      <p className="text-sm text-gray-400 mb-4">{teamName} — who's playing today?</p>
+      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">{t('newGame.back')}</button>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('newGame.availablePlayers')}</h1>
+      <p className="text-sm text-gray-400 mb-4">{t('newGame.whoIsPlaying', { teamName })}</p>
 
       {players.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-8">No players on this team yet.</p>
+        <p className="text-gray-400 text-sm text-center py-8">{t('newGame.noPlayers')}</p>
       ) : (
         <ul className="space-y-2 mb-6">
           {players.map(player => {
@@ -149,13 +152,13 @@ function AvailabilityStep({
         onClick={onNext}
         className="w-full bg-brand-500 text-white font-medium py-3 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
       >
-        Next: Set lineup order →
+        {t('newGame.nextLineupOrder')}
       </button>
     </div>
   )
 }
 
-// ── Order step ────────────────────────────────────────────────────────────────
+// ── Order step ───────────────────────────────────────────────────────────────
 
 function OrderStep({
   teamName, starters, bench, positions, sensors,
@@ -176,22 +179,23 @@ function OrderStep({
   onBack: () => void
   saving?: boolean
 }) {
+  const { t } = useTranslation()
   const assignedPositions = new Set(starters.map(p => positions[p.id]).filter(Boolean))
   const missingPositions = REQUIRED_POSITIONS.filter(p => !assignedPositions.has(p))
 
   return (
     <div className="p-4">
-      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">‹ Back</button>
-      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Lineup order</h1>
-      <p className="text-sm text-gray-400 mb-4">{teamName} — drag to reorder, pick position</p>
+      <button onClick={onBack} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">{t('newGame.back')}</button>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('newGame.lineupOrder')}</h1>
+      <p className="text-sm text-gray-400 mb-4">{t('newGame.dragToReorder', { teamName })}</p>
 
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Starting lineup</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('newGame.startingLineup')}</p>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={starters.map(p => p.id)} strategy={verticalListSortingStrategy}>
           <ul className="space-y-2 mb-4">
             {starters.length === 0 && (
-              <li className="text-gray-400 text-sm text-center py-4">No starters — move players from bench.</li>
+              <li className="text-gray-400 text-sm text-center py-4">{t('newGame.noStarters')}</li>
             )}
             {starters.map((player, i) => (
               <SortablePlayer
@@ -209,7 +213,7 @@ function OrderStep({
 
       {bench.length > 0 && (
         <>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">Bench</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-2">{t('newGame.bench')}</p>
           <ul className="space-y-2 mb-4">
             {bench.map(player => (
               <li key={player.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 px-4 py-3">
@@ -221,7 +225,7 @@ function OrderStep({
                   onClick={() => onMoveToLineup(player.id)}
                   className="text-xs bg-brand-50 dark:bg-blue-900/20 text-brand-600 hover:bg-brand-100 dark:hover:bg-blue-900/30 font-medium px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-700 shrink-0 transition-colors"
                 >
-                  → Lineup
+                  {t('newGame.toLineup')}
                 </button>
               </li>
             ))}
@@ -231,9 +235,9 @@ function OrderStep({
 
       {missingPositions.length > 0 && starters.length > 0 && (
         <div className="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
-          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Missing field positions</p>
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">{t('newGame.missingPositions')}</p>
           <p className="text-xs text-amber-600 mt-0.5">
-            {missingPositions.join(', ')} — assign these before starting.
+            {t('newGame.missingPositionsText', { positions: missingPositions.join(', ') })}
           </p>
         </div>
       )}
@@ -243,13 +247,13 @@ function OrderStep({
         onClick={onNext}
         className="w-full bg-brand-500 text-white font-medium py-3 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
       >
-        {saving ? 'Creating game…' : nextLabel}
+        {nextLabel}
       </button>
     </div>
   )
 }
 
-// ── Quick-add toggle (shared for home/away) ───────────────────────────────────
+// ── Quick-add toggle (shared for home/away) ──────────────────────────────────
 
 function QuickAddToggle({
   label, isQuick, onToggle, teamId, setTeamId, teams, excludeTeamId,
@@ -268,6 +272,7 @@ function QuickAddToggle({
   setBatterCount: (n: number) => void
   placeholder: string
 }) {
+  const { t } = useTranslation()
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -281,7 +286,7 @@ function QuickAddToggle({
             !isQuick ? 'bg-brand-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
-          Known team
+          {t('newGame.knownTeam')}
         </button>
         <button
           type="button"
@@ -290,7 +295,7 @@ function QuickAddToggle({
             isQuick ? 'bg-brand-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
-          Quick add
+          {t('newGame.quickAdd')}
         </button>
       </div>
       {!isQuick ? (
@@ -299,10 +304,10 @@ function QuickAddToggle({
           onChange={e => setTeamId(e.target.value)}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
-          <option value="">— select team —</option>
+          <option value="">{t('newGame.selectTeam')}</option>
           {teams
-            .filter(t => !excludeTeamId || t.id !== excludeTeamId)
-            .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            .filter(tm => !excludeTeamId || tm.id !== excludeTeamId)
+            .map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
         </select>
       ) : (
         <div className="space-y-3">
@@ -314,7 +319,7 @@ function QuickAddToggle({
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600 dark:text-gray-400 shrink-0">Batters in lineup</label>
+            <label className="text-sm text-gray-600 dark:text-gray-400 shrink-0">{t('newGame.battersInLineup')}</label>
             <input
               type="number"
               min={1}
@@ -325,7 +330,7 @@ function QuickAddToggle({
             />
           </div>
           <p className="text-xs text-gray-400">
-            Creates {batterCount} placeholder players. You can fill in real names later.
+            {t('newGame.placeholderPlayers', { count: batterCount })}
           </p>
         </div>
       )}
@@ -333,12 +338,13 @@ function QuickAddToggle({
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page ───────────────────────────────────────────────────────────────────
 
 export default function NewGamePage() {
   const navigate = useNavigate()
   const { session } = useSession()
   const { league } = useLeague()
+  const { t } = useTranslation()
 
   const [date, setDate]         = useState(new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
@@ -395,7 +401,7 @@ export default function NewGamePage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
   )
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────────────
 
   function teamPlayers(teamId: string): LocalPlayer[] {
     return (players ?? []).filter(p => p.teamId === teamId && !p.deletedAt)
@@ -404,8 +410,8 @@ export default function NewGamePage() {
   function handleHomeTeamChange(id: string) {
     setHomeTeamId(id)
     if (id && !location) {
-      const t = teams?.find(t => t.id === id)
-      if (t?.homeField) setLocation(t.homeField)
+      const tm = teams?.find(tm => tm.id === id)
+      if (tm?.homeField) setLocation(tm.homeField)
     }
   }
 
@@ -414,7 +420,6 @@ export default function NewGamePage() {
     const pMap = Object.fromEntries((players ?? []).map(p => [p.id, p]))
     const ordered = orderedIds.map(id => pMap[id]).filter(Boolean) as LocalPlayer[]
 
-    // All primary positions in the lineup — avoid these when resolving conflicts
     const allPrimaries = new Set(
       ordered.map(p => p.primaryPosition).filter((pos): pos is string => !!pos)
     )
@@ -423,7 +428,6 @@ export default function NewGamePage() {
     const taken = new Set<string>()
     const conflicts: LocalPlayer[] = []
 
-    // First pass: assign primary positions; collect duplicates
     for (const p of ordered) {
       if (!p.primaryPosition) continue
       if (!taken.has(p.primaryPosition)) {
@@ -434,7 +438,6 @@ export default function NewGamePage() {
       }
     }
 
-    // Second pass: resolve conflicts via secondary positions
     for (const p of conflicts) {
       const fallback = (p.secondaryPositions ?? []).find(
         pos => !taken.has(pos) && !allPrimaries.has(pos)
@@ -443,13 +446,12 @@ export default function NewGamePage() {
         positions[p.id] = fallback
         taken.add(fallback)
       }
-      // else: leave blank — no valid secondary available
     }
 
     return { ordered, positions }
   }
 
-  // ── Position conflict resolution ──────────────────────────────────────────────
+  // ── Position conflict resolution ─────────────────────────────────────────────────────────
 
   function homePositionChange(id: string, pos: string) {
     setHomePositions(prev => {
@@ -479,7 +481,7 @@ export default function NewGamePage() {
     })
   }
 
-  // ── Bench / lineup moves ──────────────────────────────────────────────────────
+  // ── Bench / lineup moves ──────────────────────────────────────────────────────────
 
   function homeMoveToBench(id: string) {
     const player = homeOrder.find(p => p.id === id)
@@ -511,7 +513,7 @@ export default function NewGamePage() {
     setAwayOrder(prev => [...prev, player])
   }
 
-  // ── Step navigation ───────────────────────────────────────────────────────────
+  // ── Step navigation ───────────────────────────────────────────────────────────────────
 
   function enterHomeAvailability() {
     const ps = teamPlayers(homeTeamId)
@@ -562,7 +564,7 @@ export default function NewGamePage() {
     else enterAwayAvailability()
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────────
+  // ── Save ─────────────────────────────────────────────────────────────────────────────
 
   async function handleSave() {
     if (!session) return
@@ -572,18 +574,18 @@ export default function NewGamePage() {
     let resolvedAwayTeamId = awayTeamId
 
     if (homeIsQuick) {
-      const t = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team', league!.id)
-      resolvedHomeTeamId = t.id
+      const tm = await teamService.create(session.user.id, quickHomeName.trim() || 'Home team', league!.id)
+      resolvedHomeTeamId = tm.id
       for (let i = 1; i <= quickHomeBatterCount; i++) {
-        await playerService.create(t.id, { name: `Player ${i}` })
+        await playerService.create(tm.id, { name: `Player ${i}` })
       }
     }
 
     if (awayIsQuick) {
-      const t = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent', league!.id)
-      resolvedAwayTeamId = t.id
+      const tm = await teamService.create(session.user.id, quickAwayName.trim() || 'Opponent', league!.id)
+      resolvedAwayTeamId = tm.id
       for (let i = 1; i <= quickAwayBatterCount; i++) {
-        await playerService.create(t.id, { name: `Player ${i}` })
+        await playerService.create(tm.id, { name: `Player ${i}` })
       }
     }
 
@@ -644,7 +646,7 @@ export default function NewGamePage() {
     navigate(`/games/${game.id}`)
   }
 
-  // ── Validity ──────────────────────────────────────────────────────────────────
+  // ── Validity ──────────────────────────────────────────────────────────────────────────
 
   const homeValid  = homeIsQuick ? quickHomeName.trim().length > 0 : !!homeTeamId
   const awayValid  = awayIsQuick ? quickAwayName.trim().length > 0 : !!awayTeamId
@@ -652,15 +654,15 @@ export default function NewGamePage() {
   const infoValid  = homeValid && awayValid && !teamsClash && !!date
   const bothQuick  = homeIsQuick && awayIsQuick
 
-  // ── Step: info ────────────────────────────────────────────────────────────────
+  // ── Step: info ────────────────────────────────────────────────────────────────────────
 
   if (step === 'info') {
     return (
       <div className="p-4">
         <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4">
-          ‹ Cancel
+          {t('newGame.cancel')}
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">New game</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('newGame.title')}</h1>
 
         <div className="space-y-4">
           <div>
@@ -670,7 +672,7 @@ export default function NewGamePage() {
               onChange={e => setSeasonId(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              <option value="">— no season —</option>
+              <option value="">{t('newGame.noSeason')}</option>
               {(seasons ?? []).map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -679,7 +681,7 @@ export default function NewGamePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Date <span className="text-red-400 dark:text-red-300">*</span>
+              {t('common.date')} <span className="text-red-400 dark:text-red-300">*</span>
             </label>
             <input
               type="date"
@@ -690,18 +692,18 @@ export default function NewGamePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.location')}</label>
             <input
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              placeholder="e.g. Sportpark De Bongerd"
+              placeholder={t('newGame.locationPlaceholder')}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <QuickAddToggle
-            label="Home team"
+            label={t('newGame.homeTeam')}
             isQuick={homeIsQuick}
             onToggle={setHomeIsQuick}
             teamId={homeTeamId}
@@ -712,11 +714,11 @@ export default function NewGamePage() {
             setQuickName={setQuickHomeName}
             batterCount={quickHomeBatterCount}
             setBatterCount={setQuickHomeBatterCount}
-            placeholder="Home team name"
+            placeholder={t('newGame.homeTeamName')}
           />
 
           <QuickAddToggle
-            label="Away team"
+            label={t('newGame.awayTeam')}
             isQuick={awayIsQuick}
             onToggle={setAwayIsQuick}
             teamId={awayTeamId}
@@ -727,7 +729,7 @@ export default function NewGamePage() {
             setQuickName={setQuickAwayName}
             batterCount={quickAwayBatterCount}
             setBatterCount={setQuickAwayBatterCount}
-            placeholder="Opponent name"
+            placeholder={t('newGame.opponentName')}
           />
         </div>
 
@@ -737,21 +739,21 @@ export default function NewGamePage() {
           className="mt-6 w-full bg-brand-500 text-white font-medium py-3 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
         >
           {bothQuick
-            ? (saving ? 'Creating game…' : 'Start game')
+            ? (saving ? t('newGame.creatingGame') : t('newGame.startGame'))
             : homeIsQuick
-              ? 'Next: Set away lineup →'
-              : 'Next: Set home lineup →'}
+              ? t('newGame.nextAwayLineup')
+              : t('newGame.nextHomeLineup')}
         </button>
       </div>
     )
   }
 
-  // ── Step: home availability ───────────────────────────────────────────────────
+  // ── Step: home availability ───────────────────────────────────────────────────────────
 
   if (step === 'home-availability') {
     return (
       <AvailabilityStep
-        teamName={teams?.find(t => t.id === homeTeamId)?.name ?? 'Home team'}
+        teamName={teams?.find(tm => tm.id === homeTeamId)?.name ?? t('newGame.homeTeam')}
         players={teamPlayers(homeTeamId)}
         available={homeAvailable}
         onToggle={id => {
@@ -765,13 +767,13 @@ export default function NewGamePage() {
     )
   }
 
-  // ── Step: home order ──────────────────────────────────────────────────────────
+  // ── Step: home order ────────────────────────────────────────────────────────────────
 
   if (step === 'home-order') {
-    const homeOrderNextLabel = awayIsQuick ? (saving ? 'Creating game…' : 'Start game') : 'Next: Set away lineup →'
+    const homeOrderNextLabel = awayIsQuick ? (saving ? t('newGame.creatingGame') : t('newGame.startGame')) : t('newGame.nextAwayLineup')
     return (
       <OrderStep
-        teamName={teams?.find(t => t.id === homeTeamId)?.name ?? 'Home team'}
+        teamName={teams?.find(tm => tm.id === homeTeamId)?.name ?? t('newGame.homeTeam')}
         starters={homeOrder}
         bench={homeBench}
         positions={homePositions}
@@ -788,12 +790,12 @@ export default function NewGamePage() {
     )
   }
 
-  // ── Step: away availability ───────────────────────────────────────────────────
+  // ── Step: away availability ───────────────────────────────────────────────────────────
 
   if (step === 'away-availability') {
     return (
       <AvailabilityStep
-        teamName={teams?.find(t => t.id === awayTeamId)?.name ?? 'Away team'}
+        teamName={teams?.find(tm => tm.id === awayTeamId)?.name ?? t('newGame.awayTeam')}
         players={teamPlayers(awayTeamId)}
         available={awayAvailable}
         onToggle={id => {
@@ -807,12 +809,12 @@ export default function NewGamePage() {
     )
   }
 
-  // ── Step: away order ──────────────────────────────────────────────────────────
+  // ── Step: away order ────────────────────────────────────────────────────────────────
 
   if (step === 'away-order') {
     return (
       <OrderStep
-        teamName={teams?.find(t => t.id === awayTeamId)?.name ?? 'Away team'}
+        teamName={teams?.find(tm => tm.id === awayTeamId)?.name ?? t('newGame.awayTeam')}
         starters={awayOrder}
         bench={awayBench}
         positions={awayPositions}
@@ -821,7 +823,7 @@ export default function NewGamePage() {
         onPositionChange={awayPositionChange}
         onMoveToBench={awayMoveToBench}
         onMoveToLineup={awayMoveToLineup}
-        nextLabel={saving ? 'Creating game…' : 'Start game'}
+        nextLabel={saving ? t('newGame.creatingGame') : t('newGame.startGame')}
         onNext={handleSave}
         onBack={() => setStep('away-availability')}
         saving={saving}

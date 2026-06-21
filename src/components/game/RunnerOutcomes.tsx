@@ -1,3 +1,4 @@
+﻿import { useTranslation } from 'react-i18next'
 import type { Bases, BaseKey, RunnerDest } from '../../types/game'
 import { computeProjectedBases, getAvailableOptions, DEST_LABEL } from '../../utils/baseballLogic'
 
@@ -11,6 +12,7 @@ function OutcomeDiamond({ current, outcomes, result, batterId }: {
   result: string
   batterId: string | undefined
 }) {
+  const { t } = useTranslation()
   const projected = computeProjectedBases(current, outcomes, result, batterId)
   const runsScored = result === 'HR'
     ? [current.first, current.second, current.third].filter(Boolean).length + 1
@@ -31,7 +33,7 @@ function OutcomeDiamond({ current, outcomes, result, batterId }: {
         <div /><div className="flex items-center justify-center"><div className="w-3 h-3 bg-white/30 border border-white/40" style={{ transform:'rotate(45deg)' }} /></div><div />
       </div>
       {runsScored > 0 && (
-        <p className="text-[10px] font-semibold text-green-400">{runsScored} run{runsScored !== 1 ? 's' : ''} scored</p>
+        <p className="text-[10px] font-semibold text-green-400">{t('runners.runsScored', { count: runsScored })}</p>
       )}
     </div>
   )
@@ -52,12 +54,13 @@ export function RunnerOutcomes({
   bases, runnerOutcomes, selectedResult, currentBatterId, currentBatterName,
   players, batterDest, onSelectOutcome,
 }: RunnerOutcomesProps) {
+  const { t } = useTranslation()
   const runnersOnBase = (['first', 'second', 'third'] as BaseKey[]).filter(k => !!bases[k])
   const isHR = selectedResult === 'HR'
 
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Runner outcomes</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('runners.title')}</p>
       <div className="flex gap-3 items-start">
         <div className="flex flex-col gap-3 flex-1">
           {isHR && (
@@ -65,7 +68,7 @@ export function RunnerOutcomes({
               <span className="text-green-500 text-lg">✓</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{currentBatterName ?? 'Batter'}</p>
-                <p className="text-xs text-green-600 dark:text-green-400">Home run — batter scores</p>
+                <p className="text-xs text-green-600 dark:text-green-400">{t('runners.homeRunScores')}</p>
               </div>
             </div>
           )}
@@ -80,7 +83,7 @@ export function RunnerOutcomes({
                   <span className="text-green-500 text-lg">✓</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{runner?.name ?? '?'}</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">on {baseLabel(k)}</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">{t('runners.batterScores', { runner: runner?.name ?? '?' })}</p>
                   </div>
                 </div>
               )
@@ -93,7 +96,7 @@ export function RunnerOutcomes({
                   <div className={`w-2 h-2 rounded-full shrink-0 ${
                     dest === 'score' ? 'bg-green-500' : dest && dest !== 'hold' ? 'bg-yellow-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                    {runner?.name ?? '?'} <span className="text-xs text-gray-400 font-normal">from {baseLabel(k)}</span>
+                    {t('runners.runnerOnBase', { runner: runner?.name ?? '?', base: baseLabel(k) })}
                   </p>
                 </div>
                 <div className="flex gap-1.5 flex-wrap">

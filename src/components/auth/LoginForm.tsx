@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabase'
 
 export default function LoginForm() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -23,25 +25,25 @@ export default function LoginForm() {
         <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">{error}</div>
       )}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.email')}</label>
         <input
           type="email"
           required
           value={email}
           onChange={e => setEmail(e.target.value)}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-          placeholder="you@example.com"
+          placeholder={t('auth.emailPlaceholder')}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.password')}</label>
         <input
           type="password"
           required
           value={password}
           onChange={e => setPassword(e.target.value)}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-          placeholder="••••••••"
+          placeholder={t('auth.passwordPlaceholder')}
         />
       </div>
       <button
@@ -49,7 +51,7 @@ export default function LoginForm() {
         disabled={loading}
         className="w-full bg-brand-500 text-white font-medium py-2.5 rounded-lg hover:bg-brand-600 active:bg-brand-700 transition-colors disabled:opacity-50"
       >
-        {loading ? 'Signing in…' : 'Sign in'}
+        {loading ? t('auth.signingIn') : t('auth.signIn')}
       </button>
     </form>
   )

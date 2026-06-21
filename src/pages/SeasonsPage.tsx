@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { seasonService } from '../services/seasonService'
@@ -7,6 +8,7 @@ import { useLeague } from '../hooks/useLeague'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 export default function SeasonsPage() {
+  const { t } = useTranslation()
   const { session } = useSession()
   const { league } = useLeague()
   const [showForm, setShowForm] = useState(false)
@@ -47,12 +49,12 @@ export default function SeasonsPage() {
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Seasons</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('seasons.title')}</h1>
         <button
           onClick={() => setShowForm(v => !v)}
           className="bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors"
         >
-          + New season
+          {t('seasons.newSeason')}
         </button>
       </div>
 
@@ -60,25 +62,25 @@ export default function SeasonsPage() {
         <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 border border-gray-200 rounded-xl p-4 mb-4 space-y-3 shadow-sm">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Name <span className="text-red-400 dark:text-red-300">*</span>
+              {t('common.name')} <span className="text-red-400 dark:text-red-300">*</span>
             </label>
             <input
               autoFocus
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Spring 2026"
+              placeholder={t('seasons.namePlaceholder')}
               required
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('seasons.year')}</label>
             <input
               type="number"
               value={year}
               onChange={e => setYear(e.target.value)}
-              placeholder="e.g. 2026"
+              placeholder={t('seasons.yearPlaceholder')}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
@@ -88,14 +90,14 @@ export default function SeasonsPage() {
               disabled={saving || !name.trim()}
               className="flex-1 bg-brand-500 text-white font-medium py-2 rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 text-sm"
             >
-              {saving ? 'Creating…' : 'Create season'}
+              {saving ? t('seasons.creating') : t('seasons.createSeason')}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
               className="px-4 py-2 bg-gray-100 text-gray-600 dark:text-gray-400 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -115,7 +117,7 @@ export default function SeasonsPage() {
                   <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{season.name}</p>
                   {season.isActive && (
                     <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-medium">
-                      Active
+                      {t('common.active')}
                     </span>
                   )}
                 </div>
@@ -129,7 +131,7 @@ export default function SeasonsPage() {
                   onClick={() => handleSetActive(season.id)}
                   className="text-xs text-brand-500 dark:text-brand-100 hover:text-brand-600 dark:hover:text-brand-100 font-medium px-2 py-1 transition-colors"
                 >
-                  Set active
+                  {t('seasons.setActive')}
                 </button>
               )}
               <button
@@ -144,15 +146,15 @@ export default function SeasonsPage() {
       ) : (
         <div className="text-center py-12 text-gray-400">
           <p className="text-4xl mb-3">📅</p>
-          <p className="font-medium text-gray-500 mb-1">No seasons yet</p>
-          <p className="text-sm">Create a season to organise your games and stats.</p>
+          <p className="font-medium text-gray-500 mb-1">{t('seasons.noSeasons')}</p>
+          <p className="text-sm">{t('seasons.noSeasonsText')}</p>
         </div>
       )}
 
       {pendingDelete && (
         <ConfirmDialog
-          message={`Delete "${pendingDelete.name}"? Games linked to it will keep their data.`}
-          confirmLabel="Delete season"
+          message={t('seasons.deleteConfirm', { name: pendingDelete.name })}
+          confirmLabel={t('seasons.deleteSeason')}
           destructive
           onConfirm={handleDeleteConfirm}
           onCancel={() => setPendingDelete(null)}

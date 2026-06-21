@@ -1,14 +1,16 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 const navItems = [
-  { to: '/',               icon: '🏟️', label: 'Games'   },
-  { to: '/teams',          icon: '👥', label: 'Teams'   },
-  { to: '/seasons',        icon: '📅', label: 'Seasons' },
-  { to: '/stats',          icon: '📊', label: 'Stats'   },
-  { to: '/league',         icon: '🏆', label: 'League'  },
+  { to: '/',               icon: '🏟️', labelKey: 'nav.games'   },
+  { to: '/teams',          icon: '👥', labelKey: 'nav.teams'   },
+  { to: '/seasons',        icon: '📅', labelKey: 'nav.seasons' },
+  { to: '/stats',          icon: '📊', labelKey: 'nav.stats'   },
+  { to: '/league',         icon: '🏆', labelKey: 'nav.league'  },
 ]
 
 export default function BottomNav() {
+  const { t } = useTranslation()
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 pb-safe">
       <div className="flex items-center justify-around h-14">
@@ -24,7 +26,7 @@ export default function BottomNav() {
             }
           >
             <span className="text-xl">{item.icon}</span>
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
           </NavLink>
         ))}
       </div>

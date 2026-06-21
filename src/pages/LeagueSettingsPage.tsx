@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
 import { useLeague } from '../hooks/useLeague'
 import { useSession } from '../hooks/useSession'
@@ -17,18 +18,22 @@ function MemberRow({
   isOwner,
   isCurrentUser,
   onRemove,
+  tYou,
+  tRemove,
 }: {
   member: { id: string; userId: string; email?: string; role: string }
   isOwner: boolean
   isCurrentUser: boolean
   onRemove: (id: string) => void
+  tYou: string
+  tRemove: string
 }) {
   return (
     <div className="flex items-center justify-between py-2">
       <div>
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {member.email ?? member.userId.slice(0, 8) + '…'}
-          {isCurrentUser && <span className="ml-2 text-xs text-brand-500 dark:text-brand-100">(you)</span>}
+          {isCurrentUser && <span className="ml-2 text-xs text-brand-500 dark:text-brand-100">{tYou}</span>}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{member.role}</p>
       </div>
@@ -37,7 +42,7 @@ function MemberRow({
           onClick={() => onRemove(member.id)}
           className="text-red-500 dark:text-red-400 text-xs hover:text-red-700 dark:hover:text-red-400"
         >
-          Remove
+          {tRemove}
         </button>
       )}
     </div>
@@ -48,6 +53,7 @@ function MemberRow({
 
 export default function LeagueSettingsPage() {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const { session } = useSession()
   const { league, leagues, switchLeague } = useLeague()
 
@@ -64,6 +70,8 @@ export default function LeagueSettingsPage() {
 
   const isOwner = !!league && !!session && league.createdBy === session.user.id
   const { theme, toggleTheme } = useTheme()
+
+  const currentLang = i18n.language?.startsWith('nl') ? 'nl' : 'en'
 
   interface DialogState {
     title?: string
@@ -114,11 +122,11 @@ export default function LeagueSettingsPage() {
     const { error: lErr } = await (supabase.from('leagues') as any).upsert({
       id, name: name.trim(), created_by: session.user.id, created_at: now,
     })
-    if (lErr) { showAlert('Failed to create league: ' + lErr.message, 'Error'); return }
+    if (lErr) { showAlert(t('league.failed', { error: lErr.message }), t('league.error')); return }
     const { error: mErr } = await (supabase.from('league_members') as any).upsert({
       id: crypto.randomUUID(), league_id: id, user_id: session.user.id, role: 'owner', email: session.user.email,
     })
-    if (mErr) { showAlert('Failed to add you as owner: ' + mErr.message, 'Error'); return }
+    if (mErr) { showAlert(t('league.failed', { error: mErr.message }), t('league.error')); return }
     await db.leagues.update(id, { _dirty: false })
     switchLeague(id)
     setShowNewForm(false)
@@ -131,7 +139,7 @@ export default function LeagueSettingsPage() {
     setSavingName(true)
     const { error } = await (supabase.from('leagues') as any).update({ name: leagueName.trim() }).eq('id', league.id)
     if (error) {
-      showAlert('Failed to save: ' + error.message, 'Error')
+      showAlert(t('league.failed', { error: error.message }), t('league.error'))
     } else {
       await db.leagues.update(league.id, { name: leagueName.trim(), _dirty: false })
     }
@@ -169,9 +177,9 @@ export default function LeagueSettingsPage() {
   // ── Remove member ───────────────────────────────────────────────────────────
   function removeMember(memberId: string) {
     showConfirm({
-      title: 'Remove member',
-      message: 'This person will lose access to the league.',
-      confirmLabel: 'Remove',
+      title: t('league.removeMemberTitle'),
+      message: t('league.removeMemberConfirm'),
+      confirmLabel: t('league.remove'),
       destructive: true,
       onConfirm: async () => {
         setDialog(null)
@@ -193,18 +201,18 @@ export default function LeagueSettingsPage() {
   const [clearing, setClearing] = useState(false)
   function handleClearAndResync() {
     showConfirm({
-      title: 'Clear & reload from server',
-      message: 'This will wipe all local data and replace it with what is on the server.',
-      confirmLabel: 'Clear & reload',
+      title: t('league.clearTitle'),
+      message: t('league.clearConfirm'),
+      confirmLabel: t('league.clearButton'),
       destructive: true,
       onConfirm: async () => {
         setDialog(null)
         setClearing(true)
         try {
           await clearLocalAndResync()
-          showAlert('Local database has been refreshed from the server.', 'Done')
+          showAlert(t('league.refreshed'), t('league.done'))
         } catch (e: any) {
-          showAlert('Failed: ' + e.message, 'Error')
+          showAlert(t('league.failed', { error: e.message }), t('league.error'))
         }
         setClearing(false)
       },
@@ -228,31 +236,39 @@ export default function LeagueSettingsPage() {
   // ── Render: no leagues yet ───────────────────────────────────────────────────
 
   if (league === undefined) {
-    return <div className="p-6 text-gray-500 dark:text-gray-400 text-sm">Loading…</div>
+    return <div className="p-6 text-gray-500 dark:text-gray-400 text-sm">{t('common.loading')}</div>
   }
 
   if (league === null) {
     return (
       <div className="p-6 max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Create a League</h1>
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="text-lg leading-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('league.createTitle')}</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => i18n.changeLanguage(currentLang === 'nl' ? 'en' : 'nl')}
+              className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 transition-colors"
+            >
+              {currentLang === 'nl' ? 'EN' : 'NL'}
+            </button>
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? t('league.lightMode') : t('league.darkMode')}
+              className="text-lg leading-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </div>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          A league is your data container — teams, seasons, and games all live inside it.
+          {t('league.createDesc')}
         </p>
         <div className="flex gap-2">
           <input
             value={leagueName}
             onChange={e => setLeagueName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && createLeague(leagueName)}
-            placeholder="League name (e.g. KNBSB Rotterdam)"
+            placeholder={t('league.leagueNamePlaceholder')}
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
           />
           <button
@@ -260,11 +276,11 @@ export default function LeagueSettingsPage() {
             disabled={!leagueName.trim()}
             className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40"
           >
-            Create
+            {t('common.create')}
           </button>
         </div>
         <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400">Sign out</button>
+          <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400">{t('league.signOut')}</button>
         </div>
       </div>
     )
@@ -275,17 +291,23 @@ export default function LeagueSettingsPage() {
   return (
     <div className="p-6 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">League</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('league.title')}</h1>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => i18n.changeLanguage(currentLang === 'nl' ? 'en' : 'nl')}
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 transition-colors"
+          >
+            {currentLang === 'nl' ? 'EN' : 'NL'}
+          </button>
+          <button
             onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? t('league.lightMode') : t('league.darkMode')}
             className="text-lg leading-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400">
-            Sign out
+            {t('league.signOut')}
           </button>
         </div>
       </div>
@@ -293,7 +315,7 @@ export default function LeagueSettingsPage() {
       {/* League switcher */}
       {leagues.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Active league</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.activeLeague')}</h2>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm divide-y divide-gray-100 dark:divide-gray-700 px-4">
             {leagues.map(l => (
               <button
@@ -302,7 +324,7 @@ export default function LeagueSettingsPage() {
                 className="w-full flex items-center justify-between py-3 text-left"
               >
                 <span className="text-sm text-gray-900 dark:text-gray-100">{l.name}</span>
-                {l.id === league.id && <span className="text-brand-500 dark:text-brand-100 text-xs font-medium">Active</span>}
+                {l.id === league.id && <span className="text-brand-500 dark:text-brand-100 text-xs font-medium">{t('common.active')}</span>}
               </button>
             ))}
           </div>
@@ -314,7 +336,7 @@ export default function LeagueSettingsPage() {
                 value={newLeagueName}
                 onChange={e => setNewLeagueName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && createLeague(newLeagueName)}
-                placeholder="New league name"
+                placeholder={t('league.newLeagueName')}
                 className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
               />
               <button
@@ -322,16 +344,16 @@ export default function LeagueSettingsPage() {
                 disabled={!newLeagueName.trim()}
                 className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40"
               >
-                Create
+                {t('common.create')}
               </button>
-              <button onClick={() => setShowNewForm(false)} className="text-sm text-gray-400 dark:text-gray-500 px-2">Cancel</button>
+              <button onClick={() => setShowNewForm(false)} className="text-sm text-gray-400 dark:text-gray-500 px-2">{t('common.cancel')}</button>
             </div>
           ) : (
             <button
               onClick={() => setShowNewForm(true)}
               className="mt-3 text-sm text-brand-500 dark:text-brand-100 hover:text-brand-700 dark:hover:text-brand-100"
             >
-              + Create another league
+              {t('league.createAnother')}
             </button>
           )}
         </section>
@@ -339,7 +361,7 @@ export default function LeagueSettingsPage() {
 
       {/* League name */}
       <section className="mb-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Name</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.nameSection')}</h2>
         <div className="flex gap-2">
           <input
             value={leagueName}
@@ -353,7 +375,7 @@ export default function LeagueSettingsPage() {
               disabled={!leagueName.trim() || savingName}
               className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40"
             >
-              {savingName ? 'Saving…' : 'Save'}
+              {savingName ? t('common.saving') : t('common.save')}
             </button>
           )}
         </div>
@@ -361,10 +383,10 @@ export default function LeagueSettingsPage() {
 
       {/* Members */}
       <section className="mb-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Members</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.membersSection')}</h2>
         <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4">
           {members.length === 0 ? (
-            <p className="text-sm text-gray-400 py-3">No members yet.</p>
+            <p className="text-sm text-gray-400 py-3">{t('league.noMembers')}</p>
           ) : (
             members.map((m: any) => (
               <MemberRow
@@ -373,6 +395,8 @@ export default function LeagueSettingsPage() {
                 isOwner={isOwner}
                 isCurrentUser={m.user_id === session?.user.id}
                 onRemove={removeMember}
+                tYou={t('league.you')}
+                tRemove={t('league.remove')}
               />
             ))
           )}
@@ -382,14 +406,14 @@ export default function LeagueSettingsPage() {
       {/* Invite scorer (owner only) */}
       {isOwner && (
         <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Invite scorer</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.inviteScorer')}</h2>
           <div className="flex gap-2">
             <input
               type="email"
               value={inviteEmail}
               onChange={e => setInviteEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendInvite()}
-              placeholder="scorer@example.com"
+              placeholder={t('league.invitePlaceholder')}
               className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
             />
             <button
@@ -397,28 +421,28 @@ export default function LeagueSettingsPage() {
               disabled={!inviteEmail.trim() || inviteLoading}
               className="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 whitespace-nowrap"
             >
-              {inviteCopied ? '✅ Copied!' : inviteLoading ? 'Sending…' : 'Copy link'}
+              {inviteCopied ? t('league.copied') : inviteLoading ? t('league.sending') : t('league.copyLink')}
             </button>
           </div>
           {inviteError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{inviteError}</p>}
 
           {invites.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs text-gray-400 mb-2">Pending invites</p>
+              <p className="text-xs text-gray-400 mb-2">{t('league.pendingInvites')}</p>
               <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4">
                 {invites.map((inv: any) => (
                   <div key={inv.id} className="flex items-center justify-between py-2">
                     <div>
                       <p className="text-sm text-gray-800 dark:text-gray-200">{inv.email}</p>
                       <p className="text-xs text-gray-400">
-                        Expires {new Date(inv.expires_at).toLocaleDateString()}
+                        {t('league.expires', { date: new Date(inv.expires_at).toLocaleDateString() })}
                       </p>
                     </div>
                     <button
                       onClick={() => revokeInvite(inv.id)}
                       className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400"
                     >
-                      Revoke
+                      {t('league.revoke')}
                     </button>
                   </div>
                 ))}
@@ -435,37 +459,37 @@ export default function LeagueSettingsPage() {
             onClick={() => navigate('/admin')}
             className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            ⚙️ Site admin
+            ⚙️ {t('league.siteAdmin')}
           </button>
         </div>
       )}
 
       {/* Help */}
       <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Help</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.helpSection')}</p>
         <button
           onClick={() => navigate('/help')}
           className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-brand-500 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors"
         >
-          ❓ How to use this app
+          {t('league.howToUse')}
         </button>
         <button
           onClick={() => setShowOnboarding(true)}
           className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-brand-500 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-blue-900/20 transition-colors"
         >
-          👋 Show introduction
+          {t('league.showIntro')}
         </button>
       </div>
 
       {/* Troubleshooting */}
       <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Troubleshooting</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.troubleshooting')}</p>
         <button
           onClick={handleClearAndResync}
           disabled={clearing}
           className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 transition-colors disabled:opacity-40"
         >
-          {clearing ? 'Clearing…' : '⚠ Clear local data & reload from server'}
+          {clearing ? t('league.clearing') : t('league.clearData')}
         </button>
       </div>
 

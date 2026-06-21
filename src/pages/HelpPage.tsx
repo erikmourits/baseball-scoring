@@ -1,79 +1,82 @@
 import { useNavigate } from 'react-router-dom'
-
-const SECTIONS = [
-  {
-    emoji: '🏆',
-    title: 'Getting started',
-    items: [
-      'Create a league — a league holds your teams, seasons, and games.',
-      'Add teams and their rosters under the Teams tab.',
-      'Create a season and mark it active under the Seasons tab.',
-      'Tap + New game on the Games screen to start scoring.',
-    ],
-  },
-  {
-    emoji: '⚾',
-    title: 'Scoring a game',
-    items: [
-      '1B  2B  3B  HR — base hits and home run.',
-      'BB — base on balls (walk).  HBP — hit by pitch.',
-      'K — strikeout.  FO — fly out.  GDP — grounded into double play.',
-      'RoE — reached on error.  FC — fielder\'s choice.',
-      'SAC — sacrifice bunt.  SF — sacrifice fly.',
-      'After each result, select the fielders involved (1–9 grid).',
-      'Move runners on the base diamond after each at-bat.',
-      'SB  CS  WP  PB  BALK — use the between-at-bat buttons on the base diamond screen.',
-      'Tap Undo at any time to step back.',
-    ],
-  },
-  {
-    emoji: '📷',
-    title: 'Scorecard OCR',
-    items: [
-      'Tap the 📷 button on the Games screen to upload a photo of a written KNBSB scorecard.',
-      'The app sends the image to an AI model which reads the scorecard and imports the at-bats.',
-      'Review each inning on the review screen before saving — you can correct any mistakes.',
-      'OCR costs roughly €0.01–0.02 per scorecard.',
-    ],
-  },
-  {
-    emoji: '📊',
-    title: 'Statistics',
-    items: [
-      'Stats are computed live from the game log — no manual entry needed.',
-      'Batting: AVG, OBP, SLG, OPS, H, HR, RBI, BB, K and more.',
-      'Pitching: ERA, WHIP, IP, W, L, K, BB and more.',
-      'View stats per player or per team under the Stats tab.',
-    ],
-  },
-  {
-    emoji: '🔄',
-    title: 'Sync & offline',
-    items: [
-      'The app works offline — all data is stored on your device first.',
-      'Changes sync to the server automatically when you\'re back online.',
-      'A sync indicator appears at the top of the screen if there are unsaved changes.',
-      'Use League Settings → Troubleshooting → Clear local data if something looks out of sync.',
-    ],
-  },
-  {
-    emoji: '👥',
-    title: 'Inviting scorers',
-    items: [
-      'Go to League Settings and tap Invite scorer to generate an invite link.',
-      'Share the link with the scorer — they log in and are added to your league automatically.',
-      'Scorers can view and score games but cannot manage league settings.',
-    ],
-  },
-]
+import { useTranslation } from 'react-i18next'
 
 export default function HelpPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+
+  const SECTIONS = [
+    {
+      emoji: '🏆',
+      title: t('help.gettingStarted'),
+      items: [
+        t('help.gs1'),
+        t('help.gs2'),
+        t('help.gs3'),
+        t('help.gs4'),
+      ],
+    },
+    {
+      emoji: '⚾',
+      title: t('help.scoring'),
+      items: [
+        t('help.sc1'),
+        t('help.sc2'),
+        t('help.sc3'),
+        t('help.sc4'),
+        t('help.sc5'),
+        t('help.sc6'),
+        t('help.sc7'),
+        t('help.sc8'),
+        t('help.sc9'),
+      ],
+    },
+    {
+      emoji: '📷',
+      title: t('help.ocr'),
+      items: [
+        t('help.ocr1'),
+        t('help.ocr2'),
+        t('help.ocr3'),
+        t('help.ocr4'),
+      ],
+    },
+    {
+      emoji: '📊',
+      title: t('help.statistics'),
+      items: [
+        t('help.stat1'),
+        t('help.stat2'),
+        t('help.stat3'),
+        t('help.stat4'),
+      ],
+    },
+    {
+      emoji: '🔄',
+      title: t('help.sync'),
+      items: [
+        t('help.sync1'),
+        t('help.sync2'),
+        t('help.sync3'),
+        t('help.sync4'),
+      ],
+    },
+    {
+      emoji: '👥',
+      title: t('help.inviting'),
+      items: [
+        t('help.inv1'),
+        t('help.inv2'),
+        t('help.inv3'),
+      ],
+    },
+  ]
+
   return (
     <div className="p-4 pb-8">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-brand-500 dark:text-brand-100 text-sm font-medium">← Back</button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Help</h1>
+        <button onClick={() => navigate(-1)} className="text-brand-500 dark:text-brand-100 text-sm font-medium">{t('help.back')}</button>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('help.title')}</h1>
       </div>
       <div className="space-y-6">
         {SECTIONS.map(s => (

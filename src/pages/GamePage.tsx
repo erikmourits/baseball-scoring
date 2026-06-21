@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useTranslation } from 'react-i18next'
 import { db, type LocalAtBat } from '../db/local'
 import { supabase } from '../lib/supabase'
 import { gameService } from '../services/gameService'
@@ -30,22 +31,22 @@ const INNING_END_CSS = `
   .inning-end-card { animation: inning-in 2.4s cubic-bezier(.22,1,.36,1) forwards; }
 `
 
-const RESULT_BUTTONS: { label: string; value: string; color: string; tip: string; no2Outs?: boolean; needsRunner?: boolean }[] = [
-  { label: 'K',   value: 'K',   color: 'btn-out',   tip: 'Strikeout swinging' },
-  { label: 'KL',  value: 'KL',  color: 'btn-out',   tip: 'Strikeout looking' },
-  { label: 'FO',  value: 'FO',  color: 'btn-out',   tip: 'Fly out' },
-  { label: 'GO',  value: 'GO',  color: 'btn-out',   tip: 'Ground out' },
-  { label: 'SAC', value: 'SAC', color: 'btn-out',   tip: 'Sac bunt',    no2Outs: true, needsRunner: true },
-  { label: 'SF',  value: 'SF',  color: 'btn-out',   tip: 'Sac fly',     no2Outs: true, needsRunner: true },
-  { label: 'GDP', value: 'GDP', color: 'btn-out',   tip: 'Double play', no2Outs: true, needsRunner: true },
-  { label: '1B',  value: '1B',  color: 'btn-hit',   tip: 'Single' },
-  { label: '2B',  value: '2B',  color: 'btn-hit',   tip: 'Double' },
-  { label: '3B',  value: '3B',  color: 'btn-hit',   tip: 'Triple' },
-  { label: 'HR',  value: 'HR',  color: 'btn-hit',   tip: 'Home run' },
-  { label: 'BB',  value: 'BB',  color: 'btn-reach', tip: 'Walk' },
-  { label: 'HBP', value: 'HBP', color: 'btn-reach', tip: 'Hit by pitch' },
-  { label: 'RoE', value: 'ROE', color: 'btn-reach', tip: 'Reached on error' },
-  { label: 'FC',  value: 'FC',  color: 'btn-reach', tip: "Fielder's choice" },
+const RESULT_BUTTONS: { label: string; value: string; color: string; tipKey: string; no2Outs?: boolean; needsRunner?: boolean }[] = [
+  { label: 'K',   value: 'K',   color: 'btn-out',   tipKey: 'game.strikeoutSwinging' },
+  { label: 'KL',  value: 'KL',  color: 'btn-out',   tipKey: 'game.strikeoutLooking' },
+  { label: 'FO',  value: 'FO',  color: 'btn-out',   tipKey: 'game.flyOut' },
+  { label: 'GO',  value: 'GO',  color: 'btn-out',   tipKey: 'game.groundOut' },
+  { label: 'SAC', value: 'SAC', color: 'btn-out',   tipKey: 'game.sacBunt',    no2Outs: true, needsRunner: true },
+  { label: 'SF',  value: 'SF',  color: 'btn-out',   tipKey: 'game.sacFly',     no2Outs: true, needsRunner: true },
+  { label: 'GDP', value: 'GDP', color: 'btn-out',   tipKey: 'game.doublePlay', no2Outs: true, needsRunner: true },
+  { label: '1B',  value: '1B',  color: 'btn-hit',   tipKey: 'game.single' },
+  { label: '2B',  value: '2B',  color: 'btn-hit',   tipKey: 'game.double' },
+  { label: '3B',  value: '3B',  color: 'btn-hit',   tipKey: 'game.triple' },
+  { label: 'HR',  value: 'HR',  color: 'btn-hit',   tipKey: 'game.homeRun' },
+  { label: 'BB',  value: 'BB',  color: 'btn-reach', tipKey: 'game.walk' },
+  { label: 'HBP', value: 'HBP', color: 'btn-reach', tipKey: 'game.hitByPitch' },
+  { label: 'RoE', value: 'ROE', color: 'btn-reach', tipKey: 'game.reachedOnError' },
+  { label: 'FC',  value: 'FC',  color: 'btn-reach', tipKey: 'game.fieldersChoice' },
 ]
 
 const FIELDER_POSITIONS = [
@@ -79,6 +80,7 @@ function ScoreboardDiamond({ bases }: { bases: Bases }) {
 export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>()
   const navigate   = useNavigate()
+  const { t } = useTranslation()
 
   // ── DB queries ─────────────────────────────────────────────────────────────
 
@@ -369,7 +371,7 @@ export default function GamePage() {
     const runnerOuts = Object.values(runnerOutcomes).filter(d => d === 'out').length
     const newOuts    = outs + outsFromResult(selectedResult) + runnerOuts
     if (newOuts >= 3) {
-      setInningEndMsg(`End of ${half === 'top' ? '▲' : '▼'} ${inningNumber}`)
+      setInningEndMsg(t('game.endOfInning', { half: half === 'top' ? '▲' : '▼', inningNumber }))
       setTimeout(() => setInningEndMsg(null), 2400)
       await advanceHalf()
     } else {
@@ -414,7 +416,7 @@ export default function GamePage() {
     } catch { /* ignore */ }
   }
 
-  if (!game || !players || !teams) return <div className="p-4 text-gray-400">Loading…</div>
+  if (!game || !players || !teams) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
 
   const homeName      = teams[game.homeTeamId ?? ''] ?? '—'
   const awayName      = teams[game.awayTeamId ?? ''] ?? '—'
@@ -431,19 +433,19 @@ export default function GamePage() {
       {/* ── Scoreboard ── */}
       <div className="bg-brand-700 text-white px-4 pt-3 pb-4">
         <div className="flex items-center justify-between mb-2">
-          <button onClick={() => navigate('/')} className="text-white/70 text-sm">‹ Games</button>
+          <button onClick={() => navigate('/')} className="text-white/70 text-sm">{t('game.backGames')}</button>
           <div className="flex items-center gap-2">
             {isLive && (
               <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-0.5 rounded-full font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
-                LIVE
+                {t('game.live')}
               </span>
             )}
             <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
-              {shareCopied ? '✓ Copied!' : 'Share'}
+              {shareCopied ? t('game.copied') : t('game.share')}
             </button>
-            <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">Sub</button>
-            <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">End game</button>
+            <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.sub')}</button>
+            <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.endGame')}</button>
           </div>
         </div>
         <div className="flex items-center justify-between px-2">
@@ -452,7 +454,7 @@ export default function GamePage() {
             <p className="text-xs text-white/60 mb-0.5">{awayName}</p>
             <p className={`text-4xl font-bold tabular-nums ${half === 'top' ? 'text-white' : 'text-white/40'}`}>{game.awayScore}</p>
             {half === 'top'
-              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>
+              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">{t('game.batting')}</p>
               : pitcherLabel
                 ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5 truncate max-w-[80px]">⚾ {pitcherLabel}</p>
                 : null
@@ -475,7 +477,7 @@ export default function GamePage() {
             <p className="text-xs text-white/60 mb-0.5">{homeName}</p>
             <p className={`text-4xl font-bold tabular-nums ${half === 'bottom' ? 'text-white' : 'text-white/40'}`}>{game.homeScore}</p>
             {half === 'bottom'
-              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">batting</p>
+              ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">{t('game.batting')}</p>
               : pitcherLabel
                 ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5 truncate max-w-[80px]">⚾ {pitcherLabel}</p>
                 : null
@@ -489,7 +491,7 @@ export default function GamePage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-brand-500 dark:text-brand-100 uppercase tracking-wider mb-0.5">
-              At bat · {half === 'top' ? awayName : homeName} #{batterIndex % (currentLineup.length || 1) + 1}
+              {t('game.atBat', { teamName: half === 'top' ? awayName : homeName, playerNumber: batterIndex % (currentLineup.length || 1) + 1 })}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">{currentBatter?.name ?? '—'}</p>
@@ -507,7 +509,7 @@ export default function GamePage() {
           </div>
           {onDeckBatter && (
             <div className="text-right">
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">On deck</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{t('game.onDeck')}</p>
               <p className="text-sm font-medium text-gray-500">{onDeckBatter.name}</p>
               {onDeckBatter.primaryPosition && <p className="text-xs text-gray-400">{onDeckBatter.primaryPosition}</p>}
             </div>
@@ -520,7 +522,7 @@ export default function GamePage() {
 
         {/* Result grid */}
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Result</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('game.result')}</p>
           <div className="grid grid-cols-4 gap-2">
             {RESULT_BUTTONS.map(btn => {
               const blockedBy2Outs = !!btn.no2Outs && outs === 2
@@ -539,7 +541,7 @@ export default function GamePage() {
                         :                           'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
                   }`}>
                   <span className="block leading-tight">{btn.label}</span>
-                  <span className="block text-[9px] font-normal opacity-70 leading-tight mt-0.5">{btn.tip}</span>
+                  <span className="block text-[9px] font-normal opacity-70 leading-tight mt-0.5">{t(btn.tipKey)}</span>
                 </button>
               )
             })}
@@ -549,7 +551,7 @@ export default function GamePage() {
         {/* Fielders */}
         {needsFielders && (
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Fielder(s) — tap in play order</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('game.fielders')}</p>
             <div className="grid grid-cols-5 gap-2">
               {FIELDER_POSITIONS.map(({ pos, label }) => (
                 <button key={pos} onClick={() => toggleFielder(pos)}
@@ -561,7 +563,7 @@ export default function GamePage() {
                 </button>
               ))}
             </div>
-            {fielders.length > 0 && <p className="text-xs text-gray-400 mt-1">Play: {fielders.join('-')}</p>}
+            {fielders.length > 0 && <p className="text-xs text-gray-400 mt-1">{t('game.play', { fielders: fielders.join('-') })}</p>}
           </div>
         )}
 
@@ -593,7 +595,7 @@ export default function GamePage() {
 
         <button onClick={() => { setSkipRuns(0); setShowSkipDialog(true) }}
           className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 border border-dashed border-gray-200 rounded-xl transition-colors">
-          Skip to next half-inning
+          {t('game.skipHalfInning')}
         </button>
       </div>
 
@@ -606,7 +608,7 @@ export default function GamePage() {
         </button>
         <button disabled={!selectedResult} onClick={recordAtBat}
           className="flex-1 bg-brand-500 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors">
-          Record at-bat
+          {t('game.recordAtBat')}
         </button>
       </div>
 
@@ -630,9 +632,9 @@ export default function GamePage() {
         <div className="fixed inset-0 bg-black/40 flex items-end z-30" onClick={() => setShowSkipDialog(false)}>
           <div className="w-full bg-white dark:bg-gray-800 rounded-t-3xl px-6 pt-6 pb-10 shadow-2xl" onClick={e => e.stopPropagation()}>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-0.5">
-              {half === 'top' ? '▲' : '▼'} {inningNumber} · {half === 'top' ? awayName : homeName} batting
+              {half === 'top' ? '▲' : '▼'} {inningNumber} · {half === 'top' ? awayName : homeName} {t('game.batting')}
             </p>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 text-center mb-6">How many runs scored?</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 text-center mb-6">{t('game.runsScored')}</p>
             <div className="flex items-center justify-center gap-6 mb-8">
               <button onClick={() => setSkipRuns(r => Math.max(0, r - 1))}
                 className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">−</button>
@@ -642,9 +644,9 @@ export default function GamePage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowSkipDialog(false)}
-                className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 dark:text-gray-400 font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 dark:text-gray-400 font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">{t('common.cancel')}</button>
               <button onClick={confirmSkip}
-                className="flex-1 py-3.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition-colors">Confirm</button>
+                className="flex-1 py-3.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition-colors">{t('common.confirm')}</button>
             </div>
           </div>
         </div>
@@ -655,14 +657,14 @@ export default function GamePage() {
         <div className="fixed inset-0 flex items-center justify-center z-30 pointer-events-none">
           <style>{INNING_END_CSS}</style>
           <div className="inning-end-card bg-brand-700 text-white px-10 py-6 rounded-3xl shadow-2xl text-center border border-white/10">
-            <p className="text-4xl font-bold mb-1">3 outs</p>
+            <p className="text-4xl font-bold mb-1">{t('game.threeOuts')}</p>
             <p className="text-sm text-white/60 font-medium tracking-wide uppercase">{inningEndMsg}</p>
           </div>
         </div>
       )}
 
       {showFinalConfirm && (
-        <ConfirmDialog message="End this game and mark it as final?" confirmLabel="End game"
+        <ConfirmDialog message={t('game.endGameConfirm')} confirmLabel={t('game.endGame')}
           onConfirm={handleFinalizeGame} onCancel={() => setShowFinalConfirm(false)} />
       )}
     </div>

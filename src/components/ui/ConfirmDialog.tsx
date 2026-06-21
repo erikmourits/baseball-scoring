@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface Props {
   title?: string
   message: string
@@ -12,13 +14,16 @@ interface Props {
 export default function ConfirmDialog({
   title,
   message,
-  confirmLabel = 'OK',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   alertOnly = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useTranslation()
+  const resolvedConfirmLabel = confirmLabel ?? t('common.ok')
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel')
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40"
@@ -36,7 +41,7 @@ export default function ConfirmDialog({
               onClick={onCancel}
               className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors"
             >
-              {cancelLabel}
+              {resolvedCancelLabel}
             </button>
           )}
           <button
@@ -47,7 +52,7 @@ export default function ConfirmDialog({
                 : 'bg-brand-500 hover:bg-brand-600 active:bg-brand-700'
             }`}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </button>
         </div>
       </div>
