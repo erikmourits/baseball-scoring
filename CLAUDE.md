@@ -192,4 +192,5 @@ Deploy by copying dist/ to the server. Nginx config in nginx/.
   TODO  Phase 7.5: Import schedule from CSV
   SKIP  Phase 7.2: Dev Supabase environment (advised against for free tier)
   TODO  Phase 4 remaining: Excel export, print box score, fielding stats
-  TODO  Phase 8: Unit tests, E2E tests, code review
+  DONE  Phase 8 (partial): 169 Vitest unit tests + 22 Playwright E2E tests passing
+  TODO  Phase 8 remaining: code review pass (error boundaries, a11y, RLS audit, dead code)

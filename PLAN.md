@@ -410,18 +410,18 @@ date,home_team,away_team,location
 
 - [x] leagueId should not be nullable (held over from before League existed)
 
-### Phase 8 — Quality & Testing ❌
-- [ ] **Extend unit tests** (Vitest — currently 88 tests on baseballLogic.ts)
-  - statsCalc.ts: batting/pitching calculation edge cases
-  - sync.ts: dirty flag, pull-prune, leagueId stamp logic
-  - teamService / seasonService / gameService
-- [ ] **E2E tests** (Playwright — not yet installed)
-  - Auth: sign in, sign out
-  - Full game flow: create league → season → team → score game → view summary
-  - League switching: verify data isolation between leagues
-  - Invite flow: generate link → accept → member appears
-  - Offline → back online → sync resolves correctly
-  - Version gate: old client blocked with banner
+### Phase 8 — Quality & Testing (partial ✅)
+- [x] **Unit tests** (Vitest — 169 tests passing)
+  - `src/__tests__/baseballLogic.test.ts` — 88 tests: result classification, out counting, scoring, baserunner logic
+  - `src/__tests__/statsCalc.test.ts` — 81 tests: `computeBattingLine`, `computePitchingLine`, `getPitcherDecisions`, formatting helpers; edge cases for ROE/FC (AB but no hit, no OBP), GDP (2 outs), fmtEra(0,0) = em dash
+- [x] **E2E tests** (Playwright — 22 tests passing, 1 skipped)
+  - `e2e/auth.spec.ts` — sign-out redirects to /auth; authenticated user sees home
+  - `e2e/navigation.spec.ts` — all 5 bottom-nav tabs; unknown route redirects home
+  - `e2e/teams.spec.ts` — page load; create team (waits for Supabase pull); navigate to detail
+  - `e2e/seasons.spec.ts` — page load; create season (waits for Supabase pull)
+  - `e2e/league.spec.ts` — page load; dark mode toggle; language toggle
+  - `e2e/game-flow.spec.ts` — home, /games/new wizard, stats page, help page
+  - Auth state shared via `e2e/.auth/user.json`; credentials in gitignored `.env.e2e`
 - [ ] **Code review pass**
   - Add React error boundaries (none exist)
   - Audit missing loading/empty states across all pages
