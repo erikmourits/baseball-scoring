@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { gameService } from '../services/gameService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useGameState, clearGameState } from '../hooks/useGameState'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { useGameSubscription } from '../hooks/useGameSubscription'
 import { SubstitutionPage } from '../components/game/SubstitutionPage'
 import { RunnerOutcomes } from '../components/game/RunnerOutcomes'
@@ -120,6 +121,7 @@ export default function GamePage() {
   } = useGameState(gameId!, game?.homeScore ?? 0, game?.awayScore ?? 0)
 
   const { isLive } = useGameSubscription(gameId)
+  useWakeLock()
 
   const batterIndex    = half === 'top' ? awayBatterIndex : homeBatterIndex
   const setBatterIndex = half === 'top' ? setAwayBatterIndex : setHomeBatterIndex

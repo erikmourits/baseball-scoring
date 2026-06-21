@@ -497,4 +497,4 @@ All pages in `src/pages/`, shared components in `src/components/`, bottom nav la
 | Stats storage | Computed on-the-fly from game log | No stale stats; game log is source of truth |
 | Multi-tenancy | League as top-level container | Enables multiple leagues per user and scorer invites |
 | RLS | security definer helper functions | Avoids bootstrap problem; inline subqueries can't bypass RLS |
-| League switching | localStorage + StorageEvent | Simple; reactive                                    
+| League switching | localStorage + StorageEvent | Simple; reactive
