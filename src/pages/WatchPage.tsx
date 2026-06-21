@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -54,6 +55,8 @@ export default function WatchPage() {
   const [error, setError]     = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [isLive, setIsLive]   = useState(false)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const joinedGameId = useRef<string | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!token) return
@@ -75,6 +78,19 @@ export default function WatchPage() {
       setLastUpdated(new Date())
       setError(null)
       setIsLive(g?.status !== 'final')
+
+      // Join presence channel once we have the gameId
+      if (g?.id && joinedGameId.current !== g.id) {
+        joinedGameId.current = g.id
+        if (channelRef.current) supabase.removeChannel(channelRef.current)
+        const ch = supabase.channel(`game-watch:${g.id}`, {
+          config: { presence: { key: crypto.randomUUID() } },
+        })
+        ch.subscribe(async status => {
+          if (status === 'SUBSCRIBED') await ch.track({ role: 'viewer' })
+        })
+        channelRef.current = ch
+      }
     } catch {
       setIsLive(false)
     }
@@ -88,6 +104,7 @@ export default function WatchPage() {
     return () => {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', handleVisibility)
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
     }
   }, [fetchData])
 
@@ -127,7 +144,7 @@ export default function WatchPage() {
       {/* Live banner */}
       {isLive && (
         <div className="bg-red-500 text-white text-xs text-center py-1.5 flex items-center justify-center gap-2 font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           {t('watch.liveUpdates')}
         </div>
       )}

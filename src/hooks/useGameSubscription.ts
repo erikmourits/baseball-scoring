@@ -9,11 +9,43 @@ const POLL_INTERVAL_MS = 5000
  * Polls Supabase every 5 seconds for changes to the given game.
  * Writes updates into local Dexie so useLiveQuery hooks re-render automatically.
  *
- * isLive — true while polling is active (game is in-progress and tab is visible)
+ * isLive      — true while polling is active (game is in-progress and tab is visible)
+ * viewerCount — number of people currently watching via the watch page
  */
 export function useGameSubscription(gameId: string | undefined) {
   const [isLive, setIsLive] = useState(false)
+  const [viewerCount, setViewerCount] = useState(0)
 
+  // ── Presence channel (viewer count) ────────────────────────────────────────
+  useEffect(() => {
+    if (!gameId) return
+
+    const channel = supabase.channel(`game-watch:${gameId}`, {
+      config: { presence: { key: 'scorer' } },
+    })
+
+    function countViewers(state: Record<string, any[]>) {
+      let count = 0
+      for (const presences of Object.values(state)) {
+        for (const p of presences) {
+          if (p.role === 'viewer') count++
+        }
+      }
+      setViewerCount(count)
+    }
+
+    channel
+      .on('presence', { event: 'sync' }, () => countViewers(channel.presenceState()))
+      .subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ role: 'scorer' })
+        }
+      })
+
+    return () => { supabase.removeChannel(channel) }
+  }, [gameId])
+
+  // ── Polling ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!gameId) return
 
@@ -130,5 +162,5 @@ export function useGameSubscription(gameId: string | undefined) {
     }
   }, [gameId])
 
-  return { isLive }
+  return { isLive, viewerCount }
 }

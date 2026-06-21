@@ -121,7 +121,7 @@ export default function GamePage() {
     captureSnapshot, handleUndo, advanceHalf,
   } = useGameState(gameId!, game?.homeScore ?? 0, game?.awayScore ?? 0)
 
-  const { isLive } = useGameSubscription(gameId)
+  const { isLive, viewerCount } = useGameSubscription(gameId)
   useWakeLock()
 
   const batterIndex    = half === 'top' ? awayBatterIndex : homeBatterIndex
@@ -438,7 +438,7 @@ export default function GamePage() {
               <button onClick={handleShare} className="flex items-center gap-1 text-xs bg-red-500/80 hover:bg-red-500 px-2 py-0.5 rounded-full font-semibold transition-colors">
                 {shareCopied
                   ? <>{t('game.copied')}</>
-                  : <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{t('game.live')}</>
+                  : <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{t('game.live')}{viewerCount > 0 && ` · ${viewerCount}`}</>
                 }
               </button>
             ) : (
