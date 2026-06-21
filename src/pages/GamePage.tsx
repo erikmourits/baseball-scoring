@@ -33,7 +33,6 @@ const INNING_END_CSS = `
 
 const RESULT_BUTTONS: { label: string; value: string; color: string; tipKey: string; no2Outs?: boolean; needsRunner?: boolean }[] = [
   { label: 'K',   value: 'K',   color: 'btn-out',   tipKey: 'game.strikeoutSwinging' },
-  { label: 'KL',  value: 'KL',  color: 'btn-out',   tipKey: 'game.strikeoutLooking' },
   { label: 'FO',  value: 'FO',  color: 'btn-out',   tipKey: 'game.flyOut' },
   { label: 'GO',  value: 'GO',  color: 'btn-out',   tipKey: 'game.groundOut' },
   { label: 'SAC', value: 'SAC', color: 'btn-out',   tipKey: 'game.sacBunt',    no2Outs: true, needsRunner: true },
@@ -435,15 +434,18 @@ export default function GamePage() {
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => navigate('/')} className="text-white/70 text-sm">{t('game.backGames')}</button>
           <div className="flex items-center gap-2">
-            {isLive && (
-              <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-0.5 rounded-full font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-800 animate-pulse" />
-                {t('game.live')}
-              </span>
+            {isLive ? (
+              <button onClick={handleShare} className="flex items-center gap-1 text-xs bg-red-500/80 hover:bg-red-500 px-2 py-0.5 rounded-full font-semibold transition-colors">
+                {shareCopied
+                  ? <>{t('game.copied')}</>
+                  : <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{t('game.live')}</>
+                }
+              </button>
+            ) : (
+              <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
+                {shareCopied ? t('game.copied') : t('game.share')}
+              </button>
             )}
-            <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
-              {shareCopied ? t('game.copied') : t('game.share')}
-            </button>
             <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.sub')}</button>
             <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.endGame')}</button>
           </div>
@@ -467,7 +469,7 @@ export default function GamePage() {
             <ScoreboardDiamond bases={bases} />
             <div className="flex gap-1.5">
               {[0,1,2].map(i => (
-                <div key={i} className={`w-2.5 h-2.5 rounded-full border ${i < outs ? 'bg-white dark:bg-gray-800 border-white' : 'border-white/40'}`} />
+                <div key={i} className={`w-2.5 h-2.5 rounded-full border ${i < outs ? 'bg-white border-white' : 'border-white/40'}`} />
               ))}
             </div>
           </div>
@@ -593,22 +595,24 @@ export default function GamePage() {
           onCancel={() => { setActiveEvent(null); setPickedRunner('') }}
         />
 
-        <button onClick={() => { setSkipRuns(0); setShowSkipDialog(true) }}
-          className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 border border-dashed border-gray-200 rounded-xl transition-colors">
-          {t('game.skipHalfInning')}
-        </button>
+
       </div>
 
       {/* ── Record button ── */}
       <div className="px-4 pb-safe pt-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
         <button onClick={handleUndo} disabled={!canUndo}
-          className={`px-5 py-3.5 rounded-xl font-semibold text-xl transition-colors ${
+          className={`w-14 py-3.5 rounded-xl font-semibold text-xl transition-colors ${
             canUndo ? 'bg-yellow-400 hover:bg-yellow-300 text-yellow-900' : 'bg-gray-50 dark:bg-gray-900 text-gray-300 cursor-default'}`}>
           ↺
         </button>
         <button disabled={!selectedResult} onClick={recordAtBat}
           className="flex-1 bg-brand-500 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors">
           {t('game.recordAtBat')}
+        </button>
+        <button onClick={() => { setSkipRuns(0); setShowSkipDialog(true) }}
+          className="w-14 py-3.5 rounded-xl font-semibold text-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          title={t('game.skipHalfInning')}>
+          ⇥
         </button>
       </div>
 

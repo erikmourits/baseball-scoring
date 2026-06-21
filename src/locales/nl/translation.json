@@ -438,7 +438,11 @@
     "wildPitch": "Wilde worp — welke loper ging voor?",
     "passedBall": "Doorgelopen bal — welke loper ging voor?",
     "balk": "Balk",
-    "noRunners": "Geen lopers op de honken."
+    "noRunners": "Geen lopers op de honken.",
+    "sbShort": "Gestolen honk",
+    "csShort": "Gepakt stelen",
+    "wpShort": "Wild pitch",
+    "pbShort": "Passed ball"
   },
   "substitution": {
     "cancel": "‹ Annuleren",

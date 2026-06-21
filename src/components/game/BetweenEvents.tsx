@@ -30,15 +30,22 @@ export function BetweenEvents({
   return (
     <div>
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('betweenEvents.title')}</p>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {(['SB', 'CS', 'WP', 'PB', 'BALK'] as BetweenEvent[]).map(ev => (
+      <div className="grid grid-cols-5 gap-2 mb-3">
+        {([
+          { ev: 'SB',   label: 'SB',   tipKey: 'betweenEvents.sbShort' },
+          { ev: 'CS',   label: 'CS',   tipKey: 'betweenEvents.csShort' },
+          { ev: 'WP',   label: 'WP',   tipKey: 'betweenEvents.wpShort' },
+          { ev: 'PB',   label: 'PB',   tipKey: 'betweenEvents.pbShort' },
+          { ev: 'BALK', label: 'BALK', tipKey: 'betweenEvents.balk' },
+        ] as { ev: BetweenEvent; label: string; tipKey: string }[]).map(({ ev, label, tipKey }) => (
           <button key={ev} onClick={() => onEventSelect(ev)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+            className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
               activeEvent === ev
                 ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
             }`}>
-            {ev === 'BALK' ? t('betweenEvents.balk') : ev}
+            <span className="block leading-tight">{label}</span>
+            <span className="block text-[9px] font-normal opacity-70 leading-tight mt-0.5">{t(tipKey)}</span>
           </button>
         ))}
       </div>

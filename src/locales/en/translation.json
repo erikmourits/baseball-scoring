@@ -438,7 +438,11 @@
     "wildPitch": "Wild pitch — which runner advanced?",
     "passedBall": "Passed ball — which runner advanced?",
     "balk": "Balk",
-    "noRunners": "No runners on base."
+    "noRunners": "No runners on base.",
+    "sbShort": "Stolen base",
+    "csShort": "Caught stealing",
+    "wpShort": "Wild pitch",
+    "pbShort": "Passed ball"
   },
   "substitution": {
     "cancel": "‹ Cancel",
