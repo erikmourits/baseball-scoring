@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Ball -->
+  <circle cx="32" cy="32" r="30" fill="#f5f0e8" stroke="#ccc" stroke-width="1.5"/>
+  <!-- Left seam -->
+  <path d="M20 10 C14 20, 14 44, 20 54" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Left seam stitches -->
+  <path d="M20 16 C17 18, 17 18, 15 20 M20 22 C17 24, 17 24, 15 26 M20 28 C17 30, 17 30, 15 32 M20 34 C17 36, 17 36, 15 38 M20 40 C17 42, 17 42, 15 44 M20 46 C17 48, 17 48, 15 50" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Right seam -->
+  <path d="M44 10 C50 20, 50 44, 44 54" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Right seam stitches -->
+  <path d="M44 16 C47 18, 47 18, 49 20 M44 22 C47 24, 47 24, 49 26 M44 28 C47 30, 47 30, 49 32 M44 34 C47 36, 47 36, 49 38 M44 40 C47 42, 47 42, 49 44 M44 46 C47 48, 47 48, 49 50" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
