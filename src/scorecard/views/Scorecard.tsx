@@ -1,23 +1,28 @@
 import { useTranslation } from 'react-i18next'
 import { fmtIp } from '../../utils/statsCalc'
 import { DiamondCell } from '../components/DiamondCell'
+import { KNBSBCell } from '../components/KNBSBCell'
 import { Linescore } from '../components/Linescore'
 import type { ScorecardData } from '../types'
 import type { LocalGameLineup, LocalAtBat } from '../../db/local'
 
-interface Props { data: ScorecardData }
+interface Props {
+  data: ScorecardData
+  style: 'mlb' | 'knbsb'
+}
 
 function fmtEraFromLine(outsRecorded: number, earnedRuns: number): string {
   if (outsRecorded === 0) return '—'
   return ((earnedRuns * 27) / outsRecorded).toFixed(2)
 }
 
-export function MLBScorecard({ data }: Props) {
+export function Scorecard({ data, style }: Props) {
   const { t } = useTranslation()
   const {
     game, homeTeam, awayTeam, playersById, maxInning,
     atBatsByBatterAndInning, statsMap, linescore,
     awayLineup, homeLineup, pitchingLines, halfInningMap,
+    scoredByPlayerAndInning,
   } = data
 
   if (!game) return null
@@ -31,6 +36,22 @@ export function MLBScorecard({ data }: Props) {
 
   function renderCell(playerId: string, inningNum: number, half: 'top' | 'bottom') {
     const inningId = halfInningMap(half).get(inningNum)
+
+    if (style === 'knbsb') {
+      const scoredInInning = !!inningId && (scoredByPlayerAndInning.get(playerId)?.has(inningId) ?? false)
+      if (!inningId) return <KNBSBCell result={undefined} scoredInInning={false} />
+      const abs: LocalAtBat[] = atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? []
+      if (abs.length === 0) return <KNBSBCell result={undefined} scoredInInning={scoredInInning} />
+      if (abs.length === 1) return <KNBSBCell result={abs[0].result} scoredInInning={scoredInInning} />
+      return (
+        <div className="flex flex-col items-center gap-0.5">
+          {abs.map((ab, i) => (
+            <KNBSBCell key={ab.id} result={ab.result} scoredInInning={i === 0 && scoredInInning} size={30} />
+          ))}
+        </div>
+      )
+    }
+
     if (!inningId) return <DiamondCell result={undefined} />
     const abs: LocalAtBat[] = atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? []
     if (abs.length === 0) return <DiamondCell result={undefined} />

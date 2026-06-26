@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useScorecardData } from '../scorecard/useScorecardData'
-import { KNBSBScorecard } from '../scorecard/views/KNBSBScorecard'
-import { MLBScorecard } from '../scorecard/views/MLBScorecard'
+import { Scorecard } from '../scorecard/views/Scorecard'
 
 type ScorecardStyle = 'knbsb' | 'mlb'
 
@@ -79,8 +78,7 @@ export default function ScorecardPage() {
       </div>
 
       {/* Active view */}
-      {style === 'knbsb' && <KNBSBScorecard data={data} />}
-      {style === 'mlb'   && <MLBScorecard   data={data} />}
+      <Scorecard data={data} style={style} />
     </div>
   )
 }
