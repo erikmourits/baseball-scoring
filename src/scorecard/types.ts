@@ -25,4 +25,8 @@ export interface ScorecardData {
   pitchingLines: LocalPitchingLine[]
   halfInningMap: (half: 'top' | 'bottom') => Map<number, string>
   scoredByPlayerAndInning: Map<string, Set<string>>
+  // 12.1: atBatId → which out (1|2|3) that batter was in the half-inning
+  outSequenceByAtBat: Map<string, number>
+  // 12.3/12.4: playerId → inningId → bases actually reached (for runner advancement)
+  playerInningBasesReached: Map<string, Map<string, string[]>>
 }

@@ -498,3 +498,101 @@ All pages in `src/pages/`, shared components in `src/components/`, bottom nav la
 | Multi-tenancy | League as top-level container | Enables multiple leagues per user and scorer invites |
 | RLS | security definer helper functions | Avoids bootstrap problem; inline subqueries can't bypass RLS |
 | League switching | localStorage + StorageEvent | Simple; reactive
+
+
+### Phase 12 — Complete Scorecard Cell Data ❌
+
+The scorecard cell rendering is currently incomplete. Each at-bat cell only shows the batter's initial result (1B, K, GO, etc.) and whether they scored. The following data is missing from both the data model and the UI.
+
+#### 12.1 — Out sequence number (no schema change needed)
+
+**What's missing:** KNBSB and MLB scorecards conventionally show which out in the half-inning each batter made — ①, ②, or ③ inside the out circle. Currently every circle shows only the result label ("K", "GO", "FO").
+
+**Fix:** Derive at render time in `Scorecard.tsx`. Walk each half-inning's at-bats in `sequenceNumber` order, accumulate an out counter (GDP = +2, all other out results = +1), and annotate each out cell with its sequence number. No DB or sync change needed.
+
+**Affected files:** `src/scorecard/views/Scorecard.tsx`
+
+---
+
+#### 12.2 — Fielder notation for outs (schema + UI change)
+
+**What's missing:** Ground-outs and fly-outs do not record which fielder(s) were involved. A 6-3 ground out and an unassisted 3 ground out are both stored as `result: 'GO'` with no further detail. Strikeouts don't distinguish the catcher (K2 vs. plain K).
+
+**Schema change:** Add `fielderNotation: string | undefined` to `LocalAtBat` (e.g. `"6-3"`, `"8"`, `"2"`). Requires:
+- New Dexie version block (v8) — index unchanged, field stored as plain property
+- Supabase migration adding nullable `fielder_notation text` column to `at_bats`
+
+**UI change:** In `GamePage`, when GO/FO/K is selected, show a compact fielder-position grid (1–9) to build the notation string before the at-bat is recorded. Notation is optional — scorer can skip if unknown.
+
+**Affected files:** `src/db/local.ts`, `src/pages/GamePage.tsx`, `src/scorecard/views/Scorecard.tsx`, `src/scorecard/components/KNBSBCell.tsx`, `supabase/migrations/`
+
+---
+
+#### 12.3 — Runner advancement destinations (schema + minor UI change)
+
+**What's missing:** When a runner advances on a play, `GamePage` computes the destination base (`'first'|'second'|'third'|'score'|'out'`) in the `runnerOutcomes` state, but only the `'score'` outcome is persisted (via `scoredPlayerIds`). All other runner movements are discarded after the play.
+
+**Impact on scorecard:** A player who hit a single and was later advanced to third by a teammate's hit shows only one base-line in their cell instead of three. A runner thrown out on the bases has no out marker in their cell.
+
+**Schema change:** Add `runnerDestinations: Record<string, string> | undefined` to `LocalAtBat` — a map of `playerId → destination` for all runners involved in the play. The value set is the existing `RunnerDest` type already used in `GamePage`. Requires:
+- Dexie v8 (same bump as 12.2 above)
+- Supabase migration adding nullable `runner_destinations jsonb` column to `at_bats`
+
+**UI change:** In `GamePage`, after building `runnerOutcomes`, persist the full map to the at-bat record instead of only extracting `scoredPlayerIds`. No change to the runner-outcome picker UI.
+
+**Scorecard change:** In `Scorecard.tsx`, when rendering a player's cell for a given inning, scan all at-bats in that inning for any entry in `runnerDestinations` that names this player, and union their destinations to determine the furthest base reached. Show the corresponding base lines.
+
+**Affected files:** `src/db/local.ts`, `src/pages/GamePage.tsx`, `src/scorecard/views/Scorecard.tsx`, `src/scorecard/components/KNBSBCell.tsx`, `supabase/migrations/`
+
+---
+
+#### 12.4 — Between-at-bat events: SB, WP, PB, BALK (schema + persistence change)
+
+**What's missing:** Stolen bases, wild pitches, passed balls, and balks advance runners between at-bats. `GamePage` handles these events in memory (updating `bases` state) but **never writes them to the database**. The `baserunningEvents` Dexie table and `LocalBaserunningEvent` interface already exist in `local.ts` but are completely unused.
+
+**Impact on scorecard:** A player who stole second has no record of it — their cell shows only their original reach (one base line) when it should show two.
+
+**Schema change required** — the existing `LocalBaserunningEvent` interface is insufficient for two reasons:
+
+1. **Wrong reference field:** The current interface has `atBatId: string`, but SB/WP/PB/BALK events happen *between* at-bats, so there is no at-bat to reference. The field must be changed to `inningId: string`.
+2. **Missing fields:** `fromBase`, `toBase`, and `sequenceNumber` are needed to render base advancement on the scorecard and to reconstruct event order, but none exist in the current interface.
+
+Updated `LocalBaserunningEvent` interface:
+
+```ts
+interface LocalBaserunningEvent {
+  id: string
+  serverId?: string
+  inningId: string          // replaces atBatId
+  runnerId?: string
+  eventType: string         // 'SB' | 'CS' | 'WP' | 'PB' | 'BALK'
+  fromBase: string          // 'first' | 'second' | 'third'
+  toBase: string            // 'second' | 'third' | 'score' | 'out'
+  sequenceNumber: number
+  createdAt: string
+  _dirty: boolean
+}
+```
+
+Confirm whether a `baserunning_events` table already exists in Supabase before writing the migration — the data model lists it but it may not have been applied. The migration must add/alter columns to match the updated interface (`inning_id`, `from_base`, `to_base`, `sequence_number`).
+
+**Change:** In `GamePage`, when SB/WP/PB/BALK is recorded, write a `LocalBaserunningEvent` record to Dexie (with `_dirty: true`) instead of only updating in-memory state, using the updated interface above.
+
+Add sync support for `baserunningEvents` in `useSync.ts` / `sync.ts` (push dirty records, pull from server). Also fix `clearLocalAndResync()` in `sync.ts`, which currently omits `baserunningEvents` from its wipe — adding sync without fixing this would leave orphaned events after a full resync.
+
+**Scorecard change:** When rendering a player's cell, also scan `baserunningEvents` for that player in the same inning, and include any base advancement from those events in the base-line calculation.
+
+**Affected files:** `src/db/local.ts`, `src/pages/GamePage.tsx`, `src/services/sync.ts`, `src/hooks/useSync.ts`, `src/scorecard/useScorecardData.ts`, `src/scorecard/views/Scorecard.tsx`, `supabase/migrations/`
+
+---
+
+#### Summary
+
+| Item | DB change | UI change | Impact |
+|------|-----------|-----------|--------|
+| 12.1 Out sequence ①②③ | None | Render-time derivation | Out circles show ①②③ |
+| 12.2 Fielder notation (6-3, 8…) | Add `fielder_notation` column | Position picker in GamePage | Accurate out descriptions |
+| 12.3 Runner destinations | Add `runner_destinations` column | Persist existing state in GamePage | Full base-path lines in cells |
+| 12.4 SB/WP/PB/BALK persistence | Extend `LocalBaserunningEvent` + Supabase migration | Persist on event + add sync | Stolen-base advancement in cells |
+
+Items 12.2, 12.3, and 12.4 all require schema changes and share a single Dexie version bump (v8), deployed together in one migration.

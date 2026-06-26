@@ -31,7 +31,7 @@ const envName = envFlagIdx !== -1 ? process.argv[envFlagIdx + 1] : null
 const envFile =
   envName === 'dev'   ? '.env.development' :
   envName === 'prod'  ? '.env.production'  :
-  envName === 'local' ? '.env.local'       : '.env'
+  envName === 'local' ? '.env.localdev'       : '.env'
 
 // ── Load env file manually ────────────────────────────────────────────────────
 try {

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
-import { db, type LocalAtBat } from '../db/local'
+import { db, type LocalAtBat, type LocalBaserunningEvent } from '../db/local'
 import { supabase } from '../lib/supabase'
 import { gameService } from '../services/gameService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -15,7 +15,7 @@ import { RunnerOutcomes } from '../components/game/RunnerOutcomes'
 import { BetweenEvents } from '../components/game/BetweenEvents'
 import type { BaseKey, BetweenEvent, Bases, RunnerDest } from '../types/game'
 import {
-  now, OUTS_RESULTS, RUNNER_OUTCOME_RESULTS, BATTER_DEST,
+  now, RUNNER_OUTCOME_RESULTS, BATTER_DEST,
   defaultOutcomes, getAvailableOptions, outsFromResult, advanceBasesForWalk,
 } from '../utils/baseballLogic'
 
@@ -223,9 +223,10 @@ export default function GamePage() {
   // ── Result selection ───────────────────────────────────────────────────────
 
   function handleResultSelect(value: string) {
-    if (value === selectedResult) { setSelectedResult(null); setRunnerOutcomes({}); return }
+    if (value === selectedResult) { setSelectedResult(null); setRunnerOutcomes({}); setFielders([]); return }
     setSelectedResult(value)
     setRunnerOutcomes(RUNNER_OUTCOME_RESULTS.has(value) ? defaultOutcomes(value, bases) : {})
+    setFielders([])
   }
 
   function selectRunnerOutcome(runnerId: string, dest: RunnerDest) {
@@ -241,13 +242,33 @@ export default function GamePage() {
     })
   }
 
+  // ── Helper: find current inning record ────────────────────────────────────
+
+  function getCurrentInning() {
+    return innings?.find(i => i.inningNumber === inningNumber && i.half === half)
+  }
+
   // ── Between-at-bat events ──────────────────────────────────────────────────
 
-  function handleBetweenEvent(ev: BetweenEvent) {
+  async function handleBetweenEvent(ev: BetweenEvent) {
     if (ev === activeEvent) { setActiveEvent(null); setPickedRunner(''); return }
     if (ev === 'BALK') {
       const snapshot = captureSnapshot()
       const runScored = !!bases.third
+      const currentInning = getCurrentInning()
+      if (currentInning) {
+        let seqNum = await db.baserunningEvents.where('inningId').equals(currentInning.id).count()
+        const moves: Array<{ runnerId: string; from: string; to: string }> = []
+        if (bases.third)  moves.push({ runnerId: bases.third,  from: 'third',  to: 'score'  })
+        if (bases.second) moves.push({ runnerId: bases.second, from: 'second', to: 'third'  })
+        if (bases.first)  moves.push({ runnerId: bases.first,  from: 'first',  to: 'second' })
+        const events: LocalBaserunningEvent[] = moves.map(m => ({
+          id: crypto.randomUUID(), inningId: currentInning.id, runnerId: m.runnerId,
+          eventType: 'BALK', fromBase: m.from, toBase: m.to,
+          sequenceNumber: ++seqNum, createdAt: now(), _dirty: true,
+        }))
+        if (events.length) await db.baserunningEvents.bulkAdd(events)
+      }
       setBases(prev => {
         const next: Bases = {}
         if (prev.second) next.third  = prev.second
@@ -267,13 +288,14 @@ export default function GamePage() {
     setPickedRunner(runners.length === 1 ? runners[0] : '')
   }
 
-  function confirmBetweenEvent() {
+  async function confirmBetweenEvent() {
     if (!pickedRunner || !activeEvent) return
     const runnerId = bases[pickedRunner]
     if (!runnerId) return
     const snapshot = captureSnapshot()
     if (activeEvent === 'SB' || activeEvent === 'WP' || activeEvent === 'PB') {
       const scored = pickedRunner === 'third'
+      const toBase = pickedRunner === 'first' ? 'second' : pickedRunner === 'second' ? 'third' : 'score'
       setBases(prev => {
         const next = { ...prev }; delete next[pickedRunner]
         if (pickedRunner === 'first')  next.second = runnerId
@@ -287,7 +309,25 @@ export default function GamePage() {
           game.awayScore + (!home ? 1 : 0))
       }
       setHistory(h => [...h, { snapshot }])
+      const currentInning = getCurrentInning()
+      if (currentInning) {
+        const seqNum = await db.baserunningEvents.where('inningId').equals(currentInning.id).count()
+        await db.baserunningEvents.add({
+          id: crypto.randomUUID(), inningId: currentInning.id, runnerId,
+          eventType: activeEvent, fromBase: pickedRunner, toBase,
+          sequenceNumber: seqNum + 1, createdAt: now(), _dirty: true,
+        })
+      }
     } else {
+      const currentInning = getCurrentInning()
+      if (currentInning) {
+        const seqNum = await db.baserunningEvents.where('inningId').equals(currentInning.id).count()
+        await db.baserunningEvents.add({
+          id: crypto.randomUUID(), inningId: currentInning.id, runnerId,
+          eventType: activeEvent, fromBase: pickedRunner, toBase: 'out',
+          sequenceNumber: seqNum + 1, createdAt: now(), _dirty: true,
+        })
+      }
       setBases(prev => { const next = { ...prev }; delete next[pickedRunner]; return next })
       const newOuts = outs + 1
       if (newOuts >= 3) { setHistory(h => [...h, { snapshot }]); advanceHalf() }
@@ -336,6 +376,11 @@ export default function GamePage() {
       }
     }
 
+    const fielderNotation = fielders.length > 0 ? fielders.join('-') : undefined
+    const runnerDestinations = RUNNER_OUTCOME_RESULTS.has(selectedResult) && Object.keys(runnerOutcomes).length > 0
+      ? { ...runnerOutcomes } as Record<string, string>
+      : undefined
+
     const atBatId = crypto.randomUUID()
     const atBat: LocalAtBat = {
       id: atBatId, inningId: inning.id,
@@ -343,6 +388,7 @@ export default function GamePage() {
       pitcherId: currentPitcherId,
       result: selectedResult, rbiCount,
       scoredPlayerIds: scoredPlayerIds.length ? scoredPlayerIds : undefined,
+      fielderNotation, runnerDestinations,
       sequenceNumber: existingAtBats.length + 1,
       createdAt: now(), updatedAt: now(), _dirty: true,
     }
@@ -434,8 +480,8 @@ export default function GamePage() {
   const homeName      = teams[game.homeTeamId ?? ''] ?? '—'
   const awayName      = teams[game.awayTeamId ?? ''] ?? '—'
   const canUndo       = history.length > 0
-  const needsFielders = selectedResult && OUTS_RESULTS.has(selectedResult) &&
-    selectedResult !== 'K' && selectedResult !== 'KL'
+  const needsFielders = selectedResult !== null &&
+    ['K', 'GO', 'FO', 'SAC', 'SF', 'GDP'].includes(selectedResult)
 
   // Pitcher shown on the fielding team's side in the scoreboard
   const pitcherLabel  = currentPitcher ? currentPitcher.name : null

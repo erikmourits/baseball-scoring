@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie'
+﻿import Dexie, { type Table } from 'dexie'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -91,7 +91,9 @@ export interface LocalAtBat {
   result?: string
   rbiCount: number
   sequenceNumber: number
-  scoredPlayerIds?: string[]  // all playerIds who scored on this play (runners + batter on HR)
+  scoredPlayerIds?: string[]           // all playerIds who scored on this play
+  fielderNotation?: string             // e.g. "6-3", "8", "2" — for GO/FO/K
+  runnerDestinations?: Record<string, string>  // runnerId → 'first'|'second'|'third'|'score'|'out'|'hold'
   createdAt: string
   updatedAt: string
   _dirty: boolean
@@ -109,10 +111,14 @@ export interface LocalFieldingCredit {
 export interface LocalBaserunningEvent {
   id: string
   serverId?: string
-  atBatId: string
+  inningId: string          // between-events have no at-bat; reference the inning directly
   runnerId?: string
-  eventType: string
+  eventType: string         // 'SB' | 'CS' | 'WP' | 'PB' | 'BALK'
+  fromBase: string          // 'first' | 'second' | 'third'
+  toBase: string            // 'second' | 'third' | 'score' | 'out'
+  sequenceNumber: number
   createdAt: string
+  _dirty: boolean
 }
 
 // One entry per player per game per team — the batting order + fielding position
@@ -216,6 +222,18 @@ class BaseballDatabase extends Dexie {
       teams:   'id, userId, leagueId',
       seasons: 'id, userId, leagueId',
       games:   'id, userId, status, seasonId, leagueId',
+    })
+
+    // v8: LocalAtBat gains fielderNotation + runnerDestinations (plain properties, no new index).
+    //     LocalBaserunningEvent: atBatId replaced by inningId; adds fromBase, toBase,
+    //     sequenceNumber, _dirty. Re-index baserunningEvents on inningId.
+    //     Existing baserunningEvents rows (there are none — table was never populated) are cleared.
+    this.version(8).stores({
+      baserunningEvents: 'id, inningId',
+    }).upgrade(async tx => {
+      // The table was never populated so there is nothing to migrate.
+      // Clear any stale rows that may have ended up there via old code paths.
+      await tx.table('baserunningEvents').clear()
     })
   }
 }

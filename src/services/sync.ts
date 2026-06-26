@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '../lib/supabase'
 import { db } from '../db/local'
-
-// ── Push dirty local records to Supabase ─────────────────────────────────────
-
 
 // ── Client version gate ───────────────────────────────────────────────────────
 
@@ -23,7 +20,7 @@ function semverLt(a: string, b: string): boolean {
 
 async function checkClientVersion() {
   const clientVersion = import.meta.env.VITE_APP_VERSION as string | undefined
-  if (!clientVersion) return // dev builds without version set — skip
+  if (!clientVersion) return
   try {
     const { data } = await (supabase.from('app_config') as any)
       .select('value')
@@ -34,7 +31,6 @@ async function checkClientVersion() {
     }
   } catch (e) {
     if (e instanceof ClientOutdatedError) throw e
-    // Network error or table missing — don't block sync
   }
 }
 
@@ -175,16 +171,18 @@ export async function syncAtBats() {
   const dirty = await db.atBats.filter(ab => ab._dirty).toArray()
   for (const atBat of dirty) {
     const { error } = await (supabase.from('at_bats') as any).upsert({
-      id:              atBat.id,
-      inning_id:       atBat.inningId,
-      batter_id:       atBat.batterId ?? null,
-      pitcher_id:      atBat.pitcherId ?? null,
-      result:             atBat.result ?? null,
-      rbi_count:          atBat.rbiCount,
-      scored_player_ids:  atBat.scoredPlayerIds ?? null,
-      sequence_number:    atBat.sequenceNumber,
-      created_at:         atBat.createdAt,
-      updated_at:         atBat.updatedAt,
+      id:                  atBat.id,
+      inning_id:           atBat.inningId,
+      batter_id:           atBat.batterId ?? null,
+      pitcher_id:          atBat.pitcherId ?? null,
+      result:              atBat.result ?? null,
+      rbi_count:           atBat.rbiCount,
+      scored_player_ids:   atBat.scoredPlayerIds ?? null,
+      fielder_notation:    atBat.fielderNotation ?? null,
+      runner_destinations: atBat.runnerDestinations ?? null,
+      sequence_number:     atBat.sequenceNumber,
+      created_at:          atBat.createdAt,
+      updated_at:          atBat.updatedAt,
     })
     if (error) { console.error('[syncAtBats]', error); continue }
 
@@ -204,13 +202,31 @@ export async function syncAtBats() {
   }
 }
 
+export async function syncBaserunningEvents() {
+  const dirty = await db.baserunningEvents.filter(e => e._dirty).toArray()
+  for (const ev of dirty) {
+    const { error } = await (supabase.from('baserunning_events') as any).upsert({
+      id:              ev.id,
+      inning_id:       ev.inningId,
+      runner_id:       ev.runnerId ?? null,
+      event_type:      ev.eventType,
+      from_base:       ev.fromBase,
+      to_base:         ev.toBase,
+      sequence_number: ev.sequenceNumber,
+      created_at:      ev.createdAt,
+    })
+    if (!error) {
+      await db.baserunningEvents.update(ev.id, { _dirty: false })
+    }
+  }
+}
+
 // ── Pull server data into local DB on login / app start ──────────────────────
 
 async function pullLeagues() {
   const { data, error } = await (supabase.from('leagues') as any).select('*')
   if (error || !data) return
 
-  // Prune local leagues the server no longer returns (user lost membership or wrong account)
   const serverIds = new Set((data as any[]).map((l: any) => l.id))
   const localLeagues = await db.leagues.toArray()
   for (const local of localLeagues) {
@@ -326,7 +342,6 @@ async function pullGames() {
 
   const serverIds = new Set((data as any[]).map((g: any) => g.id))
 
-  // Remove local games that no longer exist on the server
   const localGames = await db.games.toArray()
   for (const local of localGames) {
     if (!local._dirty && !serverIds.has(local.id)) {
@@ -336,9 +351,9 @@ async function pullGames() {
         const atBatIds = (await db.atBats.where('inningId').anyOf(inningIds).toArray()).map(ab => ab.id)
         if (atBatIds.length) {
           await db.fieldingCredits.where('atBatId').anyOf(atBatIds).delete()
-          await db.baserunningEvents.where('atBatId').anyOf(atBatIds).delete()
           await db.atBats.where('inningId').anyOf(inningIds).delete()
         }
+        await db.baserunningEvents.where('inningId').anyOf(inningIds).delete()
         await db.innings.where('gameId').equals(local.id).delete()
       }
       await db.games.delete(local.id)
@@ -418,17 +433,19 @@ async function pullAtBats() {
     const local = await db.atBats.get(ab.id)
     if (!local || !local._dirty) {
       await db.atBats.put({
-        id:             ab.id,
-        inningId:       ab.inning_id,
-        batterId:       ab.batter_id ?? undefined,
-        pitcherId:      ab.pitcher_id ?? undefined,
-        result:           ab.result ?? undefined,
-        rbiCount:         ab.rbi_count,
-        scoredPlayerIds:  ab.scored_player_ids ?? undefined,
-        sequenceNumber:   ab.sequence_number,
-        createdAt:        ab.created_at,
-        updatedAt:        ab.updated_at,
-        _dirty:           false,
+        id:                  ab.id,
+        inningId:            ab.inning_id,
+        batterId:            ab.batter_id ?? undefined,
+        pitcherId:           ab.pitcher_id ?? undefined,
+        result:              ab.result ?? undefined,
+        rbiCount:            ab.rbi_count,
+        scoredPlayerIds:     ab.scored_player_ids ?? undefined,
+        fielderNotation:     ab.fielder_notation ?? undefined,
+        runnerDestinations:  ab.runner_destinations ?? undefined,
+        sequenceNumber:      ab.sequence_number,
+        createdAt:           ab.created_at,
+        updatedAt:           ab.updated_at,
+        _dirty:              false,
       })
     }
   }
@@ -451,20 +468,36 @@ async function pullAtBats() {
   }
 }
 
+async function pullBaserunningEvents() {
+  const { data, error } = await (supabase.from('baserunning_events') as any).select('*')
+  if (error || !data) return
+
+  for (const ev of data as any[]) {
+    const local = await db.baserunningEvents.get(ev.id)
+    if (!local || !local._dirty) {
+      await db.baserunningEvents.put({
+        id:             ev.id,
+        inningId:       ev.inning_id,
+        runnerId:       ev.runner_id ?? undefined,
+        eventType:      ev.event_type,
+        fromBase:       ev.from_base,
+        toBase:         ev.to_base,
+        sequenceNumber: ev.sequence_number,
+        createdAt:      ev.created_at,
+        _dirty:         false,
+      })
+    }
+  }
+}
 
 /**
  * Ensures every local team/season/game has a leagueId and is marked dirty so
- * it gets pushed to Supabase. Runs on every pullFromServer call — idempotent
- * because the dirty flag is already true if unpushed, and harmless if already
- * synced (Supabase upsert is a no-op for unchanged rows).
+ * it gets pushed to Supabase. Runs on every pullFromServer call — idempotent.
  */
 async function stampMissingLeagueIds() {
   const league = await db.leagues.toCollection().first()
   if (!league) return
 
-  // Mark ALL local records dirty so they get pushed.
-  // Records with wrong/missing leagueId would be rejected by Supabase RLS;
-  // this ensures the leagueId is always set before the next syncAll() runs.
   const [teams, seasons, games] = await Promise.all([
     db.teams.toArray(),
     db.seasons.toArray(),
@@ -494,14 +527,12 @@ async function stampMissingLeagueIds() {
 
 /**
  * Force-push ALL local records to Supabase regardless of dirty flag.
- * Use after a schema migration to recover data that Supabase lost.
  */
 export async function forceResyncAll() {
   const league = await db.leagues.toCollection().first()
   if (!league) return
 
-  // Mark everything dirty
-  const [teams, seasons, games, players, innings, atBats, lineups] = await Promise.all([
+  const [teams, seasons, games, players, innings, atBats, lineups, brEvents] = await Promise.all([
     db.teams.toArray(),
     db.seasons.toArray(),
     db.games.toArray(),
@@ -509,6 +540,7 @@ export async function forceResyncAll() {
     db.innings.toArray(),
     db.atBats.toArray(),
     db.gameLineups.toArray(),
+    db.baserunningEvents.toArray(),
   ])
 
   await Promise.all([
@@ -519,15 +551,14 @@ export async function forceResyncAll() {
     ...innings.map(i => db.innings.update(i.id, { _dirty: true })),
     ...atBats.map(ab => db.atBats.update(ab.id, { _dirty: true })),
     ...lineups.map(l => db.gameLineups.update(l.id, { _dirty: true })),
+    ...brEvents.map(e => db.baserunningEvents.update(e.id, { _dirty: true })),
   ])
 
-  console.log(`[sync] Force-marked ${teams.length + seasons.length + games.length + players.length + innings.length + atBats.length + lineups.length} records dirty`)
+  console.log(`[sync] Force-marked ${teams.length + seasons.length + games.length + players.length + innings.length + atBats.length + lineups.length + brEvents.length} records dirty`)
   await syncAll()
 }
 
-
 export async function clearLocalAndResync() {
-  // Wipe all local tables
   await Promise.all([
     db.leagues.clear(),
     db.teams.clear(),
@@ -537,33 +568,28 @@ export async function clearLocalAndResync() {
     db.gameLineups.clear(),
     db.innings.clear(),
     db.atBats.clear(),
+    db.fieldingCredits.clear(),
+    db.baserunningEvents.clear(),
   ])
-  // Pull fresh from server
   await pullFromServer()
 }
 
 export async function pullFromServer() {
-  // Leagues first — everything else references them
   await pullLeagues()
-  // Stamp leagueId onto any pre-migration local records before pushing
   await stampMissingLeagueIds()
-  // Independent tables next
   await Promise.all([pullTeams(), pullPlayers(), pullSeasons()])
-  // Games before their dependent tables
   await pullGames()
   await Promise.all([pullGameLineups(), pullInnings()])
-  // At-bats (and fielding credits) last
   await pullAtBats()
+  await pullBaserunningEvents()
 }
 
 export async function syncAll() {
   await checkClientVersion()
-  // Leagues first
   await syncLeagues()
-  // Independent tables
   await Promise.all([syncTeams(), syncPlayers(), syncSeasons()])
-  // Game data in dependency order: games → lineups/innings → at-bats
   await syncGames()
   await Promise.all([syncGameLineups(), syncInnings()])
   await syncAtBats()
+  await syncBaserunningEvents()
 }

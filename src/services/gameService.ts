@@ -69,7 +69,9 @@ export const gameService = {
       const atBatIds = atBats.map(ab => ab.id)
       if (atBatIds.length > 0) {
         await db.fieldingCredits.where('atBatId').anyOf(atBatIds).delete()
-        await db.baserunningEvents.where('atBatId').anyOf(atBatIds).delete()
+      }
+      await db.baserunningEvents.where('inningId').anyOf(inningIds).delete()
+      if (atBatIds.length > 0) {
         await db.atBats.where('inningId').anyOf(inningIds).delete()
       }
     }

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next'
+﻿import { useTranslation } from 'react-i18next'
 import { fmtIp } from '../../utils/statsCalc'
 import { DiamondCell } from '../components/DiamondCell'
 import { KNBSBCell } from '../components/KNBSBCell'
@@ -22,7 +22,7 @@ export function Scorecard({ data, style }: Props) {
     game, homeTeam, awayTeam, playersById, maxInning,
     atBatsByBatterAndInning, statsMap, linescore,
     awayLineup, homeLineup, pitchingLines, halfInningMap,
-    scoredByPlayerAndInning,
+    scoredByPlayerAndInning, outSequenceByAtBat, playerInningBasesReached,
   } = data
 
   if (!game) return null
@@ -36,17 +36,36 @@ export function Scorecard({ data, style }: Props) {
 
   function renderCell(playerId: string, inningNum: number, half: 'top' | 'bottom') {
     const inningId = halfInningMap(half).get(inningNum)
+    const playerBases = inningId
+      ? playerInningBasesReached.get(playerId)?.get(inningId)
+      : undefined
 
     if (style === 'knbsb') {
       const scoredInInning = !!inningId && (scoredByPlayerAndInning.get(playerId)?.has(inningId) ?? false)
       if (!inningId) return <KNBSBCell result={undefined} scoredInInning={false} />
       const abs: LocalAtBat[] = atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? []
       if (abs.length === 0) return <KNBSBCell result={undefined} scoredInInning={scoredInInning} />
-      if (abs.length === 1) return <KNBSBCell result={abs[0].result} scoredInInning={scoredInInning} />
+      if (abs.length === 1) return (
+        <KNBSBCell
+          result={abs[0].result}
+          fielderNotation={abs[0].fielderNotation}
+          outNumber={outSequenceByAtBat.get(abs[0].id)}
+          basesReached={playerBases}
+          scoredInInning={scoredInInning}
+        />
+      )
       return (
         <div className="flex flex-col items-center gap-0.5">
           {abs.map((ab, i) => (
-            <KNBSBCell key={ab.id} result={ab.result} scoredInInning={i === 0 && scoredInInning} size={30} />
+            <KNBSBCell
+              key={ab.id}
+              result={ab.result}
+              fielderNotation={ab.fielderNotation}
+              outNumber={outSequenceByAtBat.get(ab.id)}
+              basesReached={i === 0 ? playerBases : undefined}
+              scoredInInning={i === 0 && scoredInInning}
+              size={30}
+            />
           ))}
         </div>
       )
