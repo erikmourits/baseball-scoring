@@ -1,4 +1,5 @@
-﻿import { useTranslation } from 'react-i18next'
+import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { fmtIp } from '../../utils/statsCalc'
 import { DiamondCell } from '../components/DiamondCell'
 import { KNBSBCell } from '../components/KNBSBCell'
@@ -34,58 +35,50 @@ export function Scorecard({ data, style }: Props) {
   const awayHits = awayLineup.reduce((s, e) => s + (statsMap.get(e.playerId)?.h ?? 0), 0)
   const homeHits = homeLineup.reduce((s, e) => s + (statsMap.get(e.playerId)?.h ?? 0), 0)
 
-  function renderCell(playerId: string, inningNum: number, half: 'top' | 'bottom') {
-    const inningId = halfInningMap(half).get(inningNum)
-    const playerBases = inningId
-      ? playerInningBasesReached.get(playerId)?.get(inningId)
-      : undefined
-
-    if (style === 'knbsb') {
-      const scoredInInning = !!inningId && (scoredByPlayerAndInning.get(playerId)?.has(inningId) ?? false)
-      if (!inningId) return <KNBSBCell result={undefined} scoredInInning={false} />
-      const abs: LocalAtBat[] = atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? []
-      if (abs.length === 0) return <KNBSBCell result={undefined} scoredInInning={scoredInInning} />
-      if (abs.length === 1) return (
-        <KNBSBCell
-          result={abs[0].result}
-          fielderNotation={abs[0].fielderNotation}
-          outNumber={outSequenceByAtBat.get(abs[0].id)}
-          basesReached={playerBases}
-          scoredInInning={scoredInInning}
-        />
-      )
-      return (
-        <div className="flex flex-col items-center gap-0.5">
-          {abs.map((ab, i) => (
-            <KNBSBCell
-              key={ab.id}
-              result={ab.result}
-              fielderNotation={ab.fielderNotation}
-              outNumber={outSequenceByAtBat.get(ab.id)}
-              basesReached={i === 0 ? playerBases : undefined}
-              scoredInInning={i === 0 && scoredInInning}
-              size={30}
-            />
-          ))}
-        </div>
-      )
-    }
-
-    if (!inningId) return <DiamondCell result={undefined} />
-    const abs: LocalAtBat[] = atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? []
-    if (abs.length === 0) return <DiamondCell result={undefined} />
-    if (abs.length === 1) return <DiamondCell result={abs[0].result} />
-    return (
-      <div className="flex flex-col items-center gap-0.5">
-        {abs.map(ab => <DiamondCell key={ab.id} result={ab.result} size={30} />)}
-      </div>
-    )
-  }
-
   function BattingSection({ lineup, half }: { lineup: LocalGameLineup[]; half: 'top' | 'bottom' }) {
     if (lineup.length === 0) return (
       <p className="text-sm text-gray-400 mb-4">{t('scorecardView.noBattingData')}</p>
     )
+
+    // How many at-bat slots each inning needs (max across all batters in this half)
+    const slotsByInning = new Map<number, number>()
+    for (const n of inningNums) {
+      const inningId = halfInningMap(half).get(n)
+      if (!inningId) { slotsByInning.set(n, 1); continue }
+      const maxAbs = lineup.reduce((m, e) => {
+        const count = atBatsByBatterAndInning.get(e.playerId)?.get(inningId)?.length ?? 0
+        return Math.max(m, count)
+      }, 0)
+      slotsByInning.set(n, Math.max(1, maxAbs))
+    }
+
+    function renderCellAtSlot(playerId: string, inningNum: number, slot: number): React.ReactNode {
+      const inningId = halfInningMap(half).get(inningNum)
+      const abs: LocalAtBat[] = inningId
+        ? (atBatsByBatterAndInning.get(playerId)?.get(inningId) ?? [])
+        : []
+      const ab = abs[slot]
+
+      if (style === 'knbsb') {
+        const scoredInInning = slot === 0 && !!inningId &&
+          (scoredByPlayerAndInning.get(playerId)?.has(inningId) ?? false)
+        const playerBases = slot === 0 && inningId
+          ? playerInningBasesReached.get(playerId)?.get(inningId)
+          : undefined
+        return (
+          <KNBSBCell
+            result={ab?.result}
+            fielderNotation={ab?.fielderNotation}
+            outNumber={ab ? outSequenceByAtBat.get(ab.id) : undefined}
+            basesReached={playerBases}
+            scoredInInning={scoredInInning}
+          />
+        )
+      }
+
+      return <DiamondCell result={ab?.result} />
+    }
+
     const stickyBase = 'bg-white dark:bg-gray-900'
     const stickyAlt  = 'bg-gray-50/60 dark:bg-gray-800/50'
     return (
@@ -96,11 +89,15 @@ export function Scorecard({ data, style }: Props) {
               <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 px-1 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[24px]">#</th>
               <th className="sticky left-6 z-10 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-left font-semibold text-gray-500 dark:text-gray-400 min-w-[110px]">{t('gameSummary.player')}</th>
               <th className="sticky left-[134px] z-10 bg-gray-50 dark:bg-gray-800 px-1 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[28px] border-r border-gray-200 dark:border-gray-700">{t('scorecardView.pos')}</th>
-              {inningNums.map(n => (
-                <th key={n} className="px-0.5 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[44px] border-l border-gray-100 dark:border-gray-700">
-                  {n}
-                </th>
-              ))}
+              {inningNums.map(n => {
+                const slots = slotsByInning.get(n) ?? 1
+                return (
+                  <th key={n} colSpan={slots}
+                    className="px-0.5 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[44px] border-l border-gray-100 dark:border-gray-700">
+                    {n}
+                  </th>
+                )
+              })}
               <th className="px-1.5 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[28px] border-l-2 border-gray-300 dark:border-gray-600">AB</th>
               <th className="px-1.5 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[28px]">H</th>
               <th className="px-1.5 py-1.5 text-center font-semibold text-gray-500 dark:text-gray-400 min-w-[28px]">{t('scorecardView.runs')}</th>
@@ -128,11 +125,15 @@ export function Scorecard({ data, style }: Props) {
                   <td className={`sticky left-[134px] z-10 ${rowBg} px-1 py-0.5 text-center text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700`}>
                     {entry.fieldingPosition ?? '—'}
                   </td>
-                  {inningNums.map(n => (
-                    <td key={n} className="px-0.5 py-0.5 border-l border-gray-100 dark:border-gray-700 align-middle text-center">
-                      {renderCell(entry.playerId, n, half)}
-                    </td>
-                  ))}
+                  {inningNums.flatMap(n => {
+                    const slots = slotsByInning.get(n) ?? 1
+                    return Array.from({ length: slots }, (_, slot) => (
+                      <td key={`${n}-${slot}`}
+                        className={`px-0.5 py-0.5 align-middle text-center ${slot === 0 ? 'border-l border-gray-100 dark:border-gray-700' : 'border-l border-dashed border-gray-200 dark:border-gray-600'}`}>
+                        {renderCellAtSlot(entry.playerId, n, slot)}
+                      </td>
+                    ))
+                  })}
                   <td className="px-1.5 py-0.5 text-center tabular-nums border-l-2 border-gray-300 dark:border-gray-600 font-medium">{s.ab}</td>
                   <td className="px-1.5 py-0.5 text-center tabular-nums">{s.h}</td>
                   <td className="px-1.5 py-0.5 text-center tabular-nums">{s.r}</td>
