@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
+    "dev:local": "supabase start && vite --mode localdev",
     "build": "tsc && vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "migrate": "node scripts/migrate.js --env prod",
+    "migrate:local": "node scripts/migrate.js --env local",
     "migrate:dev": "node scripts/migrate.js --env dev",
     "migrate:prod": "node scripts/migrate.js --env prod",
     "deploy-functions": "node scripts/deploy-functions.js --env prod",
@@ -18,7 +20,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "serve-functions": "supabase functions serve --env-file supabase/functions/.env"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -43,6 +49,7 @@
     "@typescript-eslint/parser": "^7.13.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
+    "concurrently": "^10.0.3",
     "dotenv": "^17.4.2",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.2",

@@ -39,6 +39,65 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
 ---
 
+
+## 2b. Option B: Run Fully Locally (no remote Supabase)
+
+Skip this section if you are using a hosted Supabase project (Option A above).
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be running, plus the Supabase CLI:
+
+```bash
+npm install -g supabase
+```
+
+**1. Start the local stack:**
+
+```bash
+npm run supabase:start
+```
+
+This prints a block of local credentials including the **anon key**. Copy it.
+
+**2. Create `.env.localdev`** in the project root (never committed):
+
+```dotenv
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<paste the anon key from step 1>
+VITE_APP_VERSION=0.0.0-local
+SUPABASE_PROJECT_REF=local
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
+
+Migrations are applied automatically on first start. To reset the database from scratch:
+
+```bash
+npm run supabase:reset
+```
+
+**3. (Optional) Enable scorecard OCR locally**
+
+Create `supabase/functions/.env` (gitignored):
+
+```dotenv
+OPENAI_API_KEY=sk-...your-key-here...
+```
+
+**4. Run the app:**
+
+```bash
+npm run dev
+```
+
+Vite picks up `.env.localdev` automatically. Supabase Studio is available at [http://127.0.0.1:54323](http://127.0.0.1:54323).
+
+To serve Edge Functions locally in a second terminal:
+
+```bash
+npm run serve-functions
+```
+
+---
+
 ## 3. Run locally
 
 ```bash

@@ -29,8 +29,9 @@ const root = join(__dirname, '..')
 const envFlagIdx = process.argv.indexOf('--env')
 const envName = envFlagIdx !== -1 ? process.argv[envFlagIdx + 1] : null
 const envFile =
-  envName === 'dev'  ? '.env.development' :
-  envName === 'prod' ? '.env.production'  : '.env'
+  envName === 'dev'   ? '.env.development' :
+  envName === 'prod'  ? '.env.production'  :
+  envName === 'local' ? '.env.local'       : '.env'
 
 // ── Load env file manually ────────────────────────────────────────────────────
 try {
@@ -62,9 +63,10 @@ if (!connectionString) {
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
+const isLocal = connectionString.includes('127.0.0.1') || connectionString.includes('localhost')
 const client = new pg.Client({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: isLocal ? false : { rejectUnauthorized: false },
 })
 
 await client.connect()

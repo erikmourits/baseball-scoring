@@ -62,6 +62,49 @@ A local-first Progressive Web App (PWA) for scoring baseball games play-by-play 
    npm run dev
    ```
 
+
+### Local Supabase (fully offline)
+
+Run the entire backend locally in Docker — no remote project needed.
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) + [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
+
+```bash
+npm install -g supabase
+```
+
+**First-time setup:**
+```bash
+npm run supabase:start   # prints the local anon key — copy it for the next step
+```
+
+Create `.env.localdev` in the project root (never committed):
+```dotenv
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<paste key printed by supabase start>
+VITE_APP_VERSION=0.0.0-local
+SUPABASE_PROJECT_REF=local
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
+
+To test Edge Functions locally, also create `supabase/functions/.env`:
+```dotenv
+OPENAI_API_KEY=sk-...   # only needed for scorecard OCR
+```
+
+**Daily workflow:**
+```bash
+npm run supabase:start   # start local stack
+npm run dev:local        # uses .env.localdev, not .env.development
+npm run supabase:reset   # reset DB and re-apply all migrations
+npm run serve-functions  # second terminal — serve Edge Functions locally
+npm run supabase:stop    # shut down at end of day
+```
+
+Supabase Studio is available at [http://127.0.0.1:54323](http://127.0.0.1:54323) while the stack is running.
+
+> To switch back to the remote dev project, delete `.env.localdev` and restart `npm run dev`.
+
 ### Environment Variables
 
 | Variable | Description |
@@ -70,6 +113,8 @@ A local-first Progressive Web App (PWA) for scoring baseball games play-by-play 
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
 | `DATABASE_URL` | Postgres connection string (for migrations) |
 | `SUPABASE_PROJECT_REF` | Supabase project reference ID |
+| `VITE_SUPABASE_URL` (local) | `http://127.0.0.1:54321` when using local stack |
+| `DATABASE_URL` (local) | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 
 ### Database Migrations
 
