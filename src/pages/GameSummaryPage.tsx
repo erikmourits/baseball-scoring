@@ -191,10 +191,18 @@ export default function GameSummaryPage() {
   return (
     <div className="p-4 pb-10 max-w-2xl mx-auto">
 
-      {/* Back */}
-      <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium mb-4 flex items-center gap-1">
-        {t('gameSummary.backGames')}
-      </button>
+      {/* Back / navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={() => navigate('/')} className="text-brand-500 dark:text-brand-100 text-sm font-medium flex items-center gap-1">
+          {t('gameSummary.backGames')}
+        </button>
+        <button
+          onClick={() => navigate(`/games/${gameId}/scorecard`)}
+          className="text-brand-500 dark:text-brand-100 text-sm font-medium flex items-center gap-1"
+        >
+          {t('scorecardView.title')} →
+        </button>
+      </div>
 
       {/* Score header */}
       <div className="bg-brand-700 text-white rounded-2xl px-5 py-4 mb-5">

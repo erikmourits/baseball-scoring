@@ -451,5 +451,20 @@
     "bench": "Bank",
     "toLineup": "→ Opstelling",
     "missingPositions": "Ontbrekende veldposities"
+  },
+  "scorecardView": {
+    "title": "Scoreformulier",
+    "backSummary": "← Samenvatting",
+    "styleKnbsb": "KNBSB",
+    "styleMlb": "MLB",
+    "batting": "{{label}} — Slagbeurt",
+    "pitching": "{{label}} — Werpen",
+    "pos": "Pos",
+    "runs": "R",
+    "pitcher": "Werper",
+    "noBattingData": "Geen slagdata geregistreerd.",
+    "noPitchingData": "Geen werpdata geregistreerd.",
+    "linescore": "Linescore",
+    "total": "Totaal"
   }
 }

@@ -91,6 +91,7 @@ export interface LocalAtBat {
   result?: string
   rbiCount: number
   sequenceNumber: number
+  scoredPlayerIds?: string[]  // all playerIds who scored on this play (runners + batter on HR)
   createdAt: string
   updatedAt: string
   _dirty: boolean

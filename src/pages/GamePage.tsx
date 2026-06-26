@@ -324,12 +324,26 @@ export default function GamePage() {
       await db.innings.add(inning)
     }
     const existingAtBats = await db.atBats.where('inningId').equals(inning.id).toArray()
+
+    const scoredPlayerIds: string[] = []
+    if (selectedResult === 'HR') {
+      scoredPlayerIds.push(...([bases.first, bases.second, bases.third, currentBatterId].filter(Boolean) as string[]))
+    } else if ((selectedResult === 'BB' || selectedResult === 'HBP') && bases.first && bases.second && bases.third) {
+      scoredPlayerIds.push(bases.third)
+    } else if (RUNNER_OUTCOME_RESULTS.has(selectedResult)) {
+      for (const [pid, dest] of Object.entries(runnerOutcomes)) {
+        if (dest === 'score') scoredPlayerIds.push(pid)
+      }
+    }
+
     const atBatId = crypto.randomUUID()
     const atBat: LocalAtBat = {
       id: atBatId, inningId: inning.id,
       batterId: currentBatterId,
       pitcherId: currentPitcherId,
-      result: selectedResult, rbiCount, sequenceNumber: existingAtBats.length + 1,
+      result: selectedResult, rbiCount,
+      scoredPlayerIds: scoredPlayerIds.length ? scoredPlayerIds : undefined,
+      sequenceNumber: existingAtBats.length + 1,
       createdAt: now(), updatedAt: now(), _dirty: true,
     }
     await db.atBats.add(atBat)
@@ -530,7 +544,7 @@ export default function GamePage() {
               const blockedBy2Outs = !!btn.no2Outs && outs === 2
               const blocked = blockedBy2Outs || (!!btn.needsRunner && runnersOnBase.length === 0)
               return (
-                <button key={btn.value} onClick={() => !blocked && handleResultSelect(btn.value)}
+                <button key={btn.value} data-testid={`result-${btn.value}`} onClick={() => !blocked && handleResultSelect(btn.value)}
                   className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                     blocked
                       ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-300 cursor-not-allowed'
@@ -605,7 +619,7 @@ export default function GamePage() {
             canUndo ? 'bg-yellow-400 hover:bg-yellow-300 text-yellow-900' : 'bg-gray-50 dark:bg-gray-900 text-gray-300 cursor-default'}`}>
           ↺
         </button>
-        <button disabled={!selectedResult} onClick={recordAtBat}
+        <button data-testid="record-atbat" disabled={!selectedResult} onClick={recordAtBat}
           className="flex-1 bg-brand-500 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors">
           {t('game.recordAtBat')}
         </button>

@@ -12,6 +12,7 @@ import GamePage from './pages/GamePage'
 import GameSummaryPage from './pages/GameSummaryPage'
 import PlayerStatsPage from './pages/PlayerStatsPage'
 import StatsPage from './pages/StatsPage'
+import ScorecardPage from './pages/ScorecardPage'
 import ScorecardUploadPage from './pages/ScorecardUploadPage'
 import ScorecardReviewPage from './pages/ScorecardReviewPage'
 import WatchPage from './pages/WatchPage'
@@ -37,6 +38,7 @@ function AuthenticatedApp() {
         <Route path="/games/new"                                element={<NewGamePage />} />
         <Route path="/games/:gameId"                            element={<GamePage />} />
         <Route path="/games/:gameId/summary"                    element={<GameSummaryPage />} />
+        <Route path="/games/:gameId/scorecard"                  element={<ScorecardPage />} />
         <Route path="/games/upload"                             element={<ScorecardUploadPage />} />
         <Route path="/games/upload/review"                      element={<ScorecardReviewPage />} />
         <Route path="/league"                                     element={<LeagueSettingsPage />} />

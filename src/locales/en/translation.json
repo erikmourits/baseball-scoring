@@ -451,5 +451,20 @@
     "bench": "Bench",
     "toLineup": "→ Lineup",
     "missingPositions": "Missing field positions"
+  },
+  "scorecardView": {
+    "title": "Scorecard",
+    "backSummary": "← Summary",
+    "styleKnbsb": "KNBSB",
+    "styleMlb": "MLB",
+    "batting": "{{label}} — Batting",
+    "pitching": "{{label}} — Pitching",
+    "pos": "Pos",
+    "runs": "R",
+    "pitcher": "Pitcher",
+    "noBattingData": "No batting data recorded.",
+    "noPitchingData": "No pitching data recorded.",
+    "linescore": "Linescore",
+    "total": "Total"
   }
 }

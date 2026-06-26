@@ -179,13 +179,14 @@ export async function syncAtBats() {
       inning_id:       atBat.inningId,
       batter_id:       atBat.batterId ?? null,
       pitcher_id:      atBat.pitcherId ?? null,
-      result:          atBat.result ?? null,
-      rbi_count:       atBat.rbiCount,
-      sequence_number: atBat.sequenceNumber,
-      created_at:      atBat.createdAt,
-      updated_at:      atBat.updatedAt,
+      result:             atBat.result ?? null,
+      rbi_count:          atBat.rbiCount,
+      scored_player_ids:  atBat.scoredPlayerIds ?? null,
+      sequence_number:    atBat.sequenceNumber,
+      created_at:         atBat.createdAt,
+      updated_at:         atBat.updatedAt,
     })
-    if (error) continue
+    if (error) { console.error('[syncAtBats]', error); continue }
 
     // Sync fielding credits alongside their parent at-bat (credits have no _dirty flag)
     const credits = await db.fieldingCredits.where('atBatId').equals(atBat.id).toArray()
@@ -421,12 +422,13 @@ async function pullAtBats() {
         inningId:       ab.inning_id,
         batterId:       ab.batter_id ?? undefined,
         pitcherId:      ab.pitcher_id ?? undefined,
-        result:         ab.result ?? undefined,
-        rbiCount:       ab.rbi_count,
-        sequenceNumber: ab.sequence_number,
-        createdAt:      ab.created_at,
-        updatedAt:      ab.updated_at,
-        _dirty:         false,
+        result:           ab.result ?? undefined,
+        rbiCount:         ab.rbi_count,
+        scoredPlayerIds:  ab.scored_player_ids ?? undefined,
+        sequenceNumber:   ab.sequence_number,
+        createdAt:        ab.created_at,
+        updatedAt:        ab.updated_at,
+        _dirty:           false,
       })
     }
   }

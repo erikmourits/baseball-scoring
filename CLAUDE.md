@@ -135,6 +135,10 @@ Failing to do this leaves stale data visible to the next user on the same device
 
 - Project: prod only (no dev environment — running on free tier)
 - Migrations: supabase/migrations/ — run with `supabase db push`
+
+**NEVER do anything locally that has impact on production.**
+Migrations are applied to production exclusively via the GitHub deploy action — never via `supabase db push`, `supabase db query`, or any local CLI/dashboard command.
+To deploy a migration: create the file in supabase/migrations/, commit it, and push to the deploy branch.
 - Edge Functions: supabase/functions/ — deploy with `supabase functions deploy <name>`
 - RLS helper functions (all security definer):
     is_site_admin()             checks site_admins table
