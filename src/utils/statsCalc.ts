@@ -119,7 +119,7 @@ export function computePitchingLine(
     if (res === 'BB')  bb++
     if (res === 'HBP') hbp++
     if (res === 'K' || res === 'KL') k++
-    r += ab.rbiCount ?? 0  // RBI proxy — see KNOWN LIMITATION at top of file
+    r += ab.rbiCount ?? 0  // RBI proxy for direct-scoring at-bats
   }
 
   for (const ev of baserunningEvents) {
