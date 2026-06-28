@@ -8,6 +8,7 @@ import { playerService } from '../services/playerService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { computeBattingLine, computePitchingLine, getPitcherDecisions, fmtAvg, fmtOps, fmtIp, fmtEra } from '../utils/statsCalc'
 import { useGameAtBats } from '../hooks/useGameAtBats'
+import { attributeScoringEventsToPitchers } from '../utils/gameSummaryCalc'
 
 type PendingAction =
   | { type: 'archivePlayer'; id: string; name: string }
@@ -51,8 +52,9 @@ function StatsTab({ teamId }: { teamId: string }) {
   const gameData = useGameAtBats(gameIds)
 
   const playerStats = useMemo(() => {
-    if (!games?.length || !players?.length || !gameData) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {} }
-    const { innings, atBats: allAtBats, inningById } = gameData
+    if (!games?.length || !players?.length || !gameData) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {}, brEventsByPitcher: {} as Record<string, import('../db/local').LocalBaserunningEvent[]> }
+    const { innings, atBats: allAtBats, inningById, baserunningEvents } = gameData
+    const brEventsByPitcher = attributeScoringEventsToPitchers(allAtBats, baserunningEvents)
 
     const batting:  Record<string, typeof allAtBats> = {}
     const pitching: Record<string, typeof allAtBats> = {}
@@ -71,11 +73,12 @@ function StatsTab({ teamId }: { teamId: string }) {
       if (winnerId) pitcherWins[winnerId]   = (pitcherWins[winnerId]   ?? 0) + 1
       if (loserId)  pitcherLosses[loserId]  = (pitcherLosses[loserId]  ?? 0) + 1
     }
-    return { batting, pitching, pitcherWins, pitcherLosses }
+    return { batting, pitching, pitcherWins, pitcherLosses, brEventsByPitcher }
   }, [games, players, gameData])
 
   const { battingRows, pitchingRows } = useMemo(() => {
     if (!players || !playerStats) return { battingRows: [], pitchingRows: [] }
+    const { brEventsByPitcher } = playerStats
     const battingRows = players
       .map(p => ({ player: p, line: computeBattingLine(playerStats.batting[p.id] ?? []) }))
       .filter(r => r.line.pa > 0)
@@ -83,7 +86,7 @@ function StatsTab({ teamId }: { teamId: string }) {
     const pitchingRows = players
       .map(p => ({
         player: p,
-        line: computePitchingLine(playerStats.pitching[p.id] ?? []),
+        line: computePitchingLine(playerStats.pitching[p.id] ?? [], brEventsByPitcher[p.id] ?? []),
         w: playerStats.pitcherWins[p.id]   ?? 0,
         l: playerStats.pitcherLosses[p.id] ?? 0,
       }))

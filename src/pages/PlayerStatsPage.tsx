@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
 import { useTeamsMap } from '../hooks/useTeamsMap'
 import { useGameAtBats } from '../hooks/useGameAtBats'
+import { attributeScoringEventsToPitchers } from '../utils/gameSummaryCalc'
 import {
   computeBattingLine, computePitchingLine, getPitcherDecisions,
   fmtAvg, fmtOps, fmtIp, fmtEra,
@@ -83,12 +84,18 @@ export default function PlayerStatsPage() {
     })
   }, [games, gameData, playerId])
 
+  // Pre-compute pitcher attribution across all games for season totals
+  const brEventsByPitcher = useMemo(() => {
+    if (!gameData) return {}
+    return attributeScoringEventsToPitchers(gameData.atBats, gameData.baserunningEvents)
+  }, [gameData])
+
   const { seasonBatting, seasonPitching, seasonW, seasonL, gameLines } = useMemo(() => {
     if (!gameLog) return { seasonBatting: null, seasonPitching: null, seasonW: 0, seasonL: 0, gameLines: [] }
     const gameLines = gameLog.map(entry => ({
       ...entry,
       batting:  computeBattingLine(entry.battingAbs),
-      pitching: computePitchingLine(entry.pitchingAbs),
+      pitching: computePitchingLine(entry.pitchingAbs, brEventsByPitcher[playerId!] ?? []),
     }))
     const allBatting  = gameLog.flatMap(e => e.battingAbs)
     const allPitching = gameLog.flatMap(e => e.pitchingAbs)
@@ -96,11 +103,11 @@ export default function PlayerStatsPage() {
     const seasonL = gameLog.filter(e => e.decision === 'L').length
     return {
       seasonBatting:  computeBattingLine(allBatting),
-      seasonPitching: computePitchingLine(allPitching),
+      seasonPitching: computePitchingLine(allPitching, brEventsByPitcher[playerId!] ?? []),
       seasonW, seasonL,
       gameLines,
     }
-  }, [gameLog])
+  }, [gameLog, brEventsByPitcher, playerId])
 
   if (!player || !team || !teams) return <div className="p-4 text-gray-400">Loading…</div>
 
