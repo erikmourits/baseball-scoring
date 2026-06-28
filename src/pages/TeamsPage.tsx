@@ -6,6 +6,7 @@ import { db } from '../db/local'
 import { teamService } from '../services/teamService'
 import { useSession } from '../hooks/useSession'
 import { useLeague } from '../hooks/useLeague'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 export default function TeamsPage() {
   const { t } = useTranslation()
@@ -15,6 +16,7 @@ export default function TeamsPage() {
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   const leagueId = league?.id
 
@@ -31,6 +33,12 @@ export default function TeamsPage() {
       return acc
     }, {})
   }, [])
+
+  async function handleDelete() {
+    if (!pendingDelete) return
+    await teamService.delete(pendingDelete.id)
+    setPendingDelete(null)
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -53,10 +61,11 @@ export default function TeamsPage() {
           {teams.map(team => {
             const playerCount = playerCounts?.[team.id] ?? 0
             return (
-              <li key={team.id}>
+              <li key={team.id} className="flex gap-2 items-stretch">
+                {/* Team card */}
                 <button
                   onClick={() => navigate(`/teams/${team.id}`)}
-                  className="w-full flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700 hover:border-brand-500 transition-colors text-left"
+                  className="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700 hover:border-brand-500 transition-colors text-left"
                 >
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">{team.name}</p>
@@ -65,6 +74,17 @@ export default function TeamsPage() {
                     </p>
                   </div>
                   <span className="text-gray-300 text-lg">›</span>
+                </button>
+
+                {/* Delete button — separate full-height target */}
+                <button
+                  onClick={() => setPendingDelete({ id: team.id, name: team.name })}
+                  aria-label={t('common.delete')}
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </li>
             )
@@ -110,6 +130,15 @@ export default function TeamsPage() {
         >
           {t('teams.newTeam')}
         </button>
+      )}
+      {pendingDelete && (
+        <ConfirmDialog
+          message={t('teams.deleteConfirm', { name: pendingDelete.name })}
+          confirmLabel={t('teams.deleteTeam')}
+          destructive
+          onConfirm={handleDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   )

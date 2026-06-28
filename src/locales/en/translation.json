@@ -163,7 +163,9 @@
     "saving": "Saving…",
     "createTeam": "Create team",
     "newTeam": "+ New Team",
-    "players": "{{count}} players"
+    "players": "{{count}} players",
+    "deleteConfirm": "Delete \"{{name}}\" and all its players? This cannot be undone.",
+    "deleteTeam": "Delete team"
   },
   "teamDetail": {
     "backTeams": "‹ Teams",

@@ -163,7 +163,9 @@
     "saving": "Opslaan…",
     "createTeam": "Team aanmaken",
     "newTeam": "+ Nieuw team",
-    "players": "{{count}} spelers"
+    "players": "{{count}} spelers",
+    "deleteConfirm": "Verwijder “{{name}}” en alle spelers? Dit kan niet ongedaan worden gemaakt.",
+    "deleteTeam": "Team verwijderen"
   },
   "teamDetail": {
     "backTeams": "‹ Teams",
