@@ -35,17 +35,14 @@ jobs:
       - name: Apply migrations and seed E2E data
         run: supabase db reset --no-seed && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.e2e.sql
 
-      - name: Export local Supabase credentials
-        run: supabase status --output env >> $GITHUB_ENV
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          VITE_SUPABASE_URL: ${{ env.API_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ env.ANON_KEY }}
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7kyqHDjx5mV1OtUbxBRUhJmzicnjOIhq14w
           E2E_EMAIL: e2e@test.local
           E2E_PASSWORD: e2e-test-password
 
