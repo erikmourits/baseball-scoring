@@ -1,9 +1,11 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
-import type { LocalAtBat, LocalBaserunningEvent } from '../db/local'
+import type { LocalAtBat, LocalBaserunningEvent, LocalPitchingLine } from '../db/local'
 import type { ScorecardData, PlayerStats } from './types'
 import { OUTS_RESULTS } from '../utils/baseballLogic'
+import { computePitchingLine, getPitcherDecisions } from '../utils/statsCalc'
+import { attributeScoringEventsToPitchers } from '../utils/gameSummaryCalc'
 
 const HIT_RESULTS   = new Set(["1B", "2B", "3B", "HR"])
 const NO_AB_RESULTS = new Set(["BB", "HBP", "SAC", "SF"])
@@ -42,10 +44,6 @@ export function useScorecardData(gameId: string | undefined): ScorecardData {
   }, [innings])
   const allLineupsRaw = useLiveQuery(
     () => gameId ? db.gameLineups.where("gameId").equals(gameId).toArray() : [],
-    [gameId]
-  )
-  const pitchingLines = useLiveQuery(
-    () => gameId ? db.pitchingLines.where("gameId").equals(gameId).toArray() : [],
     [gameId]
   )
 
@@ -124,7 +122,7 @@ export function useScorecardData(gameId: string | undefined): ScorecardData {
     }
 
     // ── 12.1: Out sequence numbers ────────────────────────────────────────────
-    // outSequenceByAtBat: atBatId → which out this was (1, 2, or 3) in the half-inning
+    // outSequenceByAtBat: atBatId -> which out this was (1, 2, or 3) in the half-inning
 
     const outSequenceByAtBat = new Map<string, number>()
 
@@ -156,7 +154,7 @@ export function useScorecardData(gameId: string | undefined): ScorecardData {
     }
 
     // ── 12.3 + 12.4: Player base-path accumulation ───────────────────────────
-    // playerInningBasesReached: playerId → inningId → bases actually reached
+    // playerInningBasesReached: playerId -> inningId -> bases actually reached
 
     const playerInningBasesMap = new Map<string, Map<string, Set<string>>>()
 
@@ -233,6 +231,45 @@ export function useScorecardData(gameId: string | undefined): ScorecardData {
     const awayLineup = sortLineup(allLineups.filter(e => e.teamId === game?.awayTeamId))
     const homeLineup = sortLineup(allLineups.filter(e => e.teamId === game?.homeTeamId))
 
+    // ── Pitching lines (computed from at-bats) ────────────────────────────────
+    const absByPitcher = new Map<string, LocalAtBat[]>()
+    for (const ab of atBatsArr) {
+      if (!ab.pitcherId) continue
+      if (!absByPitcher.has(ab.pitcherId)) absByPitcher.set(ab.pitcherId, [])
+      absByPitcher.get(ab.pitcherId)!.push(ab)
+    }
+
+    const inningHalfRecord: Record<string, 'top' | 'bottom'> = {}
+    for (const inn of inningsArr) inningHalfRecord[inn.id] = inn.half
+
+    const eventsByPitcher = attributeScoringEventsToPitchers(atBatsArr, brEventsArr)
+    const { winnerId, loserId } = atBatsArr.length > 0
+      ? getPitcherDecisions(atBatsArr, inningHalfRecord, game?.homeScore ?? 0, game?.awayScore ?? 0)
+      : {}
+
+    const now = new Date().toISOString()
+    const pitchingLines: LocalPitchingLine[] = Array.from(absByPitcher.entries()).map(([pid, abs]) => {
+      const line = computePitchingLine(abs, eventsByPitcher[pid] ?? [])
+      return {
+        id:               pid,
+        gameId:           gameId ?? '',
+        playerId:         pid,
+        outsRecorded:     line.outs,
+        hitsAllowed:      line.h,
+        runsAllowed:      line.r,
+        earnedRuns:       line.r,
+        walks:            line.bb,
+        strikeouts:       line.k,
+        hbp:              line.hbp,
+        isWinningPitcher: pid === winnerId,
+        isLosingPitcher:  pid === loserId,
+        isSave:           false,
+        createdAt:        now,
+        updatedAt:        now,
+        _dirty:           false,
+      }
+    })
+
     return {
       game,
       homeTeam:  game?.homeTeamId ? teamsById.get(game.homeTeamId) : undefined,
@@ -245,14 +282,14 @@ export function useScorecardData(gameId: string | undefined): ScorecardData {
       linescore,
       awayLineup,
       homeLineup,
-      pitchingLines: pitchingLines ?? [],
+      pitchingLines,
       halfInningMap,
       scoredByPlayerAndInning,
       outSequenceByAtBat,
       playerInningBasesReached,
       isLoading,
     }
-  }, [game, teams, players, innings, allAtBats, allBaserunningEvents, allLineupsRaw, pitchingLines, isLoading])
+  }, [game, teams, players, innings, allAtBats, allBaserunningEvents, allLineupsRaw, isLoading])
 
   return data
 }
