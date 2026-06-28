@@ -17,13 +17,12 @@ import type { LocalAtBat, LocalBaserunningEvent } from '../db/local'
 //  Derivable now (no schema change needed):
 //    whip               — (bb + h) / ip — added below
 //
-// ── KNOWN LIMITATION ──────────────────────────────────────────────────────────
+// ── RESOLVED ──────────────────────────────────────────────────────────────────
 //
-//  computePitchingLine and the GameSummaryPage linescore both use rbiCount as a
-//  proxy for runs allowed.  Runs scored via baserunning events (WP, PB, BALK)
-//  stored in LocalBaserunningEvent are NOT fed in here, so pitcher R / ERA can
-//  be under-counted when such events occur.
-//  TODO: accept LocalBaserunningEvent[] as a second parameter and add those runs.
+//  computePitchingLine now accepts LocalBaserunningEvent[] as a second parameter
+//  and correctly counts toBase === 'score' events as runs allowed. Baserunning
+//  scoring events (WP, PB, BALK) are attributed to pitchers via
+//  attributeScoringEventsToPitchers and passed in via baserunningEvents param.
 
 // ── Stat types ─────────────────────────────────────────────────────────────────
 
@@ -96,7 +95,7 @@ export interface PitchingLine {
   outs: number   // total outs recorded
   ip:   number   // decimal innings (outs / 3, e.g. 13 outs = 4.333)
   h:    number   // hits allowed
-  r:    number   // runs allowed (via RBI proxy — see KNOWN LIMITATION above)
+  r:    number   // runs allowed (rbiCount + baserunning-event scoring runs)
   bb:   number   // walks issued
   k:    number   // strikeouts
   hbp:  number   // hit batters
