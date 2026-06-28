@@ -4,8 +4,11 @@ import { useGameSubscription } from '../hooks/useGameSubscription'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
-import { computePitchingLine, getPitcherDecisions, fmtIp, fmtEra } from '../utils/statsCalc'
-import type { LocalAtBat } from '../db/local'
+import { useTeamsMap } from '../hooks/useTeamsMap'
+import { usePlayersMap } from '../hooks/usePlayersMap'
+import { fmtIp, fmtEra } from '../utils/statsCalc'
+import { buildGameSummary } from '../utils/gameSummaryCalc'
+import type { BatterLine, PitcherLine } from '../utils/gameSummaryCalc'
 
 // ── Constants ──────────────────────────────────────────────────────────────────────────────────
 
@@ -18,31 +21,6 @@ function resultColor(r: string) {
   return 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
 }
 
-// ── Types ───────────────────────────────────────────────────────────────────────────────────────
-
-type BatterLine = {
-  playerId: string
-  battingOrder: number
-  name: string
-  jerseyNumber?: string
-  ab: number
-  hits: number
-  rbi: number
-  results: string[]
-}
-
-type PitcherLine = {
-  playerId: string
-  name: string
-  outs: number
-  h: number
-  r: number
-  bb: number
-  k: number
-  era: number
-  decision?: 'W' | 'L'
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────────────────────────
 
 export default function GameSummaryPage() {
@@ -53,15 +31,9 @@ export default function GameSummaryPage() {
 
   const game = useLiveQuery(() => db.games.get(gameId!), [gameId])
 
-  const teams = useLiveQuery(async () => {
-    const all = await db.teams.toArray()
-    return Object.fromEntries(all.map(t => [t.id, t.name]))
-  })
+  const teams = useTeamsMap()
 
-  const players = useLiveQuery(async () => {
-    const all = await db.players.toArray()
-    return Object.fromEntries(all.map(p => [p.id, p]))
-  })
+  const players = usePlayersMap()
 
   const homeLineup = useLiveQuery(async () => {
     if (!game?.homeTeamId) return []
@@ -106,77 +78,10 @@ export default function GameSummaryPage() {
   }, [innings, atBats])
 
   const { awayBatters, homeBatters, awayHits, homeHits, awayPitchers, homePitchers } = useMemo(() => {
-    const empty = { awayBatters: [], homeBatters: [], awayHits: 0, homeHits: 0, awayPitchers: [], homePitchers: [] }
-    if (!atBats || !innings || !homeLineup || !awayLineup || !players) return empty
-
-    const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
-
-    // ── Batting ──
-    const absByBatter: Record<string, { results: string[]; rbi: number; side: 'top' | 'bottom' }> = {}
-    for (const ab of atBats) {
-      if (!ab.batterId) continue
-      const inn = inningMeta[ab.inningId]
-      if (!inn) continue
-      if (!absByBatter[ab.batterId]) absByBatter[ab.batterId] = { results: [], rbi: 0, side: inn.half }
-      if (ab.result) absByBatter[ab.batterId].results.push(ab.result)
-      absByBatter[ab.batterId].rbi += ab.rbiCount ?? 0
-    }
-
-    function buildBatterLines(lineup: typeof homeLineup): BatterLine[] {
-      if (!lineup) return []
-      const starters = lineup.filter(e => e.battingOrder > 0).sort((a, b) => a.battingOrder - b.battingOrder)
-      const bench    = lineup.filter(e => e.battingOrder === 0)
-      return [...starters, ...bench].map(entry => {
-        const player  = players![entry.playerId]
-        const stats   = absByBatter[entry.playerId]
-        const results = stats?.results ?? []
-        const ab      = results.filter(r => !NO_AB_RESULTS.has(r)).length
-        const hits    = results.filter(r => HIT_RESULTS.has(r)).length
-        return { playerId: entry.playerId, battingOrder: entry.battingOrder,
-          name: player?.name ?? '—', jerseyNumber: player?.jerseyNumber,
-          ab, hits, rbi: stats?.rbi ?? 0, results }
-      }).filter(b => b.results.length > 0 || b.battingOrder > 0)
-    }
-
-    const awayLines = buildBatterLines(awayLineup)
-    const homeLines = buildBatterLines(homeLineup)
-
-    // ── Pitching ──
-    // top half → home team pitches; bottom half → away team pitches
-    const absByPitcher: Record<string, { abs: LocalAtBat[]; side: 'top' | 'bottom' }> = {}
-    for (const ab of atBats) {
-      if (!ab.pitcherId) continue
-      const inn = inningMeta[ab.inningId]
-      if (!inn) continue
-      if (!absByPitcher[ab.pitcherId]) absByPitcher[ab.pitcherId] = { abs: [], side: inn.half }
-      absByPitcher[ab.pitcherId].abs.push(ab)
-    }
-
-    const halfMap: Record<string, 'top' | 'bottom'> = {}
-    for (const inn of innings) halfMap[inn.id] = inn.half
-    const { winnerId, loserId } = getPitcherDecisions(atBats, halfMap, game?.homeScore ?? 0, game?.awayScore ?? 0)
-
-    function buildPitcherLines(side: 'top' | 'bottom'): PitcherLine[] {
-      return Object.entries(absByPitcher)
-        .filter(([, v]) => v.side === side)
-        .map(([pid, { abs }]) => {
-          const line = computePitchingLine(abs)
-          const decision: 'W' | 'L' | undefined = pid === winnerId ? 'W' : pid === loserId ? 'L' : undefined
-          return { playerId: pid, name: players![pid]?.name ?? '—', ...line, decision }
-        })
-        .sort((a, b) => b.outs - a.outs)
-    }
-
-    return {
-      awayBatters: awayLines,
-      homeBatters: homeLines,
-      awayHits:    awayLines.reduce((s, b) => s + b.hits, 0),
-      homeHits:    homeLines.reduce((s, b) => s + b.hits, 0),
-      // home pitches in top, away pitches in bottom
-      homePitchers: buildPitcherLines('top'),
-      awayPitchers: buildPitcherLines('bottom'),
-    }
-  }, [atBats, innings, homeLineup, awayLineup, players])
+    if (!atBats || !innings || !homeLineup || !awayLineup || !players)
+      return { awayBatters: [] as BatterLine[], homeBatters: [] as BatterLine[], awayHits: 0, homeHits: 0, awayPitchers: [] as PitcherLine[], homePitchers: [] as PitcherLine[] }
+    return buildGameSummary(atBats, innings, homeLineup, awayLineup, players, game?.homeScore ?? 0, game?.awayScore ?? 0)
+  }, [atBats, innings, homeLineup, awayLineup, players, game?.homeScore, game?.awayScore])
 
   // ── Render ────────────────────────────────────────────────────────────────────────────────────
 

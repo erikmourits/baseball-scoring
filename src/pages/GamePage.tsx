@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
 import { db, type LocalAtBat, type LocalBaserunningEvent } from '../db/local'
+import { useTeamsMap } from '../hooks/useTeamsMap'
+import { usePlayersMap } from '../hooks/usePlayersMap'
 import { supabase } from '../lib/supabase'
 import { gameService } from '../services/gameService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -97,15 +99,8 @@ export default function GamePage() {
     return entries.sort((a, b) => a.battingOrder - b.battingOrder)
   }, [game?.awayTeamId])
 
-  const players = useLiveQuery(async () => {
-    const all = await db.players.toArray()
-    return Object.fromEntries(all.map(p => [p.id, p]))
-  })
-
-  const teams = useLiveQuery(async () => {
-    const all = await db.teams.toArray()
-    return Object.fromEntries(all.map(t => [t.id, t.name]))
-  })
+  const players = usePlayersMap()
+  const teams = useTeamsMap()
 
   const innings = useLiveQuery(async () => {
     if (!gameId) return []

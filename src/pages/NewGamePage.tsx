@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -453,33 +453,26 @@ export default function NewGamePage() {
 
   // ── Position conflict resolution ─────────────────────────────────────────────────────────
 
-  function homePositionChange(id: string, pos: string) {
-    setHomePositions(prev => {
-      const next = { ...prev }
-      if (pos) {
-        const conflict = Object.entries(next).find(([pid, p]) => p === pos && pid !== id)
-        if (conflict) next[conflict[0]] = ''
-        next[id] = pos
-      } else {
-        next[id] = ''
-      }
-      return next
-    })
+  function makePositionChangeHandler(
+    setter: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  ) {
+    return (id: string, pos: string) => {
+      setter(prev => {
+        const next = { ...prev }
+        if (pos) {
+          const conflict = Object.entries(next).find(([pid, p]) => p === pos && pid !== id)
+          if (conflict) next[conflict[0]] = ''
+          next[id] = pos
+        } else {
+          next[id] = ''
+        }
+        return next
+      })
+    }
   }
 
-  function awayPositionChange(id: string, pos: string) {
-    setAwayPositions(prev => {
-      const next = { ...prev }
-      if (pos) {
-        const conflict = Object.entries(next).find(([pid, p]) => p === pos && pid !== id)
-        if (conflict) next[conflict[0]] = ''
-        next[id] = pos
-      } else {
-        next[id] = ''
-      }
-      return next
-    })
-  }
+  const homePositionChange = makePositionChangeHandler(setHomePositions)
+  const awayPositionChange = makePositionChangeHandler(setAwayPositions)
 
   // ── Bench / lineup moves ──────────────────────────────────────────────────────────
 

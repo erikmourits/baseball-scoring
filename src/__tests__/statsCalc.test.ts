@@ -468,3 +468,55 @@ describe('getPitcherDecisions — GDP counts as 2 outs', () => {
     expect(result.winnerId).toBe('P_gdp')
   })
 })
+
+// ── computePitchingLine — WHIP ─────────────────────────────────────────────────
+
+describe('computePitchingLine — WHIP', () => {
+  it('0 outs returns whip = 0', () => {
+    const line = computePitchingLine([])
+    expect(line.whip).toBe(0)
+  })
+
+  it('1 hit in 1 inning (3 outs) = WHIP 1.000', () => {
+    const line = computePitchingLine([ab('1B'), ab('K'), ab('K'), ab('K')])
+    // 1 hit, 0 BB, 3 outs (1 IP) -> WHIP = 1 / 1 = 1.000
+    expect(line.whip).toBeCloseTo(1.0)
+  })
+
+  it('1 walk and 1 hit in 1 inning = WHIP 2.000', () => {
+    const line = computePitchingLine([ab('BB'), ab('1B'), ab('K'), ab('K'), ab('K')])
+    // 1 BB + 1 H = 2, 3 outs (1 IP) -> WHIP = 2 / 1 = 2.000
+    expect(line.whip).toBeCloseTo(2.0)
+  })
+
+  it('perfect inning (3 outs, 0 baserunners) = WHIP 0.000', () => {
+    const line = computePitchingLine([ab('K'), ab('FO'), ab('GO')])
+    expect(line.whip).toBeCloseTo(0.0)
+  })
+
+  it('6 innings (18 outs), 6 H, 3 BB = WHIP 1.500', () => {
+    const outs = Array.from({ length: 12 }, () => ab('K'))
+    const hits = Array.from({ length: 6 }, () => ab('1B'))
+    const walks = Array.from({ length: 3 }, () => ab('BB'))
+    const gdps = Array.from({ length: 3 }, () => ab('GDP')) // 3 GDP = 6 outs
+    const line = computePitchingLine([...outs, ...hits, ...walks, ...gdps])
+    // 18 outs = 6 IP, 9 baserunners -> WHIP = 9 / 6 = 1.500
+    expect(line.whip).toBeCloseTo(1.5)
+  })
+})
+
+// ── computePitchingLine — RBI proxy limitation ─────────────────────────────────
+
+describe('computePitchingLine — RBI proxy for runs', () => {
+  it('rbiCount sums to r: HR with 2 runners on = 3 RBI = 3 r', () => {
+    const line = computePitchingLine([ab('HR', 3), ab('K'), ab('K'), ab('K')])
+    expect(line.r).toBe(3)
+  })
+
+  it('r = 0 when no at-bat rbiCounts (baserunning-event runs not counted)', () => {
+    // If a runner scores on a WP/PB/BALK (no rbiCount on at-bat), r stays 0.
+    // This documents the known limitation: those runs require LocalBaserunningEvent.
+    const line = computePitchingLine([ab('1B', 0), ab('K'), ab('K')])
+    expect(line.r).toBe(0)
+  })
+})

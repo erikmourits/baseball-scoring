@@ -7,6 +7,7 @@ import { teamService } from '../services/teamService'
 import { playerService } from '../services/playerService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { computeBattingLine, computePitchingLine, getPitcherDecisions, fmtAvg, fmtOps, fmtIp, fmtEra } from '../utils/statsCalc'
+import { useGameAtBats } from '../hooks/useGameAtBats'
 
 type PendingAction =
   | { type: 'archivePlayer'; id: string; name: string }
@@ -46,12 +47,12 @@ function StatsTab({ teamId }: { teamId: string }) {
   }, [teamId, seasonId])
 
   // All at-bats for those games, grouped by batterId and pitcherId
-  const playerStats = useLiveQuery(async () => {
-    if (!games?.length || !players?.length) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {} }
-    const gameIds = games.map(g => g.id)
-    const innings = await db.innings.where('gameId').anyOf(gameIds).toArray()
-    const inningIds = innings.map(i => i.id)
-    const allAtBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
+  const gameIds = games?.map(g => g.id) ?? []
+  const gameData = useGameAtBats(gameIds)
+
+  const playerStats = useMemo(() => {
+    if (!games?.length || !players?.length || !gameData) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {} }
+    const { innings, atBats: allAtBats, inningById } = gameData
 
     const batting:  Record<string, typeof allAtBats> = {}
     const pitching: Record<string, typeof allAtBats> = {}
@@ -60,7 +61,6 @@ function StatsTab({ teamId }: { teamId: string }) {
       if (ab.pitcherId) { if (!pitching[ab.pitcherId]) pitching[ab.pitcherId] = []; pitching[ab.pitcherId].push(ab) }
     }
 
-    const inningById = Object.fromEntries(innings.map(i => [i.id, i]))
     const pitcherWins:   Record<string, number> = {}
     const pitcherLosses: Record<string, number> = {}
     for (const game of games) {
@@ -72,7 +72,7 @@ function StatsTab({ teamId }: { teamId: string }) {
       if (loserId)  pitcherLosses[loserId]  = (pitcherLosses[loserId]  ?? 0) + 1
     }
     return { batting, pitching, pitcherWins, pitcherLosses }
-  }, [games?.length, players?.length])
+  }, [games, players, gameData])
 
   const { battingRows, pitchingRows } = useMemo(() => {
     if (!players || !playerStats) return { battingRows: [], pitchingRows: [] }

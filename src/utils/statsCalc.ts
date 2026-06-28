@@ -1,5 +1,30 @@
 import type { LocalAtBat } from '../db/local'
 
+// ── MISSING STATS (data exists in DB, not yet surfaced) ────────────────────────
+//
+//  Batting:
+//    r   (runs scored)  — source: scoredPlayerIds on LocalAtBat
+//    sb  (stolen bases) — source: LocalBaserunningEvent.eventType === 'SB'
+//    cs  (caught steal) — source: LocalBaserunningEvent.eventType === 'CS'
+//
+//  Pitching:
+//    er  (earned runs)  — not tracked; requires earned/unearned flag per at-bat
+//    sv / hld / bs      — not tracked; requires save-situation detection
+//
+//  Fielding:
+//    e / po / a         — stored in LocalFieldingCredit, never surfaced in stat lines
+//
+//  Derivable now (no schema change needed):
+//    whip               — (bb + h) / ip — added below
+//
+// ── KNOWN LIMITATION ──────────────────────────────────────────────────────────
+//
+//  computePitchingLine and the GameSummaryPage linescore both use rbiCount as a
+//  proxy for runs allowed.  Runs scored via baserunning events (WP, PB, BALK)
+//  stored in LocalBaserunningEvent are NOT fed in here, so pitcher R / ERA can
+//  be under-counted when such events occur.
+//  TODO: accept LocalBaserunningEvent[] as a second parameter and add those runs.
+
 // ── Stat types ─────────────────────────────────────────────────────────────────
 
 export interface BattingLine {
@@ -71,11 +96,12 @@ export interface PitchingLine {
   outs: number   // total outs recorded
   ip:   number   // decimal innings (outs / 3, e.g. 13 outs = 4.333)
   h:    number   // hits allowed
-  r:    number   // runs allowed (via RBI, approximation)
+  r:    number   // runs allowed (via RBI proxy — see KNOWN LIMITATION above)
   bb:   number   // walks issued
   k:    number   // strikeouts
   hbp:  number   // hit batters
   era:  number   // earned run average: (r * 27) / outs
+  whip: number   // (bb + h) / (outs / 3); 0 when outs = 0
 }
 
 const OUT_RESULTS = new Set(['K', 'KL', 'FO', 'GO', 'SAC', 'SF'])
@@ -91,11 +117,12 @@ export function computePitchingLine(atBats: LocalAtBat[]): PitchingLine {
     if (res === 'BB')  bb++
     if (res === 'HBP') hbp++
     if (res === 'K' || res === 'KL') k++
-    r += ab.rbiCount ?? 0
+    r += ab.rbiCount ?? 0  // RBI proxy — see KNOWN LIMITATION at top of file
   }
 
-  const era = outs > 0 ? (r * 27) / outs : 0
-  return { outs, ip: outs / 3, h, r, bb, k, hbp, era }
+  const era  = outs > 0 ? (r * 27) / outs : 0
+  const whip = outs > 0 ? (bb + h) / (outs / 3) : 0
+  return { outs, ip: outs / 3, h, r, bb, k, hbp, era, whip }
 }
 
 
@@ -137,7 +164,7 @@ export function getPitcherDecisions(
   return { winnerId: topId(winOuts), loserId: topId(loseOuts) }
 }
 
-/** Format innings pitched: 13 outs → "4.1", 14 → "4.2", 15 → "5.0" */
+/** Format innings pitched: 13 outs -> "4.1", 14 -> "4.2", 15 -> "5.0" */
 export function fmtIp(outs: number): string {
   if (outs === 0) return '0.0'
   const full = Math.floor(outs / 3)

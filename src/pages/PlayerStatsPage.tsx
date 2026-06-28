@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/local'
+import { useTeamsMap } from '../hooks/useTeamsMap'
+import { useGameAtBats } from '../hooks/useGameAtBats'
 import {
   computeBattingLine, computePitchingLine, getPitcherDecisions,
   fmtAvg, fmtOps, fmtIp, fmtEra,
@@ -48,20 +50,15 @@ export default function PlayerStatsPage() {
     return all.sort((a, b) => a.date.localeCompare(b.date))
   }, [teamId, seasonId])
 
-  const teams = useLiveQuery(async () => {
-    const all = await db.teams.toArray()
-    return Object.fromEntries(all.map(t => [t.id, t.name]))
-  })
+  const teams = useTeamsMap()
 
   // Per-game at-bats + pitcher decisions
-  const gameLog = useLiveQuery(async () => {
-    if (!games?.length) return []
-    const gameIds = games.map(g => g.id)
-    const innings = await db.innings.where('gameId').anyOf(gameIds).toArray()
-    const inningIds = innings.map(i => i.id)
-    const allAtBats = await db.atBats.where('inningId').anyOf(inningIds).toArray()
+  const gameIds = games?.map(g => g.id) ?? []
+  const gameData = useGameAtBats(gameIds)
 
-    const inningById = Object.fromEntries(innings.map(i => [i.id, i]))
+  const gameLog = useMemo(() => {
+    if (!games?.length || !gameData) return []
+    const { innings, atBats: allAtBats, inningById } = gameData
 
     const battingByGame:  Record<string, typeof allAtBats> = {}
     const pitchingByGame: Record<string, typeof allAtBats> = {}
@@ -84,7 +81,7 @@ export default function PlayerStatsPage() {
         decision,
       }
     })
-  }, [games?.length, playerId])
+  }, [games, gameData, playerId])
 
   const { seasonBatting, seasonPitching, seasonW, seasonL, gameLines } = useMemo(() => {
     if (!gameLog) return { seasonBatting: null, seasonPitching: null, seasonW: 0, seasonL: 0, gameLines: [] }
