@@ -17,6 +17,17 @@ insert into auth.users (
   now()
 );
 
+-- Identity record required by GoTrue v2 for email/password sign-in
+insert into auth.identities (
+  provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+) values (
+  'e2e@test.local',
+  'e2e00000-0000-0000-0000-000000000000',
+  '{"sub":"e2e00000-0000-0000-0000-000000000000","email":"e2e@test.local","email_verified":true,"provider":"email"}',
+  'email',
+  now(), now(), now()
+);
+
 -- League owned by the test user
 insert into leagues (id, name, created_by)
 values (
