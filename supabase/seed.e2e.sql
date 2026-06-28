@@ -1,18 +1,24 @@
 -- E2E test fixtures for local CI. Runs against a local Supabase instance only.
 
+\set ON_ERROR_STOP on
+
 -- Test user (email/password auth via pgcrypto's crypt)
+-- instance_id must be '00000000-...' - GoTrue filters users by this field.
 insert into auth.users (
-  id, aud, role, email, encrypted_password, email_confirmed_at,
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) values (
+  '00000000-0000-0000-0000-000000000000',
   'e2e00000-0000-0000-0000-000000000000',
   'authenticated',
   'authenticated',
   'e2e@test.local',
-  crypt('e2e-test-password', gen_salt('bf')),
+  crypt('e2e-test-password', gen_salt('bf', 10)),
   now(),
+  '', '', '', '',
   '{"provider":"email","providers":["email"]}',
-  '{}',
+  '{"email_verified":true}',
   now(),
   now()
 );
