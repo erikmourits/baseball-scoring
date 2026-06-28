@@ -95,7 +95,11 @@ export default function PlayerStatsPage() {
     const gameLines = gameLog.map(entry => ({
       ...entry,
       batting:  computeBattingLine(entry.battingAbs),
-      pitching: computePitchingLine(entry.pitchingAbs, brEventsByPitcher[playerId!] ?? []),
+      pitching: (() => {
+        const entryInningIds = new Set(entry.pitchingAbs.map(ab => ab.inningId))
+        const entryBrEvents = (brEventsByPitcher[playerId!] ?? []).filter(ev => entryInningIds.has(ev.inningId))
+        return computePitchingLine(entry.pitchingAbs, entryBrEvents)
+      })(),
     }))
     const allBatting  = gameLog.flatMap(e => e.battingAbs)
     const allPitching = gameLog.flatMap(e => e.pitchingAbs)

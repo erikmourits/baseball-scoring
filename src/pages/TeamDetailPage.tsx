@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
 import { db } from '../db/local'
+import type { LocalBaserunningEvent } from '../db/local'
 import { teamService } from '../services/teamService'
 import { playerService } from '../services/playerService'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -52,7 +53,7 @@ function StatsTab({ teamId }: { teamId: string }) {
   const gameData = useGameAtBats(gameIds)
 
   const playerStats = useMemo(() => {
-    if (!games?.length || !players?.length || !gameData) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {}, brEventsByPitcher: {} as Record<string, import('../db/local').LocalBaserunningEvent[]> }
+    if (!games?.length || !players?.length || !gameData) return { batting: {}, pitching: {}, pitcherWins: {}, pitcherLosses: {}, brEventsByPitcher: {} as Record<string, LocalBaserunningEvent[]> }
     const { innings, atBats: allAtBats, inningById, baserunningEvents } = gameData
     const brEventsByPitcher = attributeScoringEventsToPitchers(allAtBats, baserunningEvents)
 
