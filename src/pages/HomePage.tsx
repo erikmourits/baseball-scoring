@@ -6,6 +6,7 @@ import { db } from '../db/local'
 import { gameService } from '../services/gameService'
 import { useLeague } from '../hooks/useLeague'
 import OnboardingWizard from '../components/OnboardingWizard'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const STATUS_COLOR: Record<string, string> = {
   draft:       'bg-gray-100 text-gray-500',
@@ -158,33 +159,24 @@ export default function HomePage() {
         </ul>
       )}
 
-      {/* Delete confirm modal */}
       {deletingId && deletingGame && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-6 sm:pb-0">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-sm">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('home.deleteGame')}</p>
-            <p className="text-sm text-gray-500 mb-2">
-              {teams?.[deletingGame.awayTeamId ?? ''] ?? '—'} @ {teams?.[deletingGame.homeTeamId ?? ''] ?? '—'}
+        <ConfirmDialog
+          title={t('home.deleteGame')}
+          detail={
+            <>
+              {teams?.[deletingGame.awayTeamId ?? ''] ?? '—'}
+              {' @ '}
+              {teams?.[deletingGame.homeTeamId ?? ''] ?? '—'}
               {' · '}
               {new Date(deletingGame.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-            </p>
-            <p className="text-xs text-gray-400 mb-5">{t('home.deleteGameText')}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeletingId(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={() => handleDelete(deletingId)}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-medium text-white hover:bg-red-600 active:bg-red-700 transition-colors"
-              >
-                {t('common.delete')}
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+          message={t('home.deleteGameText')}
+          confirmLabel={t('common.delete')}
+          destructive
+          onConfirm={() => handleDelete(deletingId)}
+          onCancel={() => setDeletingId(null)}
+        />
       )}
     </div>
   )

@@ -696,14 +696,14 @@ export default function GamePage() {
             <p className="text-lg font-bold text-gray-900 dark:text-gray-100 text-center mb-6">{t('game.runsScored')}</p>
             <div className="flex items-center justify-center gap-6 mb-8">
               <button onClick={() => setSkipRuns(r => Math.max(0, r - 1))}
-                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">−</button>
+                className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">−</button>
               <span className="text-6xl font-bold text-gray-900 dark:text-gray-100 tabular-nums w-16 text-center">{skipRuns}</span>
               <button onClick={() => setSkipRuns(r => r + 1)}
-                className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">+</button>
+                className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-2xl font-bold text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center">+</button>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowSkipDialog(false)}
-                className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 dark:text-gray-400 font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">{t('common.cancel')}</button>
+                className="flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">{t('common.cancel')}</button>
               <button onClick={confirmSkip}
                 className="flex-1 py-3.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition-colors">{t('common.confirm')}</button>
             </div>

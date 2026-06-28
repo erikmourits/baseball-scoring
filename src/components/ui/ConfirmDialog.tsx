@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
   title?: string
+  detail?: ReactNode
   message: string
   confirmLabel?: string
   cancelLabel?: string
@@ -13,6 +15,7 @@ interface Props {
 
 export default function ConfirmDialog({
   title,
+  detail,
   message,
   confirmLabel,
   cancelLabel,
@@ -34,12 +37,13 @@ export default function ConfirmDialog({
         onClick={e => e.stopPropagation()}
       >
         {title && <p className="text-gray-900 dark:text-gray-100 font-semibold text-base">{title}</p>}
+        {detail && <div className="text-sm text-gray-500 dark:text-gray-400">{detail}</div>}
         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{message}</p>
         <div className="flex gap-3">
           {!alertOnly && (
             <button
               onClick={onCancel}
-              className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors"
+              className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 transition-colors"
             >
               {resolvedCancelLabel}
             </button>
