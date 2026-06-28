@@ -5,6 +5,12 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Default local Supabase keys (same on every install using the default JWT secret).
+# These are public knowledge — safe to hardcode for a local-only CI instance.
+env:
+  SUPABASE_LOCAL_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7kyqHDjx5mV1OtUbxBRUhJmzicnjOIhq14w
+  SUPABASE_LOCAL_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hj04zWl196z2-SBc0
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -35,21 +41,14 @@ jobs:
       - name: Apply migrations to local Supabase
         run: supabase db reset --no-seed
 
-      - name: Get local Supabase credentials
-        id: supabase_local
-        run: |
-          echo "anon_key=$(supabase status | grep 'anon key' | awk '{print $NF}')" >> $GITHUB_OUTPUT
-          echo "service_key=$(supabase status | grep 'service_role key' | awk '{print $NF}')" >> $GITHUB_OUTPUT
-
       - name: Create E2E test user
         run: |
           curl -sf -X POST http://127.0.0.1:54321/auth/v1/admin/users \
-            -H "apikey: $SERVICE_KEY" \
-            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "apikey: $SUPABASE_LOCAL_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_LOCAL_SERVICE_KEY" \
             -H "Content-Type: application/json" \
             -d '{"id":"e2e00000-0000-0000-0000-000000000000","email":"'"$E2E_EMAIL"'","password":"'"$E2E_PASSWORD"'","email_confirm":true}'
         env:
-          SERVICE_KEY: ${{ steps.supabase_local.outputs.service_key }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
@@ -63,7 +62,7 @@ jobs:
         run: npm run test:e2e
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
-          VITE_SUPABASE_ANON_KEY: ${{ steps.supabase_local.outputs.anon_key }}
+          VITE_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
