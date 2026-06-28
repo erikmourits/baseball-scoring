@@ -8,7 +8,7 @@ import { useTeamsMap } from '../hooks/useTeamsMap'
 import { usePlayersMap } from '../hooks/usePlayersMap'
 import { fmtIp, fmtEra } from '../utils/statsCalc'
 import { buildGameSummary } from '../utils/gameSummaryCalc'
-import type { BatterLine, PitcherLine } from '../utils/gameSummaryCalc'
+import type { BatterLine, PitcherLine, LinescoreEntry } from '../utils/gameSummaryCalc'
 
 // ── Constants ──────────────────────────────────────────────────────────────────────────────────
 
@@ -56,32 +56,23 @@ export default function GameSummaryPage() {
     return db.atBats.where('inningId').anyOf(inningIds).toArray()
   }, [innings?.length])
 
+  const baserunningEvents = useLiveQuery(async () => {
+    if (!innings?.length) return []
+    const inningIds = innings.map(i => i.id).filter((id): id is string => !!id)
+    return db.baserunningEvents.where('inningId').anyOf(inningIds).toArray()
+  }, [innings?.length])
+
   // ── Derived data ───────────────────────────────────────────────────────────────────────────────────
 
-  const { linescore } = useMemo(() => {
-    if (!innings || !atBats) return { linescore: [] }
-    const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
-    const runMap: Record<string, number> = {}
-    for (const ab of atBats) {
-      if (!ab.rbiCount) continue
-      const inn = inningMeta[ab.inningId]
-      if (!inn) continue
-      const key = `${inn.inningNumber}:${inn.half}`
-      runMap[key] = (runMap[key] ?? 0) + ab.rbiCount
+  const { awayBatters, homeBatters, awayHits, homeHits, awayPitchers, homePitchers, linescore } = useMemo(() => {
+    const empty = {
+      awayBatters: [] as BatterLine[], homeBatters: [] as BatterLine[],
+      awayHits: 0, homeHits: 0, awayPitchers: [] as PitcherLine[],
+      homePitchers: [] as PitcherLine[], linescore: [] as LinescoreEntry[],
     }
-    const maxInning = Math.max(9, ...innings.map(i => i.inningNumber))
-    const lines = []
-    for (let n = 1; n <= maxInning; n++) {
-      lines.push({ inningNum: n, awayRuns: runMap[`${n}:top`] ?? 0, homeRuns: runMap[`${n}:bottom`] ?? 0 })
-    }
-    return { linescore: lines }
-  }, [innings, atBats])
-
-  const { awayBatters, homeBatters, awayHits, homeHits, awayPitchers, homePitchers } = useMemo(() => {
-    if (!atBats || !innings || !homeLineup || !awayLineup || !players)
-      return { awayBatters: [] as BatterLine[], homeBatters: [] as BatterLine[], awayHits: 0, homeHits: 0, awayPitchers: [] as PitcherLine[], homePitchers: [] as PitcherLine[] }
-    return buildGameSummary(atBats, innings, homeLineup, awayLineup, players, game?.homeScore ?? 0, game?.awayScore ?? 0)
-  }, [atBats, innings, homeLineup, awayLineup, players, game?.homeScore, game?.awayScore])
+    if (!atBats || !innings || !homeLineup || !awayLineup || !players || !baserunningEvents) return empty
+    return buildGameSummary(atBats, innings, homeLineup, awayLineup, players, game?.homeScore ?? 0, game?.awayScore ?? 0, baserunningEvents)
+  }, [atBats, innings, homeLineup, awayLineup, players, game?.homeScore, game?.awayScore, baserunningEvents])
 
   // ── Render ────────────────────────────────────────────────────────────────────────────────────
 
