@@ -106,39 +106,46 @@ export default function SeasonsPage() {
       {seasons && seasons.length > 0 ? (
         <ul className="space-y-2">
           {seasons.map(season => (
-            <li
-              key={season.id}
-              className={`bg-white dark:bg-gray-800 rounded-xl border shadow-sm px-4 py-3 flex items-center gap-3 ${
-                season.isActive ? 'border-brand-500 dark:border-blue-500 ring-1 ring-brand-500 dark:ring-blue-400' : 'border-gray-100 dark:border-gray-700'
-              }`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{season.name}</p>
-                  {season.isActive && (
-                    <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-medium">
-                      {t('common.active')}
-                    </span>
+            <li key={season.id} className="flex gap-2 items-stretch">
+              {/* Season card */}
+              <div
+                className={`flex-1 bg-white dark:bg-gray-800 rounded-xl border shadow-sm px-4 py-3 flex items-center gap-3 ${
+                  season.isActive ? 'border-brand-500 dark:border-blue-500 ring-1 ring-brand-500 dark:ring-blue-400' : 'border-gray-100 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{season.name}</p>
+                    {season.isActive && (
+                      <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-medium">
+                        {t('common.active')}
+                      </span>
+                    )}
+                  </div>
+                  {season.year && (
+                    <p className="text-sm text-gray-400">{season.year}</p>
                   )}
                 </div>
-                {season.year && (
-                  <p className="text-sm text-gray-400">{season.year}</p>
+
+                {!season.isActive && (
+                  <button
+                    onClick={() => handleSetActive(season.id)}
+                    className="text-xs text-brand-500 dark:text-brand-100 hover:text-brand-600 dark:hover:text-brand-100 font-medium px-2 py-1 transition-colors"
+                  >
+                    {t('seasons.setActive')}
+                  </button>
                 )}
               </div>
 
-              {!season.isActive && (
-                <button
-                  onClick={() => handleSetActive(season.id)}
-                  className="text-xs text-brand-500 dark:text-brand-100 hover:text-brand-600 dark:hover:text-brand-100 font-medium px-2 py-1 transition-colors"
-                >
-                  {t('seasons.setActive')}
-                </button>
-              )}
+              {/* Delete button — separate full-height target */}
               <button
                 onClick={() => setPendingDelete({ id: season.id, name: season.name })}
-                className="text-gray-300 hover:text-red-400 text-sm px-1 transition-colors"
+                aria-label={t('common.delete')}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700 transition-colors"
               >
-                ✕
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
               </button>
             </li>
           ))}
