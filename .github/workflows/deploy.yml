@@ -26,19 +26,8 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Run database migrations
-        run: node scripts/migrate.js
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
       - name: Install Supabase CLI
         run: npm install -g supabase
-
-      - name: Deploy Edge Functions
-        run: node scripts/deploy-functions.js
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
 
       - name: Start local Supabase
         run: supabase start
@@ -85,6 +74,17 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Run database migrations
+        run: node scripts/migrate.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy Edge Functions
+        run: node scripts/deploy-functions.js
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
 
       - name: Build
         run: npm run build
