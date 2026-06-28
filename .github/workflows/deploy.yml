@@ -32,6 +32,12 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Generate E2E credentials
+        id: e2e_creds
+        run: |
+          echo "email=e2e-${GITHUB_RUN_ID}@test.local" >> $GITHUB_OUTPUT
+          echo "password=$(openssl rand -hex 16)" >> $GITHUB_OUTPUT
+
       - name: Install Supabase CLI
         run: npm install -g supabase
 
@@ -49,8 +55,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"id":"e2e00000-0000-0000-0000-000000000000","email":"'"$E2E_EMAIL"'","password":"'"$E2E_PASSWORD"'","email_confirm":true}'
         env:
-          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_EMAIL: ${{ steps.e2e_creds.outputs.email }}
+          E2E_PASSWORD: ${{ steps.e2e_creds.outputs.password }}
 
       - name: Seed E2E test data
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.e2e.sql
@@ -63,8 +69,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
-          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_EMAIL: ${{ steps.e2e_creds.outputs.email }}
+          E2E_PASSWORD: ${{ steps.e2e_creds.outputs.password }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
