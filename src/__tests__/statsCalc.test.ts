@@ -520,3 +520,50 @@ describe('computePitchingLine — RBI proxy for runs', () => {
     expect(line.r).toBe(0)
   })
 })
+
+// ── computePitchingLine — baserunning-event runs ───────────────────────────────
+
+let bevSeq = 0
+function bev(toBase: string, extra: Partial<import('../db/local').LocalBaserunningEvent> = {}): import('../db/local').LocalBaserunningEvent {
+  return {
+    id: `bev-${++bevSeq}`,
+    inningId: 'inning-1',
+    eventType: 'WP',
+    fromBase: 'third',
+    toBase,
+    sequenceNumber: bevSeq,
+    createdAt: '2026-01-01T00:00:00Z',
+    _dirty: false,
+    ...extra,
+  }
+}
+
+describe('computePitchingLine — baserunning-event runs', () => {
+  it('scoring WP adds 1 to r', () => {
+    const line = computePitchingLine([ab('K'), ab('K'), ab('K')], [bev('score')])
+    expect(line.r).toBe(1)
+  })
+
+  it('non-scoring baserunning event (toBase=third) does not add to r', () => {
+    const line = computePitchingLine([ab('K'), ab('K'), ab('K')], [bev('third')])
+    expect(line.r).toBe(0)
+  })
+
+  it('two scoring events plus one rbiCount: r = 3', () => {
+    const line = computePitchingLine(
+      [ab('HR', 1), ab('K'), ab('K'), ab('K')],
+      [bev('score'), bev('score')],
+    )
+    expect(line.r).toBe(3)
+  })
+
+  it('no baserunning events arg: existing behaviour unchanged', () => {
+    const line = computePitchingLine([ab('HR', 2), ab('K'), ab('K'), ab('K')])
+    expect(line.r).toBe(2)
+  })
+
+  it('empty baserunning events: r only from rbiCount', () => {
+    const line = computePitchingLine([ab('HR', 1), ab('K'), ab('K'), ab('K')], [])
+    expect(line.r).toBe(1)
+  })
+})

@@ -1,4 +1,4 @@
-import type { LocalAtBat } from '../db/local'
+import type { LocalAtBat, LocalBaserunningEvent } from '../db/local'
 
 // ── MISSING STATS (data exists in DB, not yet surfaced) ────────────────────────
 //
@@ -106,7 +106,10 @@ export interface PitchingLine {
 
 const OUT_RESULTS = new Set(['K', 'KL', 'FO', 'GO', 'SAC', 'SF'])
 
-export function computePitchingLine(atBats: LocalAtBat[]): PitchingLine {
+export function computePitchingLine(
+  atBats: LocalAtBat[],
+  baserunningEvents: LocalBaserunningEvent[] = [],
+): PitchingLine {
   let outs = 0, h = 0, r = 0, bb = 0, k = 0, hbp = 0
 
   for (const ab of atBats) {
@@ -120,6 +123,9 @@ export function computePitchingLine(atBats: LocalAtBat[]): PitchingLine {
     r += ab.rbiCount ?? 0  // RBI proxy — see KNOWN LIMITATION at top of file
   }
 
+  for (const ev of baserunningEvents) {
+    if (ev.toBase === 'score') r++
+  }
   const era  = outs > 0 ? (r * 27) / outs : 0
   const whip = outs > 0 ? (bb + h) / (outs / 3) : 0
   return { outs, ip: outs / 3, h, r, bb, k, hbp, era, whip }
