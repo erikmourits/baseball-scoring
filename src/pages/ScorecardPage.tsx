@@ -19,6 +19,8 @@ export default function ScorecardPage() {
 
   const awayName = data.awayTeam?.name ?? '—'
   const homeName = data.homeTeam?.name ?? '—'
+  const awayWon  = data.game.awayScore > data.game.homeScore
+  const homeWon  = data.game.homeScore > data.game.awayScore
   const dateStr  = new Date(data.game.date).toLocaleDateString('nl-NL', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -41,16 +43,19 @@ export default function ScorecardPage() {
           {data.game.location ? ` · ${data.game.location}` : ''}
         </p>
         <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 text-center">
+          <div className={`flex-1 text-center ${awayWon ? '' : 'opacity-60'}`}>
             <p className="text-sm font-medium text-white/80 mb-1">{awayName}</p>
             <p className="text-4xl font-bold tabular-nums">{data.game.awayScore}</p>
           </div>
           <div className="text-white/30 text-xl font-light">–</div>
-          <div className="flex-1 text-center">
+          <div className={`flex-1 text-center ${homeWon ? '' : 'opacity-60'}`}>
             <p className="text-sm font-medium text-white/80 mb-1">{homeName}</p>
             <p className="text-4xl font-bold tabular-nums">{data.game.homeScore}</p>
           </div>
         </div>
+        {data.game.status === 'final' && (
+          <p className="text-center text-xs text-white/40 mt-3 uppercase tracking-wider">{t('gameSummary.final')}</p>
+        )}
       </div>
 
       {/* Style switcher */}

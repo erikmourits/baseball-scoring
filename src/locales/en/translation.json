@@ -458,6 +458,8 @@
     "styleKnbsb": "KNBSB",
     "styleMlb": "MLB",
     "batting": "{{label}} — Batting",
+    "battingAll": "Batting",
+    "pitchingAll": "Pitching",
     "pitching": "{{label}} — Pitching",
     "pos": "Pos",
     "runs": "R",

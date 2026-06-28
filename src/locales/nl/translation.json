@@ -458,6 +458,8 @@
     "styleKnbsb": "KNBSB",
     "styleMlb": "MLB",
     "batting": "{{label}} — Slagbeurt",
+    "battingAll": "Slagbeurt",
+    "pitchingAll": "Werpen",
     "pitching": "{{label}} — Werpen",
     "pos": "Pos",
     "runs": "R",
