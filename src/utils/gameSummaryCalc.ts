@@ -1,7 +1,7 @@
-import type { LocalAtBat, LocalInning, LocalGameLineup, LocalPlayer } from '../db/local'
+import type { LocalAtBat, LocalInning, LocalGameLineup, LocalPlayer, LocalBaserunningEvent } from '../db/local'
 import { computePitchingLine, getPitcherDecisions } from './statsCalc'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// -- Types ----------------------------------------------------------------------
 
 export type BatterLine = {
   playerId: string
@@ -29,10 +29,87 @@ export type PitcherLine = {
   decision?: 'W' | 'L'
 }
 
+export type LinescoreEntry = { inningNum: number; awayRuns: number; homeRuns: number }
+
 const HIT_RESULTS   = new Set(['1B', '2B', '3B', 'HR'])
 const NO_AB_RESULTS = new Set(['BB', 'HBP', 'SAC', 'SF'])
 
-// ── Core builders ──────────────────────────────────────────────────────────────
+// -- Attribution ----------------------------------------------------------------
+
+/**
+ * For each scoring baserunning event (toBase === 'score'), find the responsible
+ * pitcher using the most-recent at-bat in the same inning with a lower
+ * sequenceNumber.  If the event precedes all at-bats in the inning, the pitcher
+ * of the inning's first at-bat is responsible.  Events with no at-bats in their
+ * inning are skipped.
+ */
+export function attributeScoringEventsToPitchers(
+  atBats: LocalAtBat[],
+  baserunningEvents: LocalBaserunningEvent[],
+): Record<string, LocalBaserunningEvent[]> {
+  // Group at-bats by inning, sorted ascending by sequenceNumber
+  const absByInning: Record<string, LocalAtBat[]> = {}
+  for (const ab of atBats) {
+    if (!absByInning[ab.inningId]) absByInning[ab.inningId] = []
+    absByInning[ab.inningId].push(ab)
+  }
+  for (const arr of Object.values(absByInning)) {
+    arr.sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+  }
+
+  const result: Record<string, LocalBaserunningEvent[]> = {}
+  for (const ev of baserunningEvents) {
+    if (ev.toBase !== 'score') continue
+    const inningAbs = absByInning[ev.inningId] ?? []
+    if (!inningAbs.length) continue
+
+    const preceding = inningAbs.filter(ab => ab.pitcherId && ab.sequenceNumber < ev.sequenceNumber)
+    const pitcherId = preceding.length > 0
+      ? preceding[preceding.length - 1].pitcherId!
+      : inningAbs.find(ab => ab.pitcherId)?.pitcherId
+
+    if (!pitcherId) continue
+    if (!result[pitcherId]) result[pitcherId] = []
+    result[pitcherId].push(ev)
+  }
+  return result
+}
+
+// -- Linescore -----------------------------------------------------------------
+
+function buildLinescore(
+  atBats: LocalAtBat[],
+  innings: LocalInning[],
+  baserunningEvents: LocalBaserunningEvent[],
+): LinescoreEntry[] {
+  const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
+  const runMap: Record<string, number> = {}
+
+  for (const ab of atBats) {
+    if (!ab.rbiCount) continue
+    const inn = inningMeta[ab.inningId]
+    if (!inn) continue
+    const key = `${inn.inningNumber}:${inn.half}`
+    runMap[key] = (runMap[key] ?? 0) + ab.rbiCount
+  }
+
+  for (const ev of baserunningEvents) {
+    if (ev.toBase !== 'score') continue
+    const inn = inningMeta[ev.inningId]
+    if (!inn) continue
+    const key = `${inn.inningNumber}:${inn.half}`
+    runMap[key] = (runMap[key] ?? 0) + 1
+  }
+
+  const maxInning = Math.max(9, ...innings.map(i => i.inningNumber))
+  const lines: LinescoreEntry[] = []
+  for (let n = 1; n <= maxInning; n++) {
+    lines.push({ inningNum: n, awayRuns: runMap[`${n}:top`] ?? 0, homeRuns: runMap[`${n}:bottom`] ?? 0 })
+  }
+  return lines
+}
+
+// -- Core builders -------------------------------------------------------------
 
 export function buildGameSummary(
   atBats: LocalAtBat[],
@@ -42,6 +119,7 @@ export function buildGameSummary(
   players: Record<string, LocalPlayer>,
   homeScore: number,
   awayScore: number,
+  baserunningEvents: LocalBaserunningEvent[] = [],
 ) {
   const inningMeta = Object.fromEntries(innings.map(i => [i.id, i]))
 
@@ -59,14 +137,14 @@ export function buildGameSummary(
     const starters = lineup.filter(e => e.battingOrder > 0).sort((a, b) => a.battingOrder - b.battingOrder)
     const bench    = lineup.filter(e => e.battingOrder === 0)
     return [...starters, ...bench].map(entry => {
-      const player  = players[entry.playerId]
-      const stats   = absByBatter[entry.playerId]
+      const pl     = players[entry.playerId]
+      const stats  = absByBatter[entry.playerId]
       const results = stats?.results ?? []
       const ab      = results.filter(r => !NO_AB_RESULTS.has(r)).length
       const hits    = results.filter(r => HIT_RESULTS.has(r)).length
       return {
         playerId: entry.playerId, battingOrder: entry.battingOrder,
-        name: player?.name ?? '—', jerseyNumber: player?.jerseyNumber,
+        name: pl?.name ?? '—', jerseyNumber: pl?.jerseyNumber,
         ab, hits, rbi: stats?.rbi ?? 0, results,
       }
     }).filter(b => b.results.length > 0 || b.battingOrder > 0)
@@ -86,11 +164,13 @@ export function buildGameSummary(
   for (const inn of innings) halfMap[inn.id] = inn.half
   const { winnerId, loserId } = getPitcherDecisions(atBats, halfMap, homeScore, awayScore)
 
+  const eventsByPitcher = attributeScoringEventsToPitchers(atBats, baserunningEvents)
+
   function buildPitcherLines(side: 'top' | 'bottom'): PitcherLine[] {
     return Object.entries(absByPitcher)
       .filter(([, v]) => v.side === side)
       .map(([pid, { abs }]) => {
-        const line = computePitchingLine(abs)
+        const line = computePitchingLine(abs, eventsByPitcher[pid] ?? [])
         const decision: 'W' | 'L' | undefined = pid === winnerId ? 'W' : pid === loserId ? 'L' : undefined
         return { playerId: pid, name: players[pid]?.name ?? '—', ...line, decision }
       })
@@ -105,7 +185,8 @@ export function buildGameSummary(
     homeBatters,
     awayHits:     awayBatters.reduce((s, b) => s + b.hits, 0),
     homeHits:     homeBatters.reduce((s, b) => s + b.hits, 0),
-    homePitchers: buildPitcherLines('top'),    // home team pitches in top half
-    awayPitchers: buildPitcherLines('bottom'), // away team pitches in bottom half
+    homePitchers: buildPitcherLines('top'),
+    awayPitchers: buildPitcherLines('bottom'),
+    linescore:    buildLinescore(atBats, innings, baserunningEvents),
   }
 }

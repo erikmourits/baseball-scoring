@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LocalAtBat, LocalInning, LocalGameLineup, LocalPlayer } from '../db/local'
-import { buildGameSummary } from '../utils/gameSummaryCalc'
+import { buildGameSummary, attributeScoringEventsToPitchers } from '../utils/gameSummaryCalc'
 
 // ── Factories ──────────────────────────────────────────────────────────────────
 
@@ -204,5 +204,111 @@ describe('buildGameSummary — pitcher lines', () => {
     const players = { hp1: player('hp1', 'P') }
     const result = buildGameSummary(atBats, [topInn], [], [], players, 1, 0)
     expect(result.homePitchers[0].whip).toBeCloseTo(1.0)
+  })
+})
+
+// ── attributeScoringEventsToPitchers ──────────────────────────────────────────
+
+let bevSeq2 = 0
+function bev2(
+  toBase: string,
+  inningId: string,
+  seq: number,
+  extra: Partial<import('../db/local').LocalBaserunningEvent> = {},
+): import('../db/local').LocalBaserunningEvent {
+  return {
+    id: `bev2-${++bevSeq2}`,
+    inningId,
+    eventType: 'WP',
+    fromBase: 'third',
+    toBase,
+    sequenceNumber: seq,
+    createdAt: '2026-01-01T00:00:00Z',
+    _dirty: false,
+    ...extra,
+  }
+}
+
+describe('attributeScoringEventsToPitchers', () => {
+  it('attributes a scoring event to the pitcher of the most-recent preceding AB', () => {
+    const atBats = [
+      ab('K', { inningId: 'inn-1', pitcherId: 'p1', sequenceNumber: 1 }),
+      ab('K', { inningId: 'inn-1', pitcherId: 'p2', sequenceNumber: 3 }),
+    ]
+    const events = [bev2('score', 'inn-1', 4)]  // after seq 3 -> p2
+    const result = attributeScoringEventsToPitchers(atBats, events)
+    expect(result['p2']).toHaveLength(1)
+    expect(result['p1']).toBeUndefined()
+  })
+
+  it('event before first AB in inning goes to pitcher of first AB', () => {
+    const atBats = [ab('K', { inningId: 'inn-1', pitcherId: 'p1', sequenceNumber: 5 })]
+    const events = [bev2('score', 'inn-1', 2)]  // seq 2 < first AB seq 5
+    const result = attributeScoringEventsToPitchers(atBats, events)
+    expect(result['p1']).toHaveLength(1)
+  })
+
+  it('non-scoring event is ignored', () => {
+    const atBats = [ab('K', { inningId: 'inn-1', pitcherId: 'p1', sequenceNumber: 1 })]
+    const events = [bev2('third', 'inn-1', 2)]
+    const result = attributeScoringEventsToPitchers(atBats, events)
+    expect(Object.keys(result)).toHaveLength(0)
+  })
+
+  it('no at-bats in inning: event is skipped', () => {
+    const events = [bev2('score', 'inn-orphan', 1)]
+    const result = attributeScoringEventsToPitchers([], events)
+    expect(Object.keys(result)).toHaveLength(0)
+  })
+
+  it('multiple events across multiple pitchers', () => {
+    const atBats = [
+      ab('K', { inningId: 'inn-1', pitcherId: 'p1', sequenceNumber: 1 }),
+      ab('K', { inningId: 'inn-1', pitcherId: 'p2', sequenceNumber: 3 }),
+    ]
+    const events = [
+      bev2('score', 'inn-1', 2),  // between seq 1 and 3 -> p1
+      bev2('score', 'inn-1', 5),  // after seq 3 -> p2
+      bev2('score', 'inn-1', 6),  // after seq 3 -> p2
+    ]
+    const result = attributeScoringEventsToPitchers(atBats, events)
+    expect(result['p1']).toHaveLength(1)
+    expect(result['p2']).toHaveLength(2)
+  })
+})
+
+// ── buildGameSummary -- linescore ───────────────────────────────────────────────
+
+describe('buildGameSummary -- linescore', () => {
+  it('linescore counts rbiCount runs per inning', () => {
+    const topInn = inning('top-1', 'top', 1)
+    const atBats = [ab('HR', { inningId: 'top-1', batterId: 'b1', pitcherId: 'hp1', rbiCount: 2 })]
+    const result = buildGameSummary(atBats, [topInn], [], [], {}, 0, 2)
+    expect(result.linescore[0]).toEqual({ inningNum: 1, awayRuns: 2, homeRuns: 0 })
+  })
+
+  it('linescore adds baserunning-event scoring runs per inning', () => {
+    const topInn = inning('top-1', 'top', 1)
+    const atBats = [ab('K', { inningId: 'top-1', batterId: 'b1', pitcherId: 'hp1', rbiCount: 0 })]
+    const events = [bev2('score', 'top-1', 999)]  // WP scores a run
+    const result = buildGameSummary(atBats, [topInn], [], [], {}, 0, 1, events)
+    expect(result.linescore[0].awayRuns).toBe(1)
+  })
+
+  it('linescore has at least 9 entries', () => {
+    const result = buildGameSummary([], [], [], [], {}, 0, 0)
+    expect(result.linescore).toHaveLength(9)
+  })
+
+  it('pitcher r includes baserunning-event run', () => {
+    const topInn = inning('top-1', 'top', 1)
+    const atBats = [
+      ab('K', { inningId: 'top-1', pitcherId: 'hp1', batterId: 'b1', sequenceNumber: 1, rbiCount: 0 }),
+      ab('K', { inningId: 'top-1', pitcherId: 'hp1', batterId: 'b2', sequenceNumber: 2, rbiCount: 0 }),
+      ab('K', { inningId: 'top-1', pitcherId: 'hp1', batterId: 'b3', sequenceNumber: 3, rbiCount: 0 }),
+    ]
+    const events = [bev2('score', 'top-1', 4)]  // WP after last AB -> hp1
+    const result = buildGameSummary(atBats, [topInn], [], [], { hp1: player('hp1', 'P') }, 1, 0, events)
+    expect(result.homePitchers[0].r).toBe(1)
   })
 })
