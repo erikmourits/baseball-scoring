@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { analytics } from '../lib/analytics'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext,
@@ -636,6 +637,7 @@ export default function NewGamePage() {
       ])
     }
 
+    analytics.track('game_created')
     navigate(`/games/${game.id}`)
   }
 

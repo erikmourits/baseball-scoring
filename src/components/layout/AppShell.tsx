@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useTranslation } from 'react-i18next'
 import BottomNav from './BottomNav'
 import { useSync } from '../../hooks/useSync'
+import { analytics } from '../../lib/analytics'
 
 function SyncBanner({ status, onSync }: {
   status: 'idle' | 'syncing' | 'error' | 'offline'
@@ -52,6 +53,13 @@ function UpdateBanner({ onUpdate }: { onUpdate: () => void }) {
 
 export default function AppShell() {
   const { status, runSync, outdated } = useSync()
+  const prevStatusRef = useRef(status)
+  useEffect(() => {
+    if (status === prevStatusRef.current) return
+    prevStatusRef.current = status
+    if (status === 'error') analytics.track('sync_error')
+    if (status === 'offline') analytics.track('sync_offline')
+  }, [status])
   const [showUpdate, setShowUpdate] = useState(false)
   const { updateServiceWorker } = useRegisterSW({
     onNeedRefresh() {

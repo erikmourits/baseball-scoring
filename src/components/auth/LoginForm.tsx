@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabase'
+import { analytics } from '../../lib/analytics'
 
 export default function LoginForm() {
   const { t } = useTranslation()
@@ -15,7 +16,11 @@ export default function LoginForm() {
     setError(null)
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
+    if (error) {
+      setError(error.message)
+    } else {
+      analytics.track('auth_login')
+    }
     setLoading(false)
   }
 

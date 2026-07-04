@@ -12,6 +12,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useGameState, clearGameState } from '../hooks/useGameState'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { useGameSubscription } from '../hooks/useGameSubscription'
+import { analytics } from '../lib/analytics'
 import { SubstitutionPage } from '../components/game/SubstitutionPage'
 import { RunnerOutcomes } from '../components/game/RunnerOutcomes'
 import { BetweenEvents } from '../components/game/BetweenEvents'
@@ -339,6 +340,7 @@ export default function GamePage() {
 
   async function recordAtBat() {
     if (!selectedResult) return
+    analytics.track('game_scoring_event', { result: selectedResult })
     const snapshot = captureSnapshot()
 
     let rbiCount = 0
