@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSession } from './hooks/useSession'
 import { useSync } from './hooks/useSync'
+import { analytics } from './lib/analytics'
 import AuthPage from './pages/AuthPage'
 import HomePage from './pages/HomePage'
 import TeamsPage from './pages/TeamsPage'
@@ -23,10 +25,19 @@ import AdminPage from './pages/AdminPage'
 import SignupInvitePage from './pages/SignupInvitePage'
 import HelpPage from './pages/HelpPage'
 
+function PageTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    analytics.track('page_view', { path: location.pathname })
+  }, [location.pathname])
+  return null
+}
+
 function AuthenticatedApp() {
   useSync()
   return (
     <Routes>
+      <PageTracker />
       <Route element={<AppShell />}>
         <Route path="/"                                         element={<HomePage />} />
         <Route path="/teams"                                    element={<TeamsPage />} />
@@ -55,6 +66,14 @@ function AuthenticatedApp() {
 
 export default function App() {
   const { session, loading } = useSession()
+
+  useEffect(() => {
+    if (session?.user) {
+      analytics.identify(session.user.id)
+    } else {
+      analytics.reset()
+    }
+  }, [session])
 
   if (loading) {
     return (

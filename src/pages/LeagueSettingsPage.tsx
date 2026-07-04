@@ -6,6 +6,7 @@ import { db } from '../db/local'
 import { useLeague } from '../hooks/useLeague'
 import { useSession } from '../hooks/useSession'
 import { supabase } from '../lib/supabase'
+import { analytics } from '../lib/analytics'
 import { clearLocalAndResync } from '../services/sync'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useTheme } from '../hooks/useTheme'
@@ -222,6 +223,7 @@ export default function LeagueSettingsPage() {
   // ── Sign out ─────────────────────────────────────────────────────────────────
   async function signOut() {
     await supabase.auth.signOut()
+    analytics.reset()
     await db.leagues.clear()
     await db.teams.clear()
     await db.players.clear()
