@@ -36,31 +36,33 @@ function PageTracker() {
 function AuthenticatedApp() {
   useSync()
   return (
-    <Routes>
+    <>
       <PageTracker />
-      <Route element={<AppShell />}>
-        <Route path="/"                                         element={<HomePage />} />
-        <Route path="/teams"                                    element={<TeamsPage />} />
-        <Route path="/teams/:teamId"                            element={<TeamDetailPage />} />
-        <Route path="/teams/:teamId/players/:playerId"          element={<PlayerFormPage />} />
-        <Route path="/teams/:teamId/players/:playerId/stats"    element={<PlayerStatsPage />} />
-        <Route path="/stats"                                         element={<StatsPage />} />
-        <Route path="/seasons"                                  element={<SeasonsPage />} />
-        <Route path="/games/new"                                element={<NewGamePage />} />
-        <Route path="/games/:gameId"                            element={<GamePage />} />
-        <Route path="/games/:gameId/summary"                    element={<GameSummaryPage />} />
-        <Route path="/games/:gameId/scorecard"                  element={<ScorecardPage />} />
-        <Route path="/games/upload"                             element={<ScorecardUploadPage />} />
-        <Route path="/games/upload/review"                      element={<ScorecardReviewPage />} />
-        <Route path="/league"                                     element={<LeagueSettingsPage />} />
-        <Route path="/watch/:token"                               element={<WatchPage />} />
-        <Route path="/invite/:token"                              element={<InvitePage />} />
-        <Route path="/league-invite/:token"                       element={<InvitePage />} />
-        <Route path="/admin"                                    element={<AdminPage />} />
-        <Route path="/help"                                     element={<HelpPage />} />
-        <Route path="*"                                         element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/"                                         element={<HomePage />} />
+          <Route path="/teams"                                    element={<TeamsPage />} />
+          <Route path="/teams/:teamId"                            element={<TeamDetailPage />} />
+          <Route path="/teams/:teamId/players/:playerId"          element={<PlayerFormPage />} />
+          <Route path="/teams/:teamId/players/:playerId/stats"    element={<PlayerStatsPage />} />
+          <Route path="/stats"                                         element={<StatsPage />} />
+          <Route path="/seasons"                                  element={<SeasonsPage />} />
+          <Route path="/games/new"                                element={<NewGamePage />} />
+          <Route path="/games/:gameId"                            element={<GamePage />} />
+          <Route path="/games/:gameId/summary"                    element={<GameSummaryPage />} />
+          <Route path="/games/:gameId/scorecard"                  element={<ScorecardPage />} />
+          <Route path="/games/upload"                             element={<ScorecardUploadPage />} />
+          <Route path="/games/upload/review"                      element={<ScorecardReviewPage />} />
+          <Route path="/league"                                     element={<LeagueSettingsPage />} />
+          <Route path="/watch/:token"                               element={<WatchPage />} />
+          <Route path="/invite/:token"                              element={<InvitePage />} />
+          <Route path="/league-invite/:token"                       element={<InvitePage />} />
+          <Route path="/admin"                                    element={<AdminPage />} />
+          <Route path="/help"                                     element={<HelpPage />} />
+          <Route path="*"                                         element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </>
   )
 }
 
