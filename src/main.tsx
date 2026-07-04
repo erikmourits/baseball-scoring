@@ -6,9 +6,17 @@ import App from './App'
 import './index.css'
 import './i18n'
 import { syncAll } from './services/sync'
-import { initAnalytics } from './lib/analytics'
+import { analytics, initAnalytics } from './lib/analytics'
+import ErrorBoundary from './components/ErrorBoundary'
 
 initAnalytics()
+
+window.addEventListener('unhandledrejection', (event) => {
+  analytics.captureException(
+    event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
+    { type: 'unhandledrejection' }
+  )
+})
 
 // Exposed for E2E tests so Playwright can force-flush dirty records to Supabase.
 // Returns { errors } so the test can assert a clean sync.
@@ -31,8 +39,10 @@ if (import.meta.env.DEV) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )
