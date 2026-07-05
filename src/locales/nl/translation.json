@@ -126,7 +126,8 @@
     "walk": "4 wijd",
     "hitByPitch": "Geraakt door worp",
     "reachedOnError": "Bereikt door fout",
-    "fieldersChoice": "Velderskeuze"
+    "fieldersChoice": "Velderskeuze",
+    "basesEmpty": "Honken leeg"
   },
   "gameSummary": {
     "backGames": "‹ Wedstrijden",

@@ -126,7 +126,8 @@
     "walk": "Walk",
     "hitByPitch": "Hit by pitch",
     "reachedOnError": "Reached on error",
-    "fieldersChoice": "Fielder's choice"
+    "fieldersChoice": "Fielder's choice",
+    "basesEmpty": "Bases empty"
   },
   "gameSummary": {
     "backGames": "‹ Games",
