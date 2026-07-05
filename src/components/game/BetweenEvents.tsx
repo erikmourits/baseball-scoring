@@ -30,7 +30,7 @@ export function BetweenEvents({
   return (
     <div>
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('betweenEvents.title')}</p>
-      <div className="grid grid-cols-5 gap-2 mb-3">
+      <div className="grid grid-cols-5 gap-2 md:gap-3 mb-3">
         {([
           { ev: 'SB',   label: 'SB',   tipKey: 'betweenEvents.sbShort' },
           { ev: 'CS',   label: 'CS',   tipKey: 'betweenEvents.csShort' },
@@ -39,7 +39,7 @@ export function BetweenEvents({
           { ev: 'BALK', label: 'BALK', tipKey: 'betweenEvents.balk' },
         ] as { ev: BetweenEvent; label: string; tipKey: string }[]).map(({ ev, label, tipKey }) => (
           <button key={ev} onClick={() => onEventSelect(ev)}
-            className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+            className={`py-2.5 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold border-2 transition-colors ${
               activeEvent === ev
                 ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'

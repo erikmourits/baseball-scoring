@@ -588,13 +588,13 @@ export default function GamePage() {
         {/* Result grid */}
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('game.result')}</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2 md:gap-3">
             {RESULT_BUTTONS.map(btn => {
               const blockedBy2Outs = !!btn.no2Outs && outs === 2
               const blocked = blockedBy2Outs || (!!btn.needsRunner && runnersOnBase.length === 0)
               return (
                 <button key={btn.value} data-testid={`result-${btn.value}`} onClick={() => !blocked && handleResultSelect(btn.value)}
-                  className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                  className={`py-2.5 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold border-2 transition-colors ${
                     blocked
                       ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-300 cursor-not-allowed'
                       : selectedResult === btn.value
@@ -617,10 +617,10 @@ export default function GamePage() {
         {needsFielders && (
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('game.fielders')}</p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-2 md:gap-3">
               {FIELDER_POSITIONS.map(({ pos, label }) => (
                 <button key={pos} onClick={() => toggleFielder(pos)}
-                  className={`py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                  className={`py-2 md:py-3 rounded-lg md:rounded-xl text-sm font-medium border-2 transition-colors ${
                     fielders.includes(pos) ? 'bg-brand-500 border-brand-500 dark:border-blue-500 text-white' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 dark:text-gray-400 hover:border-brand-300 dark:hover:border-blue-600'
                   }`}>
                   <span className="block text-xs text-current/60">{pos}</span>
