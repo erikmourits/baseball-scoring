@@ -167,6 +167,7 @@ export default function GamePage() {
   const [showFinalConfirm, setShowFinalConfirm] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [showSub, setShowSub]                   = useState(false)
+  const [subDefaultTeamId, setSubDefaultTeamId] = useState('')
   const [activeEvent, setActiveEvent]           = useState<BetweenEvent | null>(null)
   const [pickedRunner, setPickedRunner]         = useState<BaseKey | ''>('')
   const [inningEndMsg, setInningEndMsg]         = useState<string | null>(null)
@@ -503,14 +504,16 @@ export default function GamePage() {
                 {shareCopied ? t('game.copied') : t('game.share')}
               </button>
             )}
-            <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors">{t('game.sub')}</button>
             <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors">{t('game.endGame')}</button>
           </div>
         </div>
         <div className="flex items-center justify-between px-2">
           {/* Away team */}
           <div className="text-center min-w-[80px]">
-            <p className="text-xs text-white/60 mb-0.5">{awayName}</p>
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <p className="text-xs text-white/60">{awayName}</p>
+              <button onClick={() => { setSubDefaultTeamId(game.awayTeamId ?? ''); setShowSub(true) }} className="text-white/50 hover:text-white text-sm leading-none transition-colors" title={t('game.sub')}>⇄</button>
+            </div>
             <p className={`text-4xl font-bold tabular-nums ${half === 'top' ? 'text-white' : 'text-white/40'}`}>{game.awayScore}</p>
             {half === 'top'
               ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">{t('game.batting')}</p>
@@ -533,7 +536,10 @@ export default function GamePage() {
 
           {/* Home team */}
           <div className="text-center min-w-[80px]">
-            <p className="text-xs text-white/60 mb-0.5">{homeName}</p>
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <p className="text-xs text-white/60">{homeName}</p>
+              <button onClick={() => { setSubDefaultTeamId(game.homeTeamId ?? ''); setShowSub(true) }} className="text-white/50 hover:text-white text-sm leading-none transition-colors" title={t('game.sub')}>⇄</button>
+            </div>
             <p className={`text-4xl font-bold tabular-nums ${half === 'bottom' ? 'text-white' : 'text-white/40'}`}>{game.homeScore}</p>
             {half === 'bottom'
               ? <p className="text-[10px] text-yellow-300 font-medium mt-0.5">{t('game.batting')}</p>
@@ -719,7 +725,7 @@ export default function GamePage() {
       {/* ── Substitution page ── */}
       {showSub && game && (
         <SubstitutionPage
-          defaultTeamId={half === 'top' ? (game.homeTeamId ?? '') : (game.awayTeamId ?? '')}
+          defaultTeamId={subDefaultTeamId}
           homeTeamId={game.homeTeamId ?? ''}
           awayTeamId={game.awayTeamId ?? ''}
           homeLineup={homeLineup ?? []}
