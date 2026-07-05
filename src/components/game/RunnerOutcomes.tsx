@@ -99,19 +99,19 @@ export function RunnerOutcomes({
                     {t('runners.runnerOnBase', { runner: runner?.name ?? '?', base: baseLabel(k) })}
                   </p>
                 </div>
-                <div className="flex gap-1.5 flex-wrap">
+                <div className="flex gap-1.5">
                   {options.map(opt => (
                     <button key={opt} onClick={() => onSelectOutcome(runnerId, opt)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${
+                      className={`flex-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${
                         dest === opt
                           ? opt === 'score' ? 'bg-green-500 border-green-500 text-white'
                           : opt === 'out'   ? 'bg-red-500 border-red-500 text-white'
                           : opt === 'hold'  ? 'bg-gray-500 border-gray-500 text-white'
                           :                   'bg-yellow-400 border-yellow-400 text-white'
-                          : opt === 'score' ? 'bg-green-50 dark:bg-green-900/30 border-green-200 text-green-600 dark:text-green-400 hover:bg-green-100'
-                          : opt === 'out'   ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100'
-                          : opt === 'hold'  ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          :                   'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100'
+                          : opt === 'score' ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400 hover:border-green-300'
+                          : opt === 'out'   ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-red-500 dark:text-red-400 hover:border-red-300'
+                          : opt === 'hold'  ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-gray-300'
+                          :                   'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-yellow-600 dark:text-yellow-400 hover:border-yellow-300'
                       }`}>
                       {DEST_LABEL[opt]}
                     </button>
