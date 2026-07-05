@@ -633,8 +633,8 @@ export default function GamePage() {
         )}
 
         {/* Runner outcomes — mobile only; tablet shows in right panel */}
-        <div className="md:hidden">
         {showRunnerSection && (
+        <div className="md:hidden">
           <RunnerOutcomes
             bases={bases}
             runnerOutcomes={runnerOutcomes}
@@ -645,8 +645,8 @@ export default function GamePage() {
             batterDest={batterDest}
             onSelectOutcome={selectRunnerOutcome}
           />
-        )}
         </div>
+        )}
 
         {/* Between at-bats */}
         <BetweenEvents
@@ -665,7 +665,7 @@ export default function GamePage() {
         </div>{/* end left panel */}
 
         {/* Right panel — tablet/desktop only */}
-        <div className="hidden md:flex md:flex-col md:w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
+        <div className="hidden md:flex md:flex-col md:w-80 min-h-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
           {showRunnerSection ? (
             <div className="p-4">
               <RunnerOutcomes
