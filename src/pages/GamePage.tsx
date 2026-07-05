@@ -667,7 +667,7 @@ export default function GamePage() {
         </div>{/* end left panel */}
 
         {/* Right panel — tablet/desktop only */}
-        <div className="hidden md:flex md:flex-col md:w-80 min-h-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
+        <div className="hidden md:flex md:flex-col md:flex-1 min-h-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
           {showRunnerSection && (
             <div className="p-4 border-b border-gray-100 dark:border-gray-700">
               <RunnerOutcomes
