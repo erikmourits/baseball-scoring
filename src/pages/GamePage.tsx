@@ -648,17 +648,19 @@ export default function GamePage() {
         </div>
         )}
 
-        {/* Between at-bats */}
-        <BetweenEvents
-          bases={bases}
-          players={players}
-          activeEvent={activeEvent}
-          pickedRunner={pickedRunner}
-          onEventSelect={handleBetweenEvent}
-          onPickRunner={setPickedRunner}
-          onConfirm={confirmBetweenEvent}
-          onCancel={() => { setActiveEvent(null); setPickedRunner('') }}
-        />
+        {/* Between at-bats — mobile only; tablet shows in right panel */}
+        <div className="md:hidden">
+          <BetweenEvents
+            bases={bases}
+            players={players}
+            activeEvent={activeEvent}
+            pickedRunner={pickedRunner}
+            onEventSelect={handleBetweenEvent}
+            onPickRunner={setPickedRunner}
+            onConfirm={confirmBetweenEvent}
+            onCancel={() => { setActiveEvent(null); setPickedRunner('') }}
+          />
+        </div>
 
 
       </div>
@@ -666,8 +668,8 @@ export default function GamePage() {
 
         {/* Right panel — tablet/desktop only */}
         <div className="hidden md:flex md:flex-col md:w-80 min-h-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
-          {showRunnerSection ? (
-            <div className="p-4">
+          {showRunnerSection && (
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700">
               <RunnerOutcomes
                 bases={bases}
                 runnerOutcomes={runnerOutcomes}
@@ -679,12 +681,19 @@ export default function GamePage() {
                 onSelectOutcome={selectRunnerOutcome}
               />
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8 text-gray-300 dark:text-gray-600">
-              <div className="w-10 h-10 rotate-45 border-2 border-gray-200 dark:border-gray-700" />
-              <p className="text-sm">{t('game.basesEmpty')}</p>
-            </div>
           )}
+          <div className="p-4">
+            <BetweenEvents
+              bases={bases}
+              players={players}
+              activeEvent={activeEvent}
+              pickedRunner={pickedRunner}
+              onEventSelect={handleBetweenEvent}
+              onPickRunner={setPickedRunner}
+              onConfirm={confirmBetweenEvent}
+              onCancel={() => { setActiveEvent(null); setPickedRunner('') }}
+            />
+          </div>
         </div>
 
       </div>{/* end middle section */}
