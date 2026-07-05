@@ -492,19 +492,19 @@ export default function GamePage() {
           <button onClick={() => navigate('/')} className="text-white/70 text-sm">{t('game.backGames')}</button>
           <div className="flex items-center gap-2">
             {isLive ? (
-              <button onClick={handleShare} className="flex items-center gap-1 text-xs bg-red-500/80 hover:bg-red-500 px-2 py-0.5 rounded-full font-semibold transition-colors">
+              <button onClick={handleShare} className="flex items-center gap-1 text-xs bg-red-500/80 hover:bg-red-500 px-3 py-1.5 rounded-full font-semibold transition-colors">
                 {shareCopied
                   ? <>{t('game.copied')}</>
                   : <><span className={`w-1.5 h-1.5 rounded-full animate-pulse ${viewerCount > 0 ? 'bg-green-400' : 'bg-white'}`} />{t('game.live')}{viewerCount > 0 && ` · ${viewerCount}`}</>
                 }
               </button>
             ) : (
-              <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
+              <button onClick={handleShare} className="text-xs bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors">
                 {shareCopied ? t('game.copied') : t('game.share')}
               </button>
             )}
-            <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.sub')}</button>
-            <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">{t('game.endGame')}</button>
+            <button onClick={() => setShowSub(true)} className="text-xs bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors">{t('game.sub')}</button>
+            <button onClick={() => setShowFinalConfirm(true)} className="text-xs bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-colors">{t('game.endGame')}</button>
           </div>
         </div>
         <div className="flex items-center justify-between px-2">
