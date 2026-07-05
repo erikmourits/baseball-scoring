@@ -68,7 +68,6 @@ export function RunnerOutcomes({
               <span className="text-green-500 text-lg">✓</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{currentBatterName ?? 'Batter'}</p>
-                <p className="text-xs text-green-600 dark:text-green-400">{t('runners.homeRunScores')}</p>
               </div>
             </div>
           )}
@@ -83,7 +82,6 @@ export function RunnerOutcomes({
                   <span className="text-green-500 text-lg">✓</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">{runner?.name ?? '?'}</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">{t('runners.batterScores', { runner: runner?.name ?? '?' })}</p>
                   </div>
                 </div>
               )
