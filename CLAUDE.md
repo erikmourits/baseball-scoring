@@ -187,6 +187,15 @@ Current version: v7 (adds leagues table, leagueId indexes on teams/seasons/games
 
 Deploy by copying dist/ to the server. Nginx config in nginx/.
 
+## Before Every Commit
+
+Always run both test suites and confirm they pass before committing:
+
+  npm run test        Vitest unit tests (169 tests)
+  npx playwright test Playwright E2E tests (22 tests)
+
+Do not commit if any test fails. Fix the failure first.
+
 ## PLAN.md Status (as of 2026-06-21)
 
   DONE  Phase 1-6: Core scoring, sync, auth, seasons, lineups, league management
