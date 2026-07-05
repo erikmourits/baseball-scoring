@@ -545,6 +545,12 @@ export default function GamePage() {
         </div>
       </div>
 
+      {/* ── Middle section (left panel + right panel on md+) ── */}
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+
+        {/* Left panel */}
+        <div className="flex flex-col overflow-hidden flex-1">
+
       {/* ── At bat / On deck ── */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
@@ -626,7 +632,8 @@ export default function GamePage() {
           </div>
         )}
 
-        {/* Runner outcomes */}
+        {/* Runner outcomes — mobile only; tablet shows in right panel */}
+        <div className="md:hidden">
         {showRunnerSection && (
           <RunnerOutcomes
             bases={bases}
@@ -639,6 +646,7 @@ export default function GamePage() {
             onSelectOutcome={selectRunnerOutcome}
           />
         )}
+        </div>
 
         {/* Between at-bats */}
         <BetweenEvents
@@ -654,6 +662,32 @@ export default function GamePage() {
 
 
       </div>
+        </div>{/* end left panel */}
+
+        {/* Right panel — tablet/desktop only */}
+        <div className="hidden md:flex md:flex-col md:w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
+          {showRunnerSection ? (
+            <div className="p-4">
+              <RunnerOutcomes
+                bases={bases}
+                runnerOutcomes={runnerOutcomes}
+                selectedResult={selectedResult!}
+                currentBatterId={currentBatterId}
+                currentBatterName={currentBatter?.name}
+                players={players}
+                batterDest={batterDest}
+                onSelectOutcome={selectRunnerOutcome}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8 text-gray-300 dark:text-gray-600">
+              <div className="w-10 h-10 rotate-45 border-2 border-gray-200 dark:border-gray-700" />
+              <p className="text-sm">{t('game.basesEmpty')}</p>
+            </div>
+          )}
+        </div>
+
+      </div>{/* end middle section */}
 
       {/* ── Record button ── */}
       <div className="px-4 pb-safe pt-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
