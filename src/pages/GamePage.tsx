@@ -512,7 +512,7 @@ export default function GamePage() {
           <div className="text-center min-w-[80px]">
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <p className="text-xs text-white/60">{awayName}</p>
-              <button onClick={() => { setSubDefaultTeamId(game.awayTeamId ?? ''); setShowSub(true) }} className="bg-white/20 hover:bg-white/35 text-white text-base leading-none px-2 py-1 rounded-lg transition-colors" title={t('game.sub')}>⇄</button>
+              <button onClick={() => { setSubDefaultTeamId(game.awayTeamId ?? ''); setShowSub(true) }} className="bg-white/20 hover:bg-white/35 text-white text-base leading-none px-2 py-1 rounded-lg transition-colors" title={t('game.sub')} aria-label={t('game.sub')} data-testid="sub-away">⇄</button>
             </div>
             <p className={`text-4xl font-bold tabular-nums ${half === 'top' ? 'text-white' : 'text-white/40'}`}>{game.awayScore}</p>
             {half === 'top'
@@ -538,7 +538,7 @@ export default function GamePage() {
           <div className="text-center min-w-[80px]">
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <p className="text-xs text-white/60">{homeName}</p>
-              <button onClick={() => { setSubDefaultTeamId(game.homeTeamId ?? ''); setShowSub(true) }} className="bg-white/20 hover:bg-white/35 text-white text-base leading-none px-2 py-1 rounded-lg transition-colors" title={t('game.sub')}>⇄</button>
+              <button onClick={() => { setSubDefaultTeamId(game.homeTeamId ?? ''); setShowSub(true) }} className="bg-white/20 hover:bg-white/35 text-white text-base leading-none px-2 py-1 rounded-lg transition-colors" title={t('game.sub')} aria-label={t('game.sub')} data-testid="sub-home">⇄</button>
             </div>
             <p className={`text-4xl font-bold tabular-nums ${half === 'bottom' ? 'text-white' : 'text-white/40'}`}>{game.homeScore}</p>
             {half === 'bottom'

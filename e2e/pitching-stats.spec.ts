@@ -36,8 +36,8 @@ async function recordHalfInning(page: Page, results: string[]) {
  * Quick-add creates lineups with isStartingPitcher: false, so we must do this
  * once per team before their first at-bat as the fielding team.
  */
-async function assignPitcherForFieldingTeam(page: Page) {
-  await page.getByRole('button', { name: /wissel|sub/i }).click()
+async function assignPitcherForFieldingTeam(page: Page, team: 'home' | 'away') {
+  await page.getByTestId(`sub-${team}`).click()
   // First select in the Sub page = position dropdown for Player 1 (batting order 1)
   await page.locator('select').first().selectOption('P')
   await page.getByRole('button', { name: /bevestigen|confirm/i }).first().click()
@@ -131,7 +131,7 @@ test.describe('Game Summary — pitching line stats', () => {
     // Quick-add creates lineups with isStartingPitcher: false. We open Sub,
     // set Player 1 to 'P', and wait for the pitcher badge in the scoreboard
     // to confirm React state has committed currentPitcherId before recording.
-    await assignPitcherForFieldingTeam(page)
+    await assignPitcherForFieldingTeam(page, 'home')
 
     // ── Step 3: Record innings ─────────────────────────────────────────────
 
@@ -142,7 +142,7 @@ test.describe('Game Summary — pitching line stats', () => {
     await recordHalfInning(page, ['K', 'K', 'K'])
 
     // Bottom 1st: assign away pitcher first (away team is now fielding)
-    await assignPitcherForFieldingTeam(page)
+    await assignPitcherForFieldingTeam(page, 'away')
     await recordHalfInning(page, ['K', 'K', 'K'])
 
     // Inning 2 Top: 3B puts B1 on 3rd, WP scores B1 (baserunning event)
