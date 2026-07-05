@@ -442,9 +442,9 @@
     "balk": "Balk",
     "noRunners": "Geen lopers op de honken.",
     "sbShort": "Gestolen honk",
-    "csShort": "Gepakt stelen",
-    "wpShort": "Wild pitch",
-    "pbShort": "Passed ball"
+    "csShort": "Uit tijdens stelen",
+    "wpShort": "Wilde worp",
+    "pbShort": "Doorgeschoten bal"
   },
   "substitution": {
     "cancel": "‹ Annuleren",
