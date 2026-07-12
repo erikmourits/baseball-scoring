@@ -171,6 +171,8 @@ class BaseballDatabase extends Dexie {
   constructor() {
     super('BaseballScoring')
 
+    // v1-v7: schema-only changes with no data transformation — upgrade() handlers not required.
+    // v8+ must include upgrade() per the convention in PLAN.md.
     // v1 & v2 existed during development — kept so existing browsers can upgrade
     this.version(1).stores({
       teams:             'id, userId',

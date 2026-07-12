@@ -422,14 +422,14 @@ date,home_team,away_team,location
   - `e2e/league.spec.ts` — page load; dark mode toggle; language toggle
   - `e2e/game-flow.spec.ts` — home, /games/new wizard, stats page, help page
   - Auth state shared via `e2e/.auth/user.json`; credentials in gitignored `.env.e2e`
-- [ ] **Code review pass**
+- [x] **Code review pass**
   - Add React error boundaries (none exist)
   - Audit missing loading/empty states across all pages
   - Accessibility: labels, focus management, tap target sizes
   - Performance: large useLiveQuery queries, unnecessary re-renders
   - Security: RLS policy audit, Edge Function input validation
   - Dead code and unused imports cleanup
-- [ ] **Dexie migration convention audit** — verify all future version bumps include an `upgrade()` handler per the convention documented above
+- [x] **Dexie migration convention audit** — verify all future version bumps include an `upgrade()` handler per the convention documented above
 
 ### Phase 9 — Deployment & Polish ✅
 - [x] DNS A record: `baseball.mourits.nu` → server IP
