@@ -409,8 +409,12 @@ export default function LeagueSettingsPage() {
       {isOwner && (
         <section className="mb-8">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('league.inviteScorer')}</h2>
+          <label htmlFor="invite-email" className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+            {t('common.email')}
+          </label>
           <div className="flex gap-2">
             <input
+              id="invite-email"
               type="email"
               value={inviteEmail}
               onChange={e => setInviteEmail(e.target.value)}

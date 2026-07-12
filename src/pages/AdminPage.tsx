@@ -190,8 +190,12 @@ export default function AdminPage() {
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           {t('admin.inviteHint')}
         </p>
+        <label htmlFor="invite-name" className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+          {t('common.name')}
+        </label>
         <div className="flex gap-2">
           <input
+            id="invite-name"
             value={invName}
             onChange={e => setInvName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && createInvite()}
