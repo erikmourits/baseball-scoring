@@ -109,6 +109,7 @@
     "play": "Play: {{fielders}}",
     "recordAtBat": "Record at-bat",
     "skipHalfInning": "Skip to next half-inning",
+    "undo": "Undo",
     "endGameConfirm": "End this game and mark it as final?",
     "threeOuts": "3 outs",
     "endOfInning": "End of {{half}} {{inningNumber}}",

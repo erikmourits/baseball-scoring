@@ -109,6 +109,7 @@
     "play": "Spel: {{fielders}}",
     "recordAtBat": "Slagbeurt vastleggen",
     "skipHalfInning": "Doorgaan naar volgende halve inning",
+    "undo": "Ongedaan maken",
     "endGameConfirm": "Deze wedstrijd beëindigen en als gespeeld markeren?",
     "threeOuts": "3 uit",
     "endOfInning": "Einde van {{half}} {{inningNumber}}",

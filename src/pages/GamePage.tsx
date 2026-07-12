@@ -706,7 +706,7 @@ export default function GamePage() {
 
       {/* ── Record button ── */}
       <div className="px-4 pb-safe pt-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
-        <button onClick={handleUndo} disabled={!canUndo}
+        <button onClick={handleUndo} disabled={!canUndo} aria-label={t('game.undo')}
           className={`w-14 py-3.5 rounded-xl font-semibold text-xl transition-colors ${
             canUndo ? 'bg-yellow-400 hover:bg-yellow-300 text-yellow-900' : 'bg-gray-50 dark:bg-gray-900 text-gray-300 cursor-default'}`}>
           ↺
@@ -717,7 +717,7 @@ export default function GamePage() {
         </button>
         <button onClick={() => { setSkipRuns(0); setShowSkipDialog(true) }}
           className="w-14 py-3.5 rounded-xl font-semibold text-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          title={t('game.skipHalfInning')}>
+          title={t('game.skipHalfInning')} aria-label={t('game.skipHalfInning')}>
           ⇥
         </button>
       </div>
