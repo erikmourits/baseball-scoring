@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import LanguageToggle from '../components/LanguageToggle'
 import { supabase } from '../lib/supabase'
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1'
@@ -71,6 +72,9 @@ export default function SignupInvitePage() {
       </div>
 
       <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <div className="flex justify-end mb-2">
+          <LanguageToggle />
+        </div>
 
         {state === 'loading' && (
           <div className="flex justify-center py-6">
