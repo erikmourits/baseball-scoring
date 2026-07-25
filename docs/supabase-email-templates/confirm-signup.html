@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8"></head>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;">
+            <tr>
+              <td style="background-color:#1e3a5f;padding:20px 32px;">
+                <span style="color:#ffffff;font-size:18px;font-weight:bold;">Baseball Scoring</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <h1 style="margin:0 0 16px;font-size:20px;color:#111827;">{{if eq .Data.lang "en"}}Confirm your email{{else}}Bevestig je e-mailadres{{end}}</h1>
+                <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#374151;">{{if eq .Data.lang "en"}}Thanks for signing up for Baseball Scoring. Click the button below to confirm your email address and finish creating your account.{{else}}Bedankt voor je aanmelding bij Baseball Scoring. Klik op de onderstaande knop om je e-mailadres te bevestigen en je account af te ronden.{{end}}</p>
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background-color:#1e3a5f;border-radius:6px;">
+                      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;">{{if eq .Data.lang "en"}}Confirm email{{else}}E-mail bevestigen{{end}}</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#9ca3af;">{{if eq .Data.lang "en"}}If you didn't request this, you can safely ignore this email.{{else}}Heb je dit niet aangevraagd? Dan kun je deze e-mail negeren.{{end}}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
