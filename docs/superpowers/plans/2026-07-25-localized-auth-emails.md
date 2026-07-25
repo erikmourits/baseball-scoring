@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: `user_metadata.lang: 'en' | 'nl'` on every new user created through these two forms — this is what the Dashboard templates' `{{ .Data.lang }}` reads.
 
-- [ ] **Step 1: Update `SignupForm.tsx`**
+- [x] **Step 1: Update `SignupForm.tsx`**
 
 Change line 10 from:
 ```typescript
@@ -50,7 +50,7 @@ to:
     const { error } = await supabase.auth.signUp({ email, password, options: { data: { lang } } })
 ```
 
-- [ ] **Step 2: Update `InvitePage.tsx`**
+- [x] **Step 2: Update `InvitePage.tsx`**
 
 Change line 19 from:
 ```typescript
@@ -77,7 +77,7 @@ to:
 
 (Normalization matches the existing pattern in `src/components/LanguageToggle.tsx:5` — `startsWith('nl')` rather than checking for `'en'` directly, so any unrecognized locale defaults to English at signup time app-side. The Dashboard template's own `{{else}}` branch is the one that defaults to Dutch, for accounts where `.Data.lang` is absent entirely — e.g. accounts created before this change.)
 
-- [ ] **Step 3: Run the test suites**
+- [x] **Step 3: Run the test suites**
 
 ```bash
 npm run test
@@ -86,7 +86,7 @@ npx playwright test
 
 Expected: Vitest passing with the same count as before this change (no test in this repo currently asserts on `signUp` call arguments, so no test changes are expected). If Playwright cannot run because there is no local Supabase dev environment available (a pre-existing, project-wide limitation — see Global Constraints), note that in the report rather than treating it as a failure of this task.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/auth/SignupForm.tsx src/pages/InvitePage.tsx
@@ -114,7 +114,7 @@ This project runs a hosted-only Supabase project (no local/self-hosted dev envir
 
 Each template shares the same brand shell (brand-500 navy `#1e3a5f` header bar, matching the app's tone) with only the heading/body/button text and the footer disclaimer varying by language via `{{if eq .Data.lang "en"}}...{{else}}...{{end}}`. All 5 templates use Supabase's built-in `{{ .ConfirmationURL }}` merge tag for the action link (available on all 5 per Supabase's docs). Each includes `<meta charset="utf-8">` for the accented Dutch characters. The footer disclaimer appears once, in the footer — never restated in the body paragraph.
 
-- [ ] **Step 0: Un-ignore the new directory**
+- [x] **Step 0: Un-ignore the new directory**
 
 This repo's `.gitignore` has a blanket `docs/` entry. Add these two lines to the end of `.gitignore`:
 ```
@@ -122,7 +122,7 @@ This repo's `.gitignore` has a blanket `docs/` entry. Add these two lines to the
 !docs/supabase-email-templates/**
 ```
 
-- [ ] **Step 1: Write `confirm-signup.html`**
+- [x] **Step 1: Write `confirm-signup.html`**
 
 ```html
 <!DOCTYPE html>
@@ -160,7 +160,7 @@ This repo's `.gitignore` has a blanket `docs/` entry. Add these two lines to the
 </html>
 ```
 
-- [ ] **Step 2: Write `invite-user.html`**
+- [x] **Step 2: Write `invite-user.html`**
 
 Same shell as Step 1 (including `<meta charset="utf-8">`), with:
 - Heading: `{{if eq .Data.lang "en"}}You're invited{{else}}Je bent uitgenodigd{{end}}`
@@ -204,7 +204,7 @@ Same shell as Step 1 (including `<meta charset="utf-8">`), with:
 </html>
 ```
 
-- [ ] **Step 3: Write `magic-link.html`**
+- [x] **Step 3: Write `magic-link.html`**
 
 ```html
 <!DOCTYPE html>
@@ -242,7 +242,7 @@ Same shell as Step 1 (including `<meta charset="utf-8">`), with:
 </html>
 ```
 
-- [ ] **Step 4: Write `change-email-address.html`**
+- [x] **Step 4: Write `change-email-address.html`**
 
 ```html
 <!DOCTYPE html>
@@ -280,7 +280,7 @@ Same shell as Step 1 (including `<meta charset="utf-8">`), with:
 </html>
 ```
 
-- [ ] **Step 5: Write `reset-password.html`**
+- [x] **Step 5: Write `reset-password.html`**
 
 ```html
 <!DOCTYPE html>
@@ -320,7 +320,7 @@ Same shell as Step 1 (including `<meta charset="utf-8">`), with:
 
 Note: the disclaimer footer already covers "if you didn't request this" for every template, including reset-password — don't restate it in the body paragraph too (see Global Constraints).
 
-- [ ] **Step 6: Write `README.md`**
+- [x] **Step 6: Write `README.md`**
 
 ```markdown
 # Supabase auth email templates
@@ -356,11 +356,11 @@ missing value, for accounts created before this change) renders the Dutch
 branch.
 ```
 
-- [ ] **Step 7: Review for coverage**
+- [x] **Step 7: Review for coverage**
 
 Confirm all 5 templates share the same brand shell (including `<meta charset="utf-8">`), each has both `en` and `nl` branches for heading/body/button/footer, the footer disclaimer is not also restated in any body paragraph, and `{{ .ConfirmationURL }}` appears in every template's action link. There is no automated test for this step — Supabase's Go templates aren't run by this repo's test suites — it's a direct-read review.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add docs/supabase-email-templates/ .gitignore
