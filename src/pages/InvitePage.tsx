@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import LanguageToggle from '../components/LanguageToggle'
 import { supabase } from '../lib/supabase'
 import { pullFromServer } from '../services/sync'
 import { useSession } from '../hooks/useSession'
@@ -154,6 +155,9 @@ export default function InvitePage() {
 
       {session ? (
         <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 text-center">
+          <div className="flex justify-end mb-2">
+            <LanguageToggle />
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('invite.loggedInAs', { email: session.user.email })}</p>
           <button onClick={acceptInvite}
             className="w-full bg-brand-500 text-white font-semibold py-3 rounded-xl hover:bg-brand-600 transition-colors">
@@ -162,6 +166,9 @@ export default function InvitePage() {
         </div>
       ) : (
         <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+          <div className="flex justify-end mb-2">
+            <LanguageToggle />
+          </div>
           <div className="flex rounded-lg bg-gray-100 p-1 mb-5">
             {(['login', 'signup'] as const).map(m => (
               <button key={m} onClick={() => setAuthMode(m)}
