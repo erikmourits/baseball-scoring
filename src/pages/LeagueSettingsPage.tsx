@@ -10,6 +10,7 @@ import { analytics } from '../lib/analytics'
 import { clearLocalAndResync } from '../services/sync'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { useTheme } from '../hooks/useTheme'
+import LanguageToggle from '../components/LanguageToggle'
 import OnboardingWizard from '../components/OnboardingWizard'
 
 // ── Member row ────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ function MemberRow({
 
 export default function LeagueSettingsPage() {
   const navigate = useNavigate()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { session } = useSession()
   const { league, leagues, switchLeague } = useLeague()
 
@@ -71,8 +72,6 @@ export default function LeagueSettingsPage() {
 
   const isOwner = !!league && !!session && league.createdBy === session.user.id
   const { theme, toggleTheme } = useTheme()
-
-  const currentLang = i18n.language?.startsWith('nl') ? 'nl' : 'en'
 
   interface DialogState {
     title?: string
@@ -247,12 +246,7 @@ export default function LeagueSettingsPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('league.createTitle')}</h1>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => i18n.changeLanguage(currentLang === 'nl' ? 'en' : 'nl')}
-              className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 transition-colors"
-            >
-              {currentLang === 'nl' ? 'EN' : 'NL'}
-            </button>
+            <LanguageToggle />
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? t('league.lightMode') : t('league.darkMode')}
@@ -295,12 +289,7 @@ export default function LeagueSettingsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('league.title')}</h1>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => i18n.changeLanguage(currentLang === 'nl' ? 'en' : 'nl')}
-            className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 transition-colors"
-          >
-            {currentLang === 'nl' ? 'EN' : 'NL'}
-          </button>
+            <LanguageToggle />
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? t('league.lightMode') : t('league.darkMode')}
