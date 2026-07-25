@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import LanguageToggle from '../components/LanguageToggle'
 import LoginForm from '../components/auth/LoginForm'
 import SignupForm from '../components/auth/SignupForm'
 
@@ -16,6 +17,9 @@ export default function AuthPage() {
       </div>
 
       <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <div className="flex justify-end mb-2">
+          <LanguageToggle />
+        </div>
         <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
           <button
             onClick={() => setMode('login')}
