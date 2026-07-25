@@ -16,7 +16,7 @@ export default function InvitePage() {
   const { token }    = useParams<{ token: string }>()
   const navigate     = useNavigate()
   const { session }  = useSession()
-  const { t }        = useTranslation()
+  const { t, i18n }  = useTranslation()
 
   const fnName = 'league-invite'
 
@@ -96,9 +96,10 @@ export default function InvitePage() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
     setAuthLoading(true); setAuthError(null)
+    const lang = i18n.language?.startsWith('nl') ? 'nl' : 'en'
     const { error } = authMode === 'login'
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signUp({ email, password, options: { data: { lang } } })
     if (error) setAuthError(error.message)
     setAuthLoading(false)
     // accept will trigger via the useEffect above once session is set

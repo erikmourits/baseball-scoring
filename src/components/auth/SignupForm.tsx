@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function SignupForm({ onSuccess }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,7 +19,8 @@ export default function SignupForm({ onSuccess }: Props) {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signUp({ email, password })
+    const lang = i18n.language?.startsWith('nl') ? 'nl' : 'en'
+    const { error } = await supabase.auth.signUp({ email, password, options: { data: { lang } } })
     if (error) {
       if (error.message.toLowerCase().includes('signups not allowed') ||
           error.message.toLowerCase().includes('signup is disabled')) {
