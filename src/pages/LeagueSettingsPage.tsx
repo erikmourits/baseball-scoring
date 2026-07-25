@@ -289,7 +289,7 @@ export default function LeagueSettingsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('league.title')}</h1>
         <div className="flex items-center gap-3">
-            <LanguageToggle />
+          <LanguageToggle />
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? t('league.lightMode') : t('league.darkMode')}
