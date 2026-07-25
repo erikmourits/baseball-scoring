@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import LanguageToggle from './LanguageToggle'
 import { db } from '../db/local'
 import { useLeague } from '../hooks/useLeague'
 import { useSession } from '../hooks/useSession'
@@ -59,6 +60,9 @@ export default function OnboardingWizard({ onClose }: Props) {
 
   if (step === 'welcome') return (
     <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-8 text-center">
+      <div className="absolute top-5 left-5">
+        <LanguageToggle />
+      </div>
       {onClose && (
         <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
       )}
@@ -78,6 +82,9 @@ export default function OnboardingWizard({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-8">
+      <div className="absolute top-5 left-5">
+        <LanguageToggle />
+      </div>
       {onClose && (
         <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
       )}
