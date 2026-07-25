@@ -145,11 +145,43 @@ To deploy a migration: create the file in supabase/migrations/, commit it, and p
     is_league_member(league_id) checks league_members
     is_league_admin(league_id)  checks league_members.role = 'admin'
 
-Invite-only signup:
-  Auth toggle in Supabase Dashboard -> Auth -> Settings -> "Enable signups" OFF.
-  Invites via site-invite Edge Function using admin.createUser({ email_confirm: true }).
-  Stored in site_invites table (name, email, invited_by, used_at).
+Signup mode (current, as of 2026-07-25):
+  Auth toggle in Supabase Dashboard -> Auth -> Settings -> "Enable signups" is ON.
+  Open self-serve signup is intentionally enabled for initial launch. Two client-side
+  paths call supabase.auth.signUp() directly and rely on Supabase's built-in
+  confirmation-email flow:
+    src/components/auth/SignupForm.tsx  (used by AuthPage's "Sign up" tab, /auth)
+    src/pages/InvitePage.tsx            (the "Sign up" tab on /invite/:token and
+                                          /league-invite/:token, for invited users
+                                          who don't yet have an account)
+  Because these go through Supabase's default mailer, a custom SMTP provider is
+  required (see below) -- the shared free-tier mailer is capped at ~2 emails/hour,
+  which open signup traffic exceeds immediately.
+
+  A separate, still-intentional invite-only path exists for site invites created by
+  admins (site-invite Edge Function using admin.createUser({ email_confirm: true }),
+  accepted via /signup/:token -> SignupInvitePage.tsx). This path does NOT send any
+  email (email_confirm: true skips confirmation) and is unaffected by the SMTP/rate
+  limit issue. Stored in site_invites table (name, email, invited_by, used_at).
   Implementation uses name-based invites (not Supabase inviteUserByEmail).
+
+  NOTE: If "Enable signups" is ever turned back OFF (reverting to fully invite-only),
+  SignupForm.tsx and InvitePage.tsx's signup tab will start failing with a
+  "signups not allowed" error -- SignupForm.tsx already handles that message, but
+  InvitePage.tsx does not.
+
+Custom SMTP (configured 2026-07-25, provider: Resend):
+  Configure in Supabase Dashboard -> Auth -> Settings -> SMTP Settings to lift the
+  built-in mailer's rate limit. Required as long as "Enable signups" is ON.
+    Host: smtp.resend.com
+    Port: 465 (SSL) or 587 (TLS)
+    Username: resend
+    Password: Resend API key
+  Sender email domain MUST exactly match the domain verified in Resend's dashboard —
+  it does not extend to subdomains. Verified domain is mourits.nu, so the sender
+  address must be ...@mourits.nu, NOT ...@baseball.mourits.nu (using the app's
+  subdomain here caused signup to fail with a 500 on /auth/v1/signup; Supabase's
+  auth logs only show a generic "Error sending confirmation email").
 
 Soft ban (user removal):
   Use updateUserById(id, { ban_duration: '876000h' }).

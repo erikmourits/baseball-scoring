@@ -13,7 +13,7 @@ A local-first Progressive Web App (PWA) for scoring baseball games play-by-play 
 - **Offline-first** — works without internet, syncs when back online
 - **PWA** — installable on iOS, Android, and desktop
 - **Dark mode** — system preference respected, manually toggleable
-- **Invite-only** — access is controlled via invite links
+- **Open signup + invite links** — anyone can create an account; league membership is granted via invite links
 
 ## Tech Stack
 
@@ -135,6 +135,35 @@ npm run deploy-functions:prod
 ```bash
 npm run build
 ```
+
+## Email (Auth)
+
+Signup is open (`Enable signups` is ON in Supabase Auth settings), so real users hit
+Supabase's confirmation-email flow via `supabase.auth.signUp()`. Supabase's built-in
+mailer is capped at ~2 emails/hour on the free tier, so production uses a custom SMTP
+provider instead.
+
+**Provider:** [Resend](https://resend.com)
+
+Configured in Supabase Dashboard → Authentication → Settings → SMTP Settings:
+
+| Setting | Value |
+|---|---|
+| Host | `smtp.resend.com` |
+| Port | `465` (SSL) or `587` (TLS) |
+| Username | `resend` |
+| Password | Resend API key |
+| Sender email | must be on the exact domain verified in Resend (`mourits.nu`) |
+
+> Resend's domain verification does not extend to subdomains — a sender address on
+> `baseball.mourits.nu` fails even though `mourits.nu` is verified, causing every signup
+> to fail with a 500 on `/auth/v1/signup`. Supabase's Auth logs only show a generic
+> "Error sending confirmation email" — check Resend's own Logs/Emails tab to see whether
+> a send was attempted or rejected before assuming the Supabase-side config is wrong.
+
+A separate, invite-only path also exists for site invites created by admins
+(`site-invite` Edge Function, `admin.createUser({ email_confirm: true })`) — that path
+sends no email and is unaffected by the SMTP setup above.
 
 ## Deployment
 
