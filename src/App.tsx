@@ -28,7 +28,7 @@ import HelpPage from './pages/HelpPage'
 function PageTracker() {
   const location = useLocation()
   useEffect(() => {
-    analytics.track('page_view', { path: location.pathname })
+    analytics.track('$pageview', { path: location.pathname })
   }, [location.pathname])
   return null
 }

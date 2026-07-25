@@ -24,13 +24,13 @@ Translation keys `game.undo` and `game.skipHalf` already exist in both `en` and 
 
 **File:** `src/pages/AdminPage.tsx`
 
-The invite form has an email input with a placeholder but no associated `<label>` element. Add a visible `<label htmlFor="invite-email">` above the input (or use the existing i18n key for "Email address"). Use a new or existing translation key.
+The invite form has an email input with a placeholder but no associated `<label>` element. Add a visible `<label htmlFor="invite-email">` above the input using the existing `common.email` key ("Email" / "E-mail").
 
 ### 1.3 LeagueSettingsPage — invite email input missing `<label>`
 
 **File:** `src/pages/LeagueSettingsPage.tsx`
 
-Same pattern as AdminPage. Add a `<label>` to the invite email input in the scorer-invite form.
+Same pattern as AdminPage. Add a `<label htmlFor="invite-email">` using `common.email` to the scorer-invite email input.
 
 ---
 

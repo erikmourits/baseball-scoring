@@ -1,7 +1,7 @@
 import posthog from 'posthog-js'
 
 export type AnalyticsEvent =
-  | 'page_view'
+  | '$pageview'
   | 'auth_login'
   | 'auth_logout'
   | 'game_created'
