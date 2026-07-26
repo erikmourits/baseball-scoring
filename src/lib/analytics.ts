@@ -32,8 +32,8 @@ export function initAnalytics(): void {
 }
 
 export const analytics = {
-  identify(userId: string): void {
-    posthog.identify(userId)
+  identify(userId: string, properties?: Record<string, unknown>): void {
+    posthog.identify(userId, properties)
   },
   reset(): void {
     posthog.reset()

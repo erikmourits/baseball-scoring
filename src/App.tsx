@@ -73,7 +73,7 @@ export default function App() {
 
   useEffect(() => {
     if (session?.user) {
-      analytics.identify(session.user.id)
+      analytics.identify(session.user.id, { email: session.user.email })
     } else {
       analytics.reset()
     }
