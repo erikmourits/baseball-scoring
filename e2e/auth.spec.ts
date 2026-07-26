@@ -18,3 +18,15 @@ test.describe('Authentication', () => {
   })
 
 })
+
+test.describe('Forgot password', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('shows a confirmation after requesting a reset link', async ({ page }) => {
+    await page.goto('/auth')
+    await page.getByRole('button', { name: /forgot password|wachtwoord vergeten/i }).click()
+    await page.locator('input[type="email"]').fill('e2e-nonexistent-user@example.com')
+    await page.getByRole('button', { name: /send reset link|reset-link versturen/i }).click()
+    await expect(page.getByText(/check your email|controleer je e-mail/i)).toBeVisible({ timeout: 10_000 })
+  })
+})

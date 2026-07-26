@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next'
 import LanguageToggle from '../components/LanguageToggle'
 import LoginForm from '../components/auth/LoginForm'
 import SignupForm from '../components/auth/SignupForm'
+import ForgotPasswordForm from '../components/auth/ForgotPasswordForm'
 
 export default function AuthPage() {
   const { t } = useTranslation()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-brand-500 px-4">
@@ -20,30 +21,34 @@ export default function AuthPage() {
         <div className="flex justify-end mb-2">
           <LanguageToggle />
         </div>
-        <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
-          <button
-            onClick={() => setMode('login')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              mode === 'login'
-                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-            }`}
-          >
-            {t('auth.login')}
-          </button>
-          <button
-            onClick={() => setMode('signup')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              mode === 'signup'
-                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-            }`}
-          >
-            {t('auth.signup')}
-          </button>
-        </div>
+        {mode !== 'forgot' && (
+          <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
+            <button
+              onClick={() => setMode('login')}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'login'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              {t('auth.login')}
+            </button>
+            <button
+              onClick={() => setMode('signup')}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'signup'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              {t('auth.signup')}
+            </button>
+          </div>
+        )}
 
-        {mode === 'login' ? <LoginForm /> : <SignupForm onSuccess={() => setMode('login')} />}
+        {mode === 'login' && <LoginForm onForgotPassword={() => setMode('forgot')} />}
+        {mode === 'signup' && <SignupForm onSuccess={() => setMode('login')} />}
+        {mode === 'forgot' && <ForgotPasswordForm onBack={() => setMode('login')} />}
       </div>
     </div>
   )
