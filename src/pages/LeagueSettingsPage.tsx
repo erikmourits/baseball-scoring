@@ -51,6 +51,119 @@ function MemberRow({
   )
 }
 
+// ── Change password ───────────────────────────────────────────────────────────
+
+function ChangePasswordSection({
+  email,
+  onSuccess,
+  onError,
+}: {
+  email: string
+  onSuccess: (message: string) => void
+  onError: (message: string) => void
+}) {
+  const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (newPassword !== confirmPassword) {
+      setError(t('auth.passwordMismatch'))
+      return
+    }
+    setLoading(true)
+    const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+    if (reauthError) {
+      setError(reauthError.message)
+      setLoading(false)
+      return
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+    setLoading(false)
+    if (updateError) {
+      onError(t('league.failed', { error: updateError.message }))
+      return
+    }
+    analytics.track('auth_password_changed')
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setExpanded(false)
+    onSuccess(t('auth.passwordChanged'))
+  }
+
+  function cancel() {
+    setExpanded(false)
+    setError('')
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      >
+        {t('auth.changePassword')}
+      </button>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 px-3 py-2.5">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm px-3 py-2 rounded-lg">{error}</div>
+      )}
+      <input
+        type="password"
+        required
+        value={currentPassword}
+        onChange={e => setCurrentPassword(e.target.value)}
+        placeholder={t('auth.currentPassword')}
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+      />
+      <input
+        type="password"
+        required
+        minLength={8}
+        value={newPassword}
+        onChange={e => setNewPassword(e.target.value)}
+        placeholder={t('auth.newPassword')}
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+      />
+      <input
+        type="password"
+        required
+        minLength={8}
+        value={confirmPassword}
+        onChange={e => setConfirmPassword(e.target.value)}
+        placeholder={t('auth.confirmPassword')}
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+      />
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+        >
+          {loading ? t('auth.changingPassword') : t('auth.changePassword')}
+        </button>
+        <button type="button" onClick={cancel} className="text-sm text-gray-400 dark:text-gray-500 px-2">
+          {t('common.cancel')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function LeagueSettingsPage() {
@@ -275,9 +388,26 @@ export default function LeagueSettingsPage() {
             {t('common.create')}
           </button>
         </div>
-        <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-1">
+          <ChangePasswordSection
+            email={session!.user.email!}
+            onSuccess={msg => showAlert(msg, t('league.done'))}
+            onError={msg => showAlert(msg, t('league.error'))}
+          />
           <button onClick={signOut} className="text-sm text-red-500 dark:text-red-400">{t('league.signOut')}</button>
         </div>
+
+        {dialog && (
+          <ConfirmDialog
+            title={dialog.title}
+            message={dialog.message}
+            confirmLabel={dialog.confirmLabel}
+            destructive={dialog.destructive}
+            alertOnly={dialog.alertOnly}
+            onConfirm={dialog.onConfirm ?? (() => setDialog(null))}
+            onCancel={() => setDialog(null)}
+          />
+        )}
       </div>
     )
   }
@@ -486,6 +616,15 @@ export default function LeagueSettingsPage() {
         >
           {clearing ? t('league.clearing') : t('league.clearData')}
         </button>
+      </div>
+
+      {/* Account */}
+      <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
+        <ChangePasswordSection
+          email={session!.user.email!}
+          onSuccess={msg => showAlert(msg, t('league.done'))}
+          onError={msg => showAlert(msg, t('league.error'))}
+        />
       </div>
 
       {/* App version */}
