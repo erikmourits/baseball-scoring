@@ -78,6 +78,8 @@ function ChangePasswordSection({
       return
     }
     setLoading(true)
+    // Client-side safeguard: re-authenticate before password change. This prevents casual
+    // misuse on an unattended device, but it's not protection against stolen session tokens.
     const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
     if (reauthError) {
       setError(reauthError.message)
