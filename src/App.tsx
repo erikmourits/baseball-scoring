@@ -24,6 +24,7 @@ import AppShell from './components/layout/AppShell'
 import AdminPage from './pages/AdminPage'
 import SignupInvitePage from './pages/SignupInvitePage'
 import HelpPage from './pages/HelpPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function PageTracker() {
   const location = useLocation()
@@ -39,6 +40,7 @@ function AuthenticatedApp() {
     <>
       <PageTracker />
       <Routes>
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<AppShell />}>
           <Route path="/"                                         element={<HomePage />} />
           <Route path="/teams"                                    element={<TeamsPage />} />
@@ -92,6 +94,7 @@ export default function App() {
       ) : (
         <Routes>
           <Route path="/auth"          element={<AuthPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/watch/:token"         element={<WatchPage />} />
           <Route path="/league-invite/:token" element={<InvitePage />} />
           <Route path="/signup/:token"        element={<SignupInvitePage />} />
