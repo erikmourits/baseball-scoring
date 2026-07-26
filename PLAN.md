@@ -408,6 +408,26 @@ date,home_team,away_team,location
 
 ---
 
+#### 7.6 — Reduce WatchPage polling egress (nice to have, do if egress becomes an issue) ❌
+`useGameSubscription.ts` polls every 5s per open `/watch/:token` tab and re-fetches the *full* game row + all innings + all at-bats each time, rather than just what changed. Free tier egress is capped at 5 GB/month; a handful of concurrent spectators on a live game over a few hours could add up. Not worth fixing preemptively — flagged here to revisit once egress usage (Dashboard → Settings → Usage) actually approaches the cap.
+
+**Approach when picked up:** either (a) switch to Supabase Realtime (`postgres_changes` or broadcast) so updates push instead of poll, or (b) keep polling but fetch only rows changed since the last poll (`updated_at` / `sequence_number` cursor) instead of the full set each time.
+
+**Recommendation: Postgres Changes.** Confirmed to fit the free tier (200 concurrent connections, 2M messages/month, 100 msgs/sec — nowhere near any of these at rec-league scale). Fan-out counts per subscriber (one DB change × N watchers = N messages/auth checks), which only matters at ~3,000+ concurrent subscribers on one game — Broadcast would be the fallback if that scale is ever reached. The client already opens a Realtime presence channel per game in `useGameSubscription.ts` for viewer count, so most of the connection plumbing is already in place; this removes the polling egress problem entirely rather than just shrinking it.
+
+**Affected files:** `src/hooks/useGameSubscription.ts`
+
+---
+
+#### 7.7 — Admin: data cleanup tools ❌
+`AdminPage.tsx` currently supports invite management and user ban/unban only. Add the ability to browse and delete old/unused data (leagues, stale site invites past expiry, orphaned games) to keep database size (500 MB free-tier cap) under control manually, since Supabase's usage-threshold emails are the only automatic warning.
+
+**Approach when picked up:** a "Leagues" section listing all leagues with member count + last game date, with a delete action; check FK cascade behavior on `leagues` → `teams`/`seasons`/`games`/etc. before wiring up delete (may need `ON DELETE CASCADE` migrations or explicit cleanup order). Worth a brainstorming/planning pass before implementation given it's a destructive, cross-table operation.
+
+**Affected files:** `src/pages/AdminPage.tsx`, possibly a new `supabase/functions/admin-cleanup/` Edge Function, `supabase/migrations/`
+
+---
+
 - [x] leagueId should not be nullable (held over from before League existed)
 
 ### Phase 8 — Quality & Testing (partial ✅)
